@@ -87,48 +87,85 @@ class Mirobot:
     def go_to_zero(self):
         self.go_to_axis(0, 0, 0, 0, 0, 0, 2000)
 
+    @staticmethod
+    def generate_args_string(instruction, pairings):
+        args = [f'{arg_key}{value}' for arg_key, value in pairings.items() if value is not None]
+
+        return ' '.join([instruction] + args)
+
     # send all axes to a specific position
-    def go_to_axis(self, a1, a2, a3, a4, a5, a6, speed):
-        msg = 'M21 G90'
-        msg += ' X' + str(a1)
-        msg += ' Y' + str(a2)
-        msg += ' Z' + str(a3)
-        msg += ' A' + str(a4)
-        msg += ' B' + str(a5)
-        msg += ' C' + str(a6)
-        msg += ' F' + str(speed)
-        self.send_msg(msg)
-        return
+    def go_to_axis(self, a1=None, a2=None, a3=None, a4=None, a5=None, a6=None, speed=None):
+        instruction = 'M21 G90'  # X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}
+        if speed:
+            speed = int(speed)
+
+        pairings = {'X': a1, 'Y': a2, 'Z': a3, 'A': a4, 'B': a5, 'C': a6, 'F': speed}
+        msg = self.generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg)
 
     # increment all axes a specified amount
-    def increment_axis(self, a1, a2, a3, a4, a5, a6, speed):
-        msg = f'M21 G91 X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}'
-        self.send_msg(msg)
-        return
+    def increment_axis(self, a1=None, a2=None, a3=None, a4=None, a5=None, a6=None, speed=None):
+        instruction = 'M21 G91'  # X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}
+
+        if speed:
+            speed = int(speed)
+
+        pairings = {'X': a1, 'Y': a2, 'Z': a3, 'A': a4, 'B': a5, 'C': a6, 'F': speed}
+        msg = self.generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg)
 
     # point to point move to a cartesian position
-    def go_to_cartesian_ptp(self, x, y, z, a, b, c, speed):
-        msg = f'M20 G90 G0 X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}'
-        self.send_msg(msg)
-        return
+    def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None):
+        instruction = 'M20 G90 G0'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if speed:
+            speed = int(speed)
+
+        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
+        msg = self.generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg)
 
     # linear move to a cartesian position
-    def go_to_cartesian_lin(self, x, y, z, a, b, c, speed):
-        msg = f'M20 G90 G1 X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}'
-        self.send_msg(msg)
-        return
+    def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None):
+        instruction = 'M20 G90 G1'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if speed:
+            speed = int(speed)
+
+        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
+        msg = self.generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg)
 
     # point to point increment in cartesian space
-    def increment_cartesian_ptp(self, x, y, z, a, b, c, speed):
-        msg = f'M20 G91 G0 X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}'
+    def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None):
+        instruction = 'M20 G91 G0'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if speed:
+            speed = int(speed)
+
+        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
+        msg = self.generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg)
+
         self.send_msg(msg)
         return
 
     # linear increment in cartesian space
-    def increment_cartesian_lin(self, x, y, z, a, b, c, speed):
-        msg = f'M20 G91 G1 X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}'
-        self.send_msg(msg)
-        return
+    def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None):
+        instruction = 'M20 G91 G1'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if speed:
+            speed = int(speed)
+
+        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
+        msg = self.generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg)
 
     # set the pwm of the air pump
     def set_air_pump(self, pwm):
