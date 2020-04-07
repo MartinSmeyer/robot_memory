@@ -1,4 +1,3 @@
-from threading import Thread
 import sys
 
 from serial_device import SerialDevice
@@ -11,12 +10,12 @@ class Mirobot:
         self.receive_callback = receive_callback
         self.debug = debug
 
-    #COMMUNICATION #
+    # COMMUNICATION #
 
     # send a message
     def send_msg(self, msg):
         if self.is_connected():
-            self.serial_device.send(msg,  terminator='\r\n')
+            self.serial_device.send(msg, terminator='\r\n')
         if self.debug:
             print('Message sent: ', msg)
 

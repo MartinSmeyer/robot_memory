@@ -21,7 +21,8 @@ class SerialDevice:
                 self.serialport.close()
         except Exception as e:
             print(e)
-            print("Destructor error closing COM port: ", sys.exc_info()[0] )
+            print("Destructor error closing COM port: ", sys.exc_info()[0])
+
 
     # check if the serial port is open
     @property
