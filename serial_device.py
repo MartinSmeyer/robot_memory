@@ -1,5 +1,6 @@
 import serial
 import sys
+import os
 from threading import Thread
 
 
@@ -83,10 +84,11 @@ class SerialDevice:
                 print("Close error closing COM port: ", sys.exc_info()[0])
 
     # send a message to the serial port
-    def send(self, message, terminator='\r\n'):
+    def send(self, message, terminator=os.linesep):
         if self._is_open:
             try:
-                message += terminator
+                if not message.endswith(terminator):
+                    message += terminator
                 self.serialport.write(message.encode('utf-8'))
             except Exception as e:
                 print(e)

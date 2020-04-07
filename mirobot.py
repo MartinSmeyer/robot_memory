@@ -15,9 +15,10 @@ class Mirobot:
     # send a message
     def send_msg(self, msg):
         if self.is_connected():
-            self.serial_device.send(msg, terminator='\r\n')
+            output = self.serial_device.send(msg)
         if self.debug:
             print('Message sent: ', msg)
+        return output
 
     # message receive handler
     def _receive_msg(self, msg):
