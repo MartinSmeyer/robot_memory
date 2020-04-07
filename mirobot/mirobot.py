@@ -4,7 +4,7 @@ from serial_device import SerialDevice
 
 
 class Mirobot(AbstractContextDecorator):
-    def __init__(self, receive_callback=None, debug=False):
+    def __init__(self, receive_callback=str, debug=False):
         # The component to which this extension is attached
         self.serial_device = SerialDevice()
         self.receive_callback = receive_callback
@@ -37,6 +37,11 @@ class Mirobot(AbstractContextDecorator):
             except Exception as e:
                 print(e)
                 print('Receive callback error: ', sys.exc_info()[0])
+
+    def get_status(self):
+        instruction = '?'
+        return self.send_msg(instruction)
+
 
     # check if we are connected
     def is_connected(self):
