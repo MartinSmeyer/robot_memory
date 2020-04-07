@@ -169,16 +169,26 @@ class Mirobot:
 
     # set the pwm of the air pump
     def set_air_pump(self, pwm):
-        if isinstance(pwm, bool):
-            pwm = ['1000', '0'][not pwm]
+        valid_values = ('1000', '0')
 
-        msg = 'M3S' + str(pwm)
+        if isinstance(pwm, bool):
+            pwm = valid_values[not pwm]
+
+        if str(pwm) not in valid_values:
+            raise ValueError(f'pwm must be one of these values: {valid_values}. Was given {pwm}.')
+
+        msg = f'M3S{pwm}'
         self.send_msg(msg)
 
     # set the pwm of the gripper
     def set_gripper(self, pwm):
-        if isinstance(pwm, bool):
-            pwm = ['65', '40'][not pwm]
+        valid_values = ('65', '40')
 
-        msg = 'M4E' + str(pwm)
+        if isinstance(pwm, bool):
+            pwm = valid_values[not pwm]
+
+        if str(pwm) not in valid_values:
+            raise ValueError(f'pwm must be one of these values: {valid_values}. Was given {pwm}.')
+
+        msg = f'M4E{pwm}'
         self.send_msg(msg)
