@@ -70,12 +70,12 @@ class Mirobot:
 
     # set the hard limit state
     def set_hard_limit(self, state):
-        msg = '$21=' + str(int(state))
+        msg = f'$21={int(state)}'
         self.send_msg(msg)
 
     # set the soft limit state
     def set_soft_limit(self, state):
-        msg = '$21=' + str(int(state))
+        msg = f'$20={int(state)}'
         self.send_msg(msg)
 
     # unlock the shaft
