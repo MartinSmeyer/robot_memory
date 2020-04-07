@@ -44,7 +44,8 @@ class SerialDevice:
     # starts the listen thread
     def start_listen_thread(self):
         if self.listen_callback is not None:
-            self.listen_thread = Thread(target=self.listen_to_device, args=(self.listen_callback,)).start()
+            self.listen_thread = Thread(target=self.listen_to_device,
+                                        args=(self.listen_callback,)).start()
 
     # listen to the serial port and pass the message to the callback
     def listen_to_device(self, listen_callback):
