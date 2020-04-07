@@ -101,75 +101,46 @@ class Mirobot:
 
     # increment all axes a specified amount
     def increment_axis(self, a1, a2, a3, a4, a5, a6, speed):
-        msg = 'M21 G91'
-        msg += ' X' + str(a1)
-        msg += ' Y' + str(a2)
-        msg += ' Z' + str(a3)
-        msg += ' A' + str(a4)
-        msg += ' B' + str(a5)
-        msg += ' C' + str(a6)
-        msg += ' F' + str(speed)
+        msg = f'M21 G91 X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}'
         self.send_msg(msg)
         return
 
     # point to point move to a cartesian position
     def go_to_cartesian_ptp(self, x, y, z, a, b, c, speed):
-        msg = 'M20 G90 G0'
-        msg += ' X' + str(x)
-        msg += ' Y' + str(y)
-        msg += ' Z' + str(z)
-        msg += ' A' + str(a)
-        msg += ' B' + str(b)
-        msg += ' C' + str(c)
-        msg += ' F' + str(speed)
+        msg = f'M20 G90 G0 X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}'
         self.send_msg(msg)
         return
 
     # linear move to a cartesian position
     def go_to_cartesian_lin(self, x, y, z, a, b, c, speed):
-        msg = 'M20 G90 G1'
-        msg += ' X' + str(x)
-        msg += ' Y' + str(y)
-        msg += ' Z' + str(z)
-        msg += ' A' + str(a)
-        msg += ' B' + str(b)
-        msg += ' C' + str(c)
-        msg += ' F' + str(speed)
+        msg = f'M20 G90 G1 X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}'
         self.send_msg(msg)
         return
 
     # point to point increment in cartesian space
     def increment_cartesian_ptp(self, x, y, z, a, b, c, speed):
-        msg = 'M20 G91 G0'
-        msg += ' X' + str(x)
-        msg += ' Y' + str(y)
-        msg += ' Z' + str(z)
-        msg += ' A' + str(a)
-        msg += ' B' + str(b)
-        msg += ' C' + str(c)
-        msg += ' F' + str(speed)
+        msg = f'M20 G91 G0 X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}'
         self.send_msg(msg)
         return
 
     # linear increment in cartesian space
     def increment_cartesian_lin(self, x, y, z, a, b, c, speed):
-        msg = 'M20 G91 G1'
-        msg += ' X' + str(x)
-        msg += ' Y' + str(y)
-        msg += ' Z' + str(z)
-        msg += ' A' + str(a)
-        msg += ' B' + str(b)
-        msg += ' C' + str(c)
-        msg += ' F' + str(speed)
+        msg = f'M20 G91 G1 X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}'
         self.send_msg(msg)
         return
 
     # set the pwm of the air pump
     def set_air_pump(self, pwm):
+        if isinstance(pwm, bool):
+            pwm = ['1000', '0'][not pwm]
+
         msg = 'M3S' + str(pwm)
         self.send_msg(msg)
 
     # set the pwm of the gripper
     def set_gripper(self, pwm):
+        if isinstance(pwm, bool):
+            pwm = ['65', '40'][not pwm]
+
         msg = 'M4E' + str(pwm)
         self.send_msg(msg)
