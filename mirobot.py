@@ -37,7 +37,7 @@ class Mirobot:
         return self.serial_device.is_open
 
     # connect to the mirobot
-    def connect(self, portname, receive_callback=None):
+    def connect(self, portname='COM3', receive_callback=None):
         self.serial_device.portname = portname
         self.serial_device.baudrate = 115200
         self.serial_device.stopbits = 1
