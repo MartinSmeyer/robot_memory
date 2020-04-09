@@ -109,17 +109,6 @@ class Mirobot(AbstractContextManager):
 
         return self.wait_for_ok()
 
-    # message receive handler
-    def _receive_msg(self, msg):
-        if self.debug:
-            print('Message received:', msg)
-        if self.receive_callback is not None:
-            try:
-                self.receive_callback(msg)
-            except Exception as e:
-                print(e)
-                print('Receive callback error: ', sys.exc_info()[0])
-
     # check if we are connected
     def is_connected(self):
         return self.serial_device.is_open

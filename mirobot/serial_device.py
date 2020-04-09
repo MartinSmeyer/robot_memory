@@ -1,18 +1,14 @@
 import serial
 import sys
 import os
-from threading import Thread
 
 
 class SerialDevice:
-    def __init__(self, portname='', baudrate=0, stopbits=1, listen_callback=None, use_listening_thread=False):
+    def __init__(self, portname='', baudrate=0, stopbits=1):
         self.portname = portname
         self.baudrate = baudrate
         self.stopbits = stopbits
         self.timeout = None
-        self.listen_callback = None
-        self.use_listening_thread = False
-        self.listen_thread = None
         self.serialport = serial.Serial()
         self._is_open = False
 
@@ -31,35 +27,15 @@ class SerialDevice:
         self._is_open = self.serialport.is_open
         return self._is_open
 
-    # sets the listen callback
-    def set_listen_callback(self, listen_callback):
-        if self.listen_thread is not None:
-            self.listen_thread.stop()
-
-        self.listen_callback = listen_callback
-
-        if self._is_open:
-            self.start_listen_thread()
-
-    # starts the listen thread
-    def start_listen_thread(self):
-        if self.listen_callback is not None:
-            self.listen_thread = Thread(target=self.listen_to_device,
-                                        args=(self.listen_callback,))
-            self.listen_thread.start()
-
     # listen to the serial port and pass the message to the callback
-    def listen_to_device(self, listen_callback):
+    def listen_to_device(self):
         while self._is_open:
             try:
                 msg = self.serialport.readline()
                 if msg != b'':
                     msg = str(msg.strip(), 'utf-8')
 
-                    if listen_callback is not None:
-                        listen_callback(msg)
-                    else:
-                        return msg
+                    return msg
 
             except Exception as e:
                 print(e)
@@ -75,8 +51,6 @@ class SerialDevice:
             try:
                 self.serialport.open()
                 self._is_open = True
-                if self.use_listening_thread:
-                    self.start_listen_thread()
             except Exception as e:
                 print("Error opening COM port: ", sys.exc_info()[0])
                 raise e
@@ -90,9 +64,6 @@ class SerialDevice:
             except Exception as e:
                 print(e)
                 print("Close error closing COM port: ", sys.exc_info()[0])
-
-        if self.listen_thread:
-            self.listen_thread.stop()  # this doesn't work cause threads don't have stop
 
     # send a message to the serial port
     def send(self, message, terminator=os.linesep):
