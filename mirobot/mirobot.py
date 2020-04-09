@@ -1,9 +1,9 @@
 import sys
-from contextlib import AbstractContextDecorator
+from contextlib import AbstractContextManager
 from serial_device import SerialDevice
 
 
-class Mirobot(AbstractContextDecorator):
+class Mirobot(AbstractContextManager):
     def __init__(self, receive_callback=str, debug=False):
         # The component to which this extension is attached
         self.serial_device = SerialDevice()
