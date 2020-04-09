@@ -280,3 +280,13 @@ class Mirobot(AbstractContextManager):
 
         msg = f'M4E{pwm}'
         self.send_msg(msg)
+
+    @wait_for_ok_decorator
+    def start_calibration(self, wait=True):
+        instruction = 'M40'
+        self.send_msg(instruction)
+
+    @wait_for_ok_decorator
+    def finish_calibration(self, wait=True):
+        instruction = 'M41'
+        self.send_msg(instruction)
