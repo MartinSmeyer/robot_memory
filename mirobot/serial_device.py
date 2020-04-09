@@ -25,7 +25,6 @@ class SerialDevice:
             print(e)
             print("Destructor error closing COM port: ", sys.exc_info()[0])
 
-
     # check if the serial port is open
     @property
     def is_open(self):
@@ -79,8 +78,8 @@ class SerialDevice:
                 if self.use_listening_thread:
                     self.start_listen_thread()
             except Exception as e:
-                print(e)
                 print("Error opening COM port: ", sys.exc_info()[0])
+                raise e
 
     # close the serial port
     def close(self):
