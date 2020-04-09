@@ -32,15 +32,6 @@ class Mirobot(AbstractContextManager):
 
     # COMMUNICATION #
 
-    # send a message
-    def send_msg(self, msg, wait=False):
-        if self.is_connected():
-            output = self.serial_device.send(msg)
-        if self.debug:
-            print('Message sent: ', msg)
-
-        return output
-
     def wait_for_ok(self, reset_expected=False):
         output = ['']
 
@@ -78,6 +69,45 @@ class Mirobot(AbstractContextManager):
 
         return output[1:]  # don't include the dummy empty string at first index
 
+    def wait_for_ok_decorator(fn):
+
+        @functools.wraps(fn)
+        def wait_for_ok_wrapper(self, *args, **kwargs):
+
+            args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+            args_dict = dict(zip(args_names, args))
+
+            if 'wait' in args_dict:
+                wait = args_dict.get('wait')
+            elif 'wait' in kwargs:
+                wait = kwargs.get('wait')
+            else:
+                wait = True
+
+            output = fn(self, *args, **kwargs)
+
+            if wait:
+                return self.wait_for_ok()
+            else:
+                return output
+
+        return wait_for_ok_wrapper
+
+    # send a message
+    @wait_for_ok_decorator
+    def send_msg(self, msg, wait=True):
+        if self.is_connected():
+            output = self.serial_device.send(msg)
+        if self.debug:
+            print('Message sent: ', msg)
+
+        return output
+
+    def get_status(self):
+        instruction = '?'
+        self.send_msg(instruction)
+
+        return self.wait_for_ok()
 
     # message receive handler
     def _receive_msg(self, msg):
@@ -89,12 +119,6 @@ class Mirobot(AbstractContextManager):
             except Exception as e:
                 print(e)
                 print('Receive callback error: ', sys.exc_info()[0])
-
-    def get_status(self):
-        instruction = '?'
-        self.send_msg(instruction)
-
-        return self.wait_for_ok()
 
     # check if we are connected
     def is_connected(self):
@@ -123,30 +147,6 @@ class Mirobot(AbstractContextManager):
         self.serial_device.close()
 
     # COMMANDS #
-
-    def wait_for_ok_decorator(fn):
-
-        @functools.wraps(fn)
-        def wait_for_ok_wrapper(self, *args, **kwargs):
-
-            args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
-            args_dict = dict(zip(args_names, args))
-
-            if 'wait' in args_dict:
-                wait = args_dict.get('wait')
-            elif 'wait' in kwargs:
-                wait = kwargs.get('wait')
-            else:
-                wait = True
-
-            output = fn(self, *args, **kwargs)
-
-            if wait:
-                return self.wait_for_ok()
-            else:
-                return output
-
-        return wait_for_ok_wrapper
 
     # home each axis individually
     @wait_for_ok_decorator
