@@ -8,8 +8,7 @@ from exceptions import MirobotError, MirobotAlarm, MirobotReset
 class Mirobot(AbstractContextManager):
     def __init__(self, receive_callback=str, debug=False):
         # The component to which this extension is attached
-        self.serial_device = SerialDevice()
-        self.receive_callback = receive_callback
+        self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
         self.debug = debug
 
     def __enter__(self):
@@ -39,7 +38,7 @@ class Mirobot(AbstractContextManager):
             eols = ok_eols
 
         while not matches_eol_strings(eols, output[-1]):
-            msg = self.serial_device.listen_to_device(None)
+            msg = self.serial_device.listen_to_device()
 
             if self.debug:
                 print(msg)
@@ -102,22 +101,14 @@ class Mirobot(AbstractContextManager):
         return self.serial_device.is_open
 
     # connect to the mirobot
-    def connect(self, portname='COM3', receive_callback=None):
+    def connect(self, portname='COM3'):
         self.serial_device.portname = portname
         self.serial_device.baudrate = 115200
         self.serial_device.stopbits = 1
-        self.serial_device.listen_callback = self._receive_msg
-
-        if receive_callback is not None:
-            self.receive_callback = receive_callback
 
         self.serial_device.open()
 
         return self.wait_for_ok(reset_expected=True)
-
-    # set the receive callback
-    def set_receive_callback(self, receive_callback):
-        self.receive_callback = receive_callback
 
     # disconnect from the mirobot
     def disconnect(self):
