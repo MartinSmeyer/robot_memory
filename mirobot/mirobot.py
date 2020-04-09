@@ -1,20 +1,8 @@
-import sys
 from contextlib import AbstractContextManager
 import functools
 
 from serial_device import SerialDevice
-
-
-class MirobotError(Exception):
-    pass
-
-
-class MirobotAlarm(Warning):
-    pass
-
-
-class MirobotReset(Warning):
-    pass
+from exceptions import MirobotError, MirobotAlarm, MirobotReset
 
 
 class Mirobot(AbstractContextManager):
