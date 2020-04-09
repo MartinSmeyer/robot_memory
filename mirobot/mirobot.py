@@ -13,6 +13,10 @@ class MirobotAlarm(Warning):
     pass
 
 
+class MirobotReset(Warning):
+    pass
+
+
 class Mirobot(AbstractContextManager):
     def __init__(self, receive_callback=str, debug=False):
         # The component to which this extension is attached
@@ -37,19 +41,25 @@ class Mirobot(AbstractContextManager):
 
         return output
 
-    def wait_for_ok(self):
+    def wait_for_ok(self, reset_expected=False):
         output = ['']
 
-        eols = ['ok', 'Using reset pos!']
+        ok_eols = ['ok']
 
-        def matches_eol_strings(s):
-            nonlocal eols
-            for eol in eols:
+        reset_strings = ['Using reset pos!']
+
+        def matches_eol_strings(terms, s):
+            for eol in terms:
                 if s.endswith(eol):
                     return True
             return False
 
-        while not matches_eol_strings(output[-1]):
+        if reset_expected:
+            eols = ok_eols + reset_strings
+        else:
+            eols = ok_eols
+
+        while not matches_eol_strings(eols, output[-1]):
             msg = self.serial_device.listen_to_device(None)
 
             if self.debug:
@@ -62,7 +72,12 @@ class Mirobot(AbstractContextManager):
 
             output.append(msg)
 
-        return output[1:]
+            if not reset_expected and matches_eol_strings(reset_strings, msg):
+                raise MirobotReset('Mirobot was unexpectedly reset!')
+                break
+
+        return output[1:]  # don't include the dummy empty string at first index
+
 
     # message receive handler
     def _receive_msg(self, msg):
@@ -97,7 +112,7 @@ class Mirobot(AbstractContextManager):
 
         self.serial_device.open()
 
-        return self.wait_for_ok()
+        return self.wait_for_ok(reset_expected=True)
 
     # set the receive callback
     def set_receive_callback(self, receive_callback):
