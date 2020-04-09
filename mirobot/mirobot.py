@@ -1,6 +1,16 @@
 import sys
 from contextlib import AbstractContextManager
+import functools
+
 from serial_device import SerialDevice
+
+
+class MirobotError(Exception):
+    pass
+
+
+class MirobotAlarm(Warning):
+    pass
 
 
 class Mirobot(AbstractContextManager):
@@ -67,8 +77,9 @@ class Mirobot(AbstractContextManager):
 
     def get_status(self):
         instruction = '?'
-        return self.send_msg(instruction)
+        self.send_msg(instruction)
 
+        return self.wait_for_ok()
 
     # check if we are connected
     def is_connected(self):
@@ -85,6 +96,8 @@ class Mirobot(AbstractContextManager):
             self.receive_callback = receive_callback
 
         self.serial_device.open()
+
+        return self.wait_for_ok()
 
     # set the receive callback
     def set_receive_callback(self, receive_callback):
