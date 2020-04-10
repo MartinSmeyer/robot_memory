@@ -12,3 +12,7 @@ class MirobotReset(Warning):
 
 class MirobotAmbiguousPort(Exception):
     pass
+
+
+class MirobotStatusError(Exception):
+    pass

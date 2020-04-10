@@ -1,9 +1,11 @@
 from contextlib import AbstractContextManager
 import functools
 import serial.tools.list_ports as lp
+import re
 
 from serial_device import SerialDevice
-from exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort
+from mirobot_status import MirobotStatus
+from exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError
 
 
 class Mirobot(AbstractContextManager):
@@ -36,7 +38,9 @@ class Mirobot(AbstractContextManager):
         self.debug = debug
 
         self.gripper_pwm_values = tuple(str(n) for n in gripper_pwm_pair)
-        self.default_speed = self.default_speed
+        self.default_speed = default_speed
+
+        self.status = MirobotStatus()
 
         # do this at the very end, after everything is setup
         if autoconnect:
@@ -126,7 +130,49 @@ class Mirobot(AbstractContextManager):
         return self.send_msg(instruction)
 
     def update_status(self):
-        pass
+        status_msg = self.get_status()[0]
+        self._parse_status(status_msg)
+
+    def _parse_status(self, msg):
+        smsg = msg.strip('<>')
+
+        state, rest = smsg.split(',', 1)
+
+        self.status.state = state
+
+        after_state_regex = r'Angle\(ABCDXYZ\):([-\.\d,]*),Cartesian coordinate\(XYZ RxRyRz\):([-.\d,]*),Pump PWM:(\d+),Valve PWM:(\d+),Motion_MODE:(\d)'
+
+        regex_match = re.fullmatch(after_state_regex, rest)
+
+        if regex_match:
+            angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
+
+            a, b, c, d, x, y, z = map(float, angles.split(','))
+
+            self.status.angle.a = a
+            self.status.angle.b = b
+            self.status.angle.c = c
+            self.status.angle.d = d
+            self.status.angle.x = x
+            self.status.angle.y = y
+            self.status.angle.z = z
+
+            x, y, z, a, b, c = map(float, cartesians.split(','))
+            self.status.cartesian.x = x
+            self.status.cartesian.y = y
+            self.status.cartesian.z = z
+            self.status.cartesian.a = a
+            self.status.cartesian.b = b
+            self.status.cartesian.c = c
+
+            self.status.pump_pwm = int(pump_pwm)
+
+            self.status.valve_pwm = int(valve_pwm)
+
+            self.status.motion_mode = bool(motion_mode)
+
+        else:
+            raise MirobotStatusError(f'Could not parse status message "{msg}"')
 
     # check if we are connected
     def is_connected(self):
