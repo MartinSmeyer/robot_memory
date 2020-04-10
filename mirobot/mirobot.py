@@ -162,34 +162,29 @@ class Mirobot(AbstractContextManager):
     # COMMANDS #
 
     # home each axis individually
-    @wait_for_ok_decorator
     def home_individual(self, wait=True):
         msg = '$HH'
-        self.send_msg(msg)
+        self.send_msg(msg, wait=wait)
 
     # home all axes simultaneously
-    @wait_for_ok_decorator
     def home_simultaneous(self, wait=True):
         msg = '$H'
-        self.send_msg(msg)
+        self.send_msg(msg, wait=wait)
 
     # set the hard limit state
-    @wait_for_ok_decorator
     def set_hard_limit(self, state, wait=True):
         msg = f'$21={int(state)}'
-        self.send_msg(msg)
+        self.send_msg(msg, wait=wait)
 
     # set the soft limit state
-    @wait_for_ok_decorator
     def set_soft_limit(self, state, wait=True):
         msg = f'$20={int(state)}'
-        self.send_msg(msg)
+        self.send_msg(msg, wait=wait)
 
     # unlock the shaft
-    @wait_for_ok_decorator
     def unlock_shaft(self, wait=True):
         msg = 'M50'
-        self.send_msg(msg)
+        self.send_msg(msg, wait=wait)
 
     # send all axes to their respective zero positions
     def go_to_zero(self, wait=True):
@@ -202,7 +197,6 @@ class Mirobot(AbstractContextManager):
         return ' '.join([instruction] + args)
 
     # send all axes to a specific position
-    @wait_for_ok_decorator
     def go_to_axis(self, a1=None, a2=None, a3=None, a4=None, a5=None, a6=None, speed=None, wait=True):
         instruction = 'M21 G90'  # X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}
         if speed:
@@ -211,10 +205,9 @@ class Mirobot(AbstractContextManager):
         pairings = {'X': a1, 'Y': a2, 'Z': a3, 'A': a4, 'B': a5, 'C': a6, 'F': speed}
         msg = self.generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg)
+        return self.send_msg(msg, wait=wait)
 
     # increment all axes a specified amount
-    @wait_for_ok_decorator
     def increment_axis(self, a1=None, a2=None, a3=None, a4=None, a5=None, a6=None, speed=None, wait=True):
         instruction = 'M21 G91'  # X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}
 
@@ -224,10 +217,9 @@ class Mirobot(AbstractContextManager):
         pairings = {'X': a1, 'Y': a2, 'Z': a3, 'A': a4, 'B': a5, 'C': a6, 'F': speed}
         msg = self.generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg)
+        return self.send_msg(msg, wait=wait)
 
     # point to point move to a cartesian position
-    @wait_for_ok_decorator
     def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
         instruction = 'M20 G90 G0'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
@@ -237,10 +229,9 @@ class Mirobot(AbstractContextManager):
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self.generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg)
+        return self.send_msg(msg, wait=wait)
 
     # linear move to a cartesian position
-    @wait_for_ok_decorator
     def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
         instruction = 'M20 G90 G1'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
@@ -250,10 +241,9 @@ class Mirobot(AbstractContextManager):
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self.generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg)
+        return self.send_msg(msg, wait=wait)
 
     # point to point increment in cartesian space
-    @wait_for_ok_decorator
     def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
         instruction = 'M20 G91 G0'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
@@ -263,13 +253,12 @@ class Mirobot(AbstractContextManager):
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self.generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg)
+        return self.send_msg(msg, wait=wait)
 
-        self.send_msg(msg)
+        self.send_msg(msg, wait=wait)
         return
 
     # linear increment in cartesian space
-    @wait_for_ok_decorator
     def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
         instruction = 'M20 G91 G1'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
@@ -279,10 +268,9 @@ class Mirobot(AbstractContextManager):
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self.generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg)
+        return self.send_msg(msg, wait=wait)
 
     # set the pwm of the air pump
-    @wait_for_ok_decorator
     def set_air_pump(self, pwm, wait=True):
         valid_values = ('1000', '0')
 
@@ -293,10 +281,9 @@ class Mirobot(AbstractContextManager):
             raise ValueError(f'pwm must be one of these values: {valid_values}. Was given {pwm}.')
 
         msg = f'M3S{pwm}'
-        self.send_msg(msg)
+        self.send_msg(msg, wait=wait)
 
     # set the pwm of the gripper
-    @wait_for_ok_decorator
     def set_gripper(self, pwm, wait=True):
         valid_values = self.gripper_pwm_values
 
@@ -307,14 +294,12 @@ class Mirobot(AbstractContextManager):
             raise ValueError(f'pwm must be one of these values: {valid_values}. Was given {pwm}.')
 
         msg = f'M4E{pwm}'
-        self.send_msg(msg)
+        self.send_msg(msg, wait=wait)
 
-    @wait_for_ok_decorator
     def start_calibration(self, wait=True):
         instruction = 'M40'
-        self.send_msg(instruction)
+        self.send_msg(instruction, wait=wait)
 
-    @wait_for_ok_decorator
     def finish_calibration(self, wait=True):
         instruction = 'M41'
-        self.send_msg(instruction)
+        self.send_msg(instruction, wait=wait)
