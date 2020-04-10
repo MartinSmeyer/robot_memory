@@ -10,19 +10,21 @@ from exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguou
 
 
 class Mirobot(AbstractContextManager):
-    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, gripper_pwm_pair=('65', '40'), default_speed=2000, **serial_device_kwargs):
-        # The component to which this extension is attached
+    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, gripper_pwm_pair=('65', '40'), pump_pwm_pair=('0', '1000'), default_speed=2000, **serial_device_kwargs):
 
         # Parse inputs into SerialDevice
         serial_device_init_fn = SerialDevice.__init__
         args_names = serial_device_init_fn.__code__.co_varnames[:serial_device_init_fn.__code__.co_argcount]
         args_dict = dict(zip(args_names, serial_device_args))
 
+        # check if baudrate was passed in args or kwargs, if not use the default value instead
         if not ('baudrate' in args_dict or 'baudrate' in serial_device_kwargs):
             serial_device_kwargs['baudrate'] = 115200
+        # check if stopbits was passed in args or kwargs, if not use the default value instead
         if not ('stopbits' in args_dict or 'stopbits' in serial_device_kwargs):
             serial_device_kwargs['stopbits'] = 1
 
+        # if portname was not passed in and autofindport is set to true, autosearch for a serial port
         if autofindport and not ('portname' in args_dict or 'portname' in serial_device_kwargs):
             self.default_portname = self._find_portname()
         else:
@@ -39,6 +41,7 @@ class Mirobot(AbstractContextManager):
         self.debug = debug
 
         self.gripper_pwm_values = tuple(str(n) for n in gripper_pwm_pair)
+        self.pump_pwm_values = tuple(str(n) for n in pump_pwm_pair)
         self.default_speed = default_speed
 
         self.status = MirobotStatus()
@@ -329,7 +332,7 @@ class Mirobot(AbstractContextManager):
 
     # set the pwm of the air pump
     def set_air_pump(self, pwm, wait=True):
-        valid_values = ('1000', '0')
+        valid_values = self.pump_pwm_values
 
         if isinstance(pwm, bool):
             pwm = valid_values[not pwm]
