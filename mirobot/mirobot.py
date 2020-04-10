@@ -7,7 +7,7 @@ from exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguou
 
 
 class Mirobot(AbstractContextManager):
-    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, **serial_device_kwargs):
+    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, gripper_pwm_pair=('65', '40'), **serial_device_kwargs):
         # The component to which this extension is attached
 
         # Parse inputs into SerialDevice
@@ -34,6 +34,8 @@ class Mirobot(AbstractContextManager):
 
         # see print statements of output
         self.debug = debug
+
+        self.gripper_pwm_values = tuple(str(n) for n in gripper_pwm_pair)
 
         # do this at the very end, after everything is setup
         if autoconnect:
@@ -296,7 +298,7 @@ class Mirobot(AbstractContextManager):
     # set the pwm of the gripper
     @wait_for_ok_decorator
     def set_gripper(self, pwm, wait=True):
-        valid_values = ('65', '40')
+        valid_values = self.gripper_pwm_values
 
         if isinstance(pwm, bool):
             pwm = valid_values[not pwm]
