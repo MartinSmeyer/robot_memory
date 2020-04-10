@@ -92,9 +92,10 @@ class Mirobot(AbstractContextManager):
 
     def get_status(self):
         instruction = '?'
-        self.send_msg(instruction)
+        return self.send_msg(instruction)
 
-        return self.wait_for_ok()
+    def update_status(self):
+        pass
 
     # check if we are connected
     def is_connected(self):
