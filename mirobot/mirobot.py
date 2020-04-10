@@ -134,43 +134,43 @@ class Mirobot(AbstractContextManager):
         self._parse_status(status_msg)
 
     def _parse_status(self, msg):
-        smsg = msg.strip('<>')
 
-        state, rest = smsg.split(',', 1)
+        state_regex = r'<([^,]*),Angle\(ABCDXYZ\):([-\.\d,]*),Cartesian coordinate\(XYZ RxRyRz\):([-.\d,]*),Pump PWM:(\d+),Valve PWM:(\d+),Motion_MODE:(\d)>'
 
-        self.status.state = state
-
-        after_state_regex = r'Angle\(ABCDXYZ\):([-\.\d,]*),Cartesian coordinate\(XYZ RxRyRz\):([-.\d,]*),Pump PWM:(\d+),Valve PWM:(\d+),Motion_MODE:(\d)'
-
-        regex_match = re.fullmatch(after_state_regex, rest)
+        regex_match = re.fullmatch(state_regex, msg)
 
         if regex_match:
-            angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
+            try:
+                state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
+                self.status.state = state
 
-            a, b, c, d, x, y, z = map(float, angles.split(','))
+                a, b, c, d, x, y, z = map(float, angles.split(','))
 
-            self.status.angle.a = a
-            self.status.angle.b = b
-            self.status.angle.c = c
-            self.status.angle.d = d
-            self.status.angle.x = x
-            self.status.angle.y = y
-            self.status.angle.z = z
+                self.status.angle.a = a
+                self.status.angle.b = b
+                self.status.angle.c = c
+                self.status.angle.d = d
+                self.status.angle.x = x
+                self.status.angle.y = y
+                self.status.angle.z = z
 
-            x, y, z, a, b, c = map(float, cartesians.split(','))
-            self.status.cartesian.x = x
-            self.status.cartesian.y = y
-            self.status.cartesian.z = z
-            self.status.cartesian.a = a
-            self.status.cartesian.b = b
-            self.status.cartesian.c = c
+                x, y, z, a, b, c = map(float, cartesians.split(','))
+                self.status.cartesian.x = x
+                self.status.cartesian.y = y
+                self.status.cartesian.z = z
+                self.status.cartesian.a = a
+                self.status.cartesian.b = b
+                self.status.cartesian.c = c
 
-            self.status.pump_pwm = int(pump_pwm)
+                self.status.pump_pwm = int(pump_pwm)
 
-            self.status.valve_pwm = int(valve_pwm)
+                self.status.valve_pwm = int(valve_pwm)
 
-            self.status.motion_mode = bool(motion_mode)
+                self.status.motion_mode = bool(motion_mode)
 
+            except Exception as exception:
+                raise Exception([MirobotStatusError(f'Could not parse status message "{msg}"'),
+                                 exception])
         else:
             raise MirobotStatusError(f'Could not parse status message "{msg}"')
 
