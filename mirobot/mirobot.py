@@ -198,28 +198,28 @@ class Mirobot(AbstractContextManager):
         return ' '.join([instruction] + args)
 
     # send all axes to a specific position
-    def go_to_axis(self, a1=None, a2=None, a3=None, a4=None, a5=None, a6=None, speed=None, wait=True):
-        instruction = 'M21 G90'  # X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}
+    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
+        instruction = 'M21 G90'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
         if not speed:
             speed = self.default_speed
         if speed:
             speed = int(speed)
 
-        pairings = {'X': a1, 'Y': a2, 'Z': a3, 'A': a4, 'B': a5, 'C': a6, 'F': speed}
+        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self.generate_args_string(instruction, pairings)
 
         return self.send_msg(msg, wait=wait)
 
     # increment all axes a specified amount
-    def increment_axis(self, a1=None, a2=None, a3=None, a4=None, a5=None, a6=None, speed=None, wait=True):
-        instruction = 'M21 G91'  # X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}
+    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
+        instruction = 'M21 G91'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
         if not speed:
             speed = self.default_speed
         if speed:
             speed = int(speed)
 
-        pairings = {'X': a1, 'Y': a2, 'Z': a3, 'A': a4, 'B': a5, 'C': a6, 'F': speed}
+        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self.generate_args_string(instruction, pairings)
 
         return self.send_msg(msg, wait=wait)
