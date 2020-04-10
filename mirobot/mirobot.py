@@ -10,7 +10,7 @@ from exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguou
 
 
 class Mirobot(AbstractContextManager):
-    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, gripper_pwm_pair=('65', '40'), pump_pwm_pair=('0', '1000'), default_speed=2000, **serial_device_kwargs):
+    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, gripper_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, **serial_device_kwargs):
 
         # Parse inputs into SerialDevice
         serial_device_init_fn = SerialDevice.__init__
@@ -40,8 +40,8 @@ class Mirobot(AbstractContextManager):
         # see print statements of output
         self.debug = debug
 
-        self.gripper_pwm_values = tuple(str(n) for n in gripper_pwm_pair)
-        self.pump_pwm_values = tuple(str(n) for n in pump_pwm_pair)
+        self.gripper_pwm_values = tuple(str(n) for n in gripper_pwm_values)
+        self.pump_pwm_values = tuple(str(n) for n in pump_pwm_values)
         self.default_speed = default_speed
 
         self.status = MirobotStatus()
@@ -332,26 +332,24 @@ class Mirobot(AbstractContextManager):
 
     # set the pwm of the air pump
     def set_air_pump(self, pwm, wait=True):
-        valid_values = self.pump_pwm_values
 
         if isinstance(pwm, bool):
-            pwm = valid_values[not pwm]
+            pwm = self.pump_pwm_values[not pwm]
 
-        if str(pwm) not in valid_values:
-            raise ValueError(f'pwm must be one of these values: {valid_values}. Was given {pwm}.')
+        if str(pwm) not in self.pump_pwm_values:
+            raise ValueError(f'pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.')
 
         msg = f'M3S{pwm}'
         return self.send_msg(msg, wait=wait)
 
     # set the pwm of the gripper
     def set_gripper(self, pwm, wait=True):
-        valid_values = self.gripper_pwm_values
 
         if isinstance(pwm, bool):
-            pwm = valid_values[not pwm]
+            pwm = self.gripper_pwm_values[not pwm]
 
-        if str(pwm) not in valid_values:
-            raise ValueError(f'pwm must be one of these values: {valid_values}. Was given {pwm}.')
+        if str(pwm) not in self.gripper_pwm_values:
+            raise ValueError(f'pwm must be one of these values: {self.gripper_pwm_values}. Was given {pwm}.')
 
         msg = f'M4E{pwm}'
         return self.send_msg(msg, wait=wait)
