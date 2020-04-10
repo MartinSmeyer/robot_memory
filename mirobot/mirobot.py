@@ -164,31 +164,31 @@ class Mirobot(AbstractContextManager):
     # home each axis individually
     def home_individual(self, wait=True):
         msg = '$HH'
-        self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait)
 
     # home all axes simultaneously
     def home_simultaneous(self, wait=True):
         msg = '$H'
-        self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait)
 
     # set the hard limit state
     def set_hard_limit(self, state, wait=True):
         msg = f'$21={int(state)}'
-        self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait)
 
     # set the soft limit state
     def set_soft_limit(self, state, wait=True):
         msg = f'$20={int(state)}'
-        self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait)
 
     # unlock the shaft
     def unlock_shaft(self, wait=True):
         msg = 'M50'
-        self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait)
 
     # send all axes to their respective zero positions
     def go_to_zero(self, wait=True):
-        self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)
+        return self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)
 
     @staticmethod
     def generate_args_string(instruction, pairings):
@@ -255,9 +255,6 @@ class Mirobot(AbstractContextManager):
 
         return self.send_msg(msg, wait=wait)
 
-        self.send_msg(msg, wait=wait)
-        return
-
     # linear increment in cartesian space
     def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
         instruction = 'M20 G91 G1'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
@@ -281,7 +278,7 @@ class Mirobot(AbstractContextManager):
             raise ValueError(f'pwm must be one of these values: {valid_values}. Was given {pwm}.')
 
         msg = f'M3S{pwm}'
-        self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait)
 
     # set the pwm of the gripper
     def set_gripper(self, pwm, wait=True):
@@ -294,12 +291,12 @@ class Mirobot(AbstractContextManager):
             raise ValueError(f'pwm must be one of these values: {valid_values}. Was given {pwm}.')
 
         msg = f'M4E{pwm}'
-        self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait)
 
     def start_calibration(self, wait=True):
         instruction = 'M40'
-        self.send_msg(instruction, wait=wait)
+        return self.send_msg(instruction, wait=wait)
 
     def finish_calibration(self, wait=True):
         instruction = 'M41'
-        self.send_msg(instruction, wait=wait)
+        return self.send_msg(instruction, wait=wait)
