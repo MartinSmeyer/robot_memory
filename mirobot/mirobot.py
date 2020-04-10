@@ -1,15 +1,43 @@
 from contextlib import AbstractContextManager
 import functools
+import serial.tools.list_ports as lp
 
 from serial_device import SerialDevice
-from exceptions import MirobotError, MirobotAlarm, MirobotReset
+from exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort
 
 
 class Mirobot(AbstractContextManager):
-    def __init__(self, receive_callback=str, debug=False):
+    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, **serial_device_kwargs):
         # The component to which this extension is attached
+
+        # Parse inputs into SerialDevice
+        serial_device_init_fn = SerialDevice.__init__
+        args_names = serial_device_init_fn.__code__.co_varnames[:serial_device_init_fn.__code__.co_argcount]
+        args_dict = dict(zip(args_names, serial_device_args))
+
+        if not ('baudrate' in args_dict or 'baudrate' in serial_device_kwargs):
+            serial_device_kwargs['baudrate'] = 115200
+        if not ('stopbits' in args_dict or 'stopbits' in serial_device_kwargs):
+            serial_device_kwargs['stopbits'] = 1
+
+        if autofindport and not ('portname' in args_dict or 'portname' in serial_device_kwargs):
+            self.default_portname = self._find_portname()
+        else:
+            if 'portname' in args_dict:
+                self.default_portname = args_dict['portname']
+            elif 'portname' in serial_device_kwargs:
+                self.default_portname = serial_device_kwargs['portname']
+            else:
+                self.default_portname = None
+
         self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
+
+        # see print statements of output
         self.debug = debug
+
+        # do this at the very end, after everything is setup
+        if autoconnect:
+            self.connect()
 
     def __enter__(self):
         return self
@@ -101,11 +129,25 @@ class Mirobot(AbstractContextManager):
     def is_connected(self):
         return self.serial_device.is_open
 
+    def _find_portname(self):
+        port_objects = lp.comports()
+
+        if not port_objects:
+            raise MirobotAmbiguousPort("No ports found! Make sure your Mirobot is connected and recognized by your operating system.")
+
+        if len(port_objects) > 1:
+            raise MirobotAmbiguousPort(f"Unable to determine which port to automatically connect to!\nFound these ports: {[p.device for p in port_objects]}.\nTo fix this, please provide port name explicitly.")
+        return port_objects[0].device
+
     # connect to the mirobot
-    def connect(self, portname='COM3'):
+    def connect(self, portname=None):
+        if portname is None:
+            if self.default_portname is not None:
+                portname = self.default_portname
+            else:
+                raise ValueError('Portname must be provided! like so `portname=\'COM3\'`')
+
         self.serial_device.portname = portname
-        self.serial_device.baudrate = 115200
-        self.serial_device.stopbits = 1
 
         self.serial_device.open()
 

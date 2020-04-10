@@ -8,3 +8,7 @@ class MirobotAlarm(Warning):
 
 class MirobotReset(Warning):
     pass
+
+
+class MirobotAmbiguousPort(Exception):
+    pass
