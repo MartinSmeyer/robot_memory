@@ -1,9 +1,10 @@
 from contextlib import AbstractContextManager
 import functools
-import serial.tools.list_ports as lp
 import re
 
 from serial_device import SerialDevice
+import serial.tools.list_ports as lp
+
 from mirobot_status import MirobotStatus
 from exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError
 
