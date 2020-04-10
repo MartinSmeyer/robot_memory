@@ -7,7 +7,7 @@ from exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguou
 
 
 class Mirobot(AbstractContextManager):
-    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, gripper_pwm_pair=('65', '40'), **serial_device_kwargs):
+    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, gripper_pwm_pair=('65', '40'), default_speed=2000, **serial_device_kwargs):
         # The component to which this extension is attached
 
         # Parse inputs into SerialDevice
@@ -36,6 +36,7 @@ class Mirobot(AbstractContextManager):
         self.debug = debug
 
         self.gripper_pwm_values = tuple(str(n) for n in gripper_pwm_pair)
+        self.default_speed = self.default_speed
 
         # do this at the very end, after everything is setup
         if autoconnect:
@@ -199,6 +200,8 @@ class Mirobot(AbstractContextManager):
     # send all axes to a specific position
     def go_to_axis(self, a1=None, a2=None, a3=None, a4=None, a5=None, a6=None, speed=None, wait=True):
         instruction = 'M21 G90'  # X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}
+        if not speed:
+            speed = self.default_speed
         if speed:
             speed = int(speed)
 
@@ -211,6 +214,8 @@ class Mirobot(AbstractContextManager):
     def increment_axis(self, a1=None, a2=None, a3=None, a4=None, a5=None, a6=None, speed=None, wait=True):
         instruction = 'M21 G91'  # X{a1} Y{a2} Z{a3} A{a4} B{a5} C{a6} F{speed}
 
+        if not speed:
+            speed = self.default_speed
         if speed:
             speed = int(speed)
 
@@ -223,6 +228,8 @@ class Mirobot(AbstractContextManager):
     def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
         instruction = 'M20 G90 G0'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
+        if not speed:
+            speed = self.default_speed
         if speed:
             speed = int(speed)
 
@@ -235,6 +242,8 @@ class Mirobot(AbstractContextManager):
     def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
         instruction = 'M20 G90 G1'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
+        if not speed:
+            speed = self.default_speed
         if speed:
             speed = int(speed)
 
@@ -247,6 +256,8 @@ class Mirobot(AbstractContextManager):
     def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
         instruction = 'M20 G91 G0'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
+        if not speed:
+            speed = self.default_speed
         if speed:
             speed = int(speed)
 
@@ -259,6 +270,8 @@ class Mirobot(AbstractContextManager):
     def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=True):
         instruction = 'M20 G91 G1'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
+        if not speed:
+            speed = self.default_speed
         if speed:
             speed = int(speed)
 
