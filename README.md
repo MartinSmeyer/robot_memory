@@ -2,7 +2,7 @@
 
 ## Description
 
-py-mirobot is a python module that can be used to control the [WLkata Mirobot](http://www.wlkata.com/site/index.html)
+`mirobot` is a python module that can be used to control the [WLkata Mirobot](http://www.wlkata.com/site/index.html)
 
 ![Mirobot](/images/Mirobot_Solo_256.jpg)
 
@@ -10,7 +10,7 @@ This component uses the G code protocol to communicate with the Mirobot over a s
 
 ## Example Usage
 
-```python
+```python3
 from mirobot import Mirobot
 
 with Mirobot(portname='COM3', debug=True) as m:
@@ -21,7 +21,7 @@ with Mirobot(portname='COM3', debug=True) as m:
 
 And that's it! Now if you want to save keystrokes, here's a even more minimal version:
 
-```
+```python3
 from mirobot import Mirobot
 
 with Mirobot() as m:
@@ -41,7 +41,7 @@ Big thanks to Mattew Wachter for laying down the framework for this library-- pl
 
 ### Reasons to fork (and not merge upstream)
 
-While based of the same code initially, this repository has developed in a different direction with opinonated views on how one should use a robotics library. Specifically, there is the problem of 'output' when operating a gcode-programmed machine like Mirobot.
+While based of the same code initially, this repository has developed in a different direction with opinionated views on how one should use a robotics library. Specifically, there is the problem of 'output' when operating a gcode-programmed machine like Mirobot.
 
 - Matthew's library takes the traditional approach to recieving output from the robot as they appear. Basically this replicates the live terminal feedback in a client similar to Wlkata's Studio program. The original code has a thread listening the background for new messages and displays them as they appear.
 
