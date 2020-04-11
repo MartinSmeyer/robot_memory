@@ -1,12 +1,7 @@
-from time import sleep
 from mirobot import Mirobot
 
 
-with Mirobot(debug=True) as m:
-    m.connect(portname='com3')
+with Mirobot(portname='COM3', debug=True) as m:
+    m.home_individual()
 
-    sleep(3)
-
-    m.home_simultaneous()
-
-    sleep(10)
+    m.go_to_zero()

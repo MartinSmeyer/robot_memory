@@ -1,12 +1,4 @@
-# py-mirobot
-
-#### Python version 3.7.6
-
-License: MIT
-
-[Matthew Wachter](https://www.matthewwachter.com)
-
-[VT Pro Design](https://www.vtprodesign.com)
+# mirobot
 
 ## Description
 
@@ -19,40 +11,64 @@ This component uses the G code protocol to communicate with the Mirobot over a s
 ## Example Usage
 
 ```python
-from time import sleep
 from mirobot import Mirobot
 
-# create an instance of the Mirobot Class
-m = Mirobot(debug=True)
-# connect to the com3 port
-m.connect('com3')
+with Mirobot(portname='COM3', debug=True) as m:
+    m.home_individual()
 
-# wait for the connection
-sleep(3)
-
-# start the homing routine
-m.home_simultaneous()
-
-# wait for 10 seconds
-sleep(10)
-
-# close the connection
-m.disconnect()
+    m.go_to_zero()
 ```
+
+And that's it! Now if you want to save keystrokes, here's a even more minimal version:
+
+```
+from mirobot import Mirobot
+
+with Mirobot() as m:
+    m.home_simultaneous()
+```
+
+The `Mirobot` class can detect existing open serial ports and "guess" which one to use as the Mirobot. There's no need to specify a portname for most cases!
+
+## Differences from source repository
+
+### Credits
+
+Big thanks to Mattew Wachter for laying down the framework for this library-- please check out his links below:
+[Matthew Wachter](https://www.matthewwachter.com)
+
+[VT Pro Design](https://www.vtprodesign.com)
+
+### Reasons to fork (and not merge upstream)
+
+While based of the same code initially, this repository has developed in a different direction with opinonated views on how one should use a robotics library. Specifically, there is the problem of 'output' when operating a gcode-programmed machine like Mirobot.
+
+- Matthew's library takes the traditional approach to recieving output from the robot as they appear. Basically this replicates the live terminal feedback in a client similar to Wlkata's Studio program. The original code has a thread listening the background for new messages and displays them as they appear.
+
+- This repository intends to take a more programmatic approach to this behavior. Specifically it narrows down the path to responsibility by explicitly pairing each command to its output. In a stream-messages-as-they-come approach to output messaging, it is not clear (or atleast easy) to determine which command failed and how to ensure scripts stop execution at exactly the point of failure (and not after). That is why each instruction in this library has a dedicated output, ensuring success and having its own message output as a return value. This approach is a lot harder to construct and relies on adapting to the idiosyncrasies of gcode and Mirobot programming.
+
+In the end, while developing this approach to error responsibility, I realized that this would probably not suit everyone's needs-- sometimes people just want a live feed of output. That is why I think Matthew's continued work would be great for the community. I don't want this repository and its beliefs to consume another. I also do not see a way to combine both approaches-- they are inherently incompatible at the core level.
+
+It is my belief that people who are looking to do significant scripting and logic-testing routines will benefit greatly from this library. People who are looking to use a CLI-friendly framework should instead use Matthew's [py-mirobot](https://github.com/matthewwachter/py-mirobot) library.
+
+## License
+
+License: MIT
+
 
 ## Communication Methods
 
 - **send_msg(msg)** - Send a serial message.
-	- **msg (str)** - The message to send.
+    - **msg (str)** - The message to send.
 
 - **is_connected()** - Return current connection state.
 
 - **connect(portname, listen_callback=None)** - Open the serial connection.
-	- **portname (str)** - The name of the com port to connect to (can be found in the Device Manager in windows)
-	- **listen_callback (method)** - A callback method that takes a message arg (e.g. recieve_msg(message)).
+    - **portname (str)** - The name of the com port to connect to (can be found in the Device Manager in windows)
+    - **listen_callback (method)** - A callback method that takes a message arg (e.g. recieve_msg(message)).
 
 - **set_receive_callback(receive_callback)** - Set or change the callback method for received messages.
-	- **receive_callback (method)** - A callback method that takes a message arg (e.g. recieve_msg(message)).
+    - **receive_callback (method)** - A callback method that takes a message arg (e.g. recieve_msg(message)).
 
 - **disconnect()** - Close the serial connection.
 
@@ -63,71 +79,71 @@ m.disconnect()
 - **home_simultaneous()** - Perform the homing routine on all axes at the same time.
 
 - **set_hard_limit(state)** - Set the hard limit state (True by default). Careful with this one!
-	- **state (bool)** - The state to be set.
+    - **state (bool)** - The state to be set.
 
 - **set_soft_limit(state)** - Set the soft limit state (True by default). Careful with this one!
-	- **state (bool)** - The state to be set.
+    - **state (bool)** - The state to be set.
 
 - **unlock_shaft()** - Unlock the shaft enabling movement.
 
 - **go_to_zero()** - Send each axis to its 0 position.
 
 - **go_to_axis(a1, a2, a3, a4, a5, a6, speed)** - Send each axis to a specific position.
-	- **a1 (float)** - Angle of axis 1.
-	- **a2 (float)** - Angle of axis 2.
-	- **a3 (float)** - Angle of axis 3.
-	- **a4 (float)** - Angle of axis 4.
-	- **a5 (float)** - Angle of axis 5.
-	- **a6 (float)** - Angle of axis 6.
-	- **speed (int)** - The velocity of the move.
+    - **a1 (float)** - Angle of axis 1.
+    - **a2 (float)** - Angle of axis 2.
+    - **a3 (float)** - Angle of axis 3.
+    - **a4 (float)** - Angle of axis 4.
+    - **a5 (float)** - Angle of axis 5.
+    - **a6 (float)** - Angle of axis 6.
+    - **speed (int)** - The velocity of the move.
 
 - **increment_axis(a1, a2, a3, a4, a5, a6, speed)** - Increment each axis a specific amount.
-	- **a1 (float)** - Angle increment of axis 1.
-	- **a2 (float)** - Angle increment of axis 2.
-	- **a3 (float)** - Angle increment of axis 3.
-	- **a4 (float)** - Angle increment of axis 4.
-	- **a5 (float)** - Angle increment of axis 5.
-	- **a6 (float)** - Angle increment of axis 6.
-	- **speed (int)** - The velocity of the move.
+    - **a1 (float)** - Angle increment of axis 1.
+    - **a2 (float)** - Angle increment of axis 2.
+    - **a3 (float)** - Angle increment of axis 3.
+    - **a4 (float)** - Angle increment of axis 4.
+    - **a5 (float)** - Angle increment of axis 5.
+    - **a6 (float)** - Angle increment of axis 6.
+    - **speed (int)** - The velocity of the move.
 
 - **go_to_cartesian_ptp(x, y, z, a, b, c, speed)** - Point to point move to a Cartesian position.
-	- **x (float)** - TX position.
-	- **y (float)** - TY position.
-	- **z (float)** - TZ position.
-	- **a (float)** - RX position.
-	- **b (float)** - RY position.
-	- **c (float)** - RZ position.
-	- **speed (int)** - The velocity of the move.
+    - **x (float)** - TX position.
+    - **y (float)** - TY position.
+    - **z (float)** - TZ position.
+    - **a (float)** - RX position.
+    - **b (float)** - RY position.
+    - **c (float)** - RZ position.
+    - **speed (int)** - The velocity of the move.
 
 - **go_to_cartesian_lin(x, y, z, a, b, c, speed)** - Linear move to a Cartesian position.
-	- **x (float)** - TX position.
-	- **y (float)** - TY position.
-	- **z (float)** - TZ position.
-	- **a (float)** - RX position.
-	- **b (float)** - RY position.
-	- **c (float)** - RZ position.
-	- **speed (int)** - The velocity of the move.
+    - **x (float)** - TX position.
+    - **y (float)** - TY position.
+    - **z (float)** - TZ position.
+    - **a (float)** - RX position.
+    - **b (float)** - RY position.
+    - **c (float)** - RZ position.
+    - **speed (int)** - The velocity of the move.
 
 - **increment_cartesian_ptp(x, y, z, a, b, c, speed)** - Point to point increment in Cartesian space.
-	- **x (float)** - TX position.
-	- **y (float)** - TY position.
-	- **z (float)** - TZ position.
-	- **a (float)** - RX position.
-	- **b (float)** - RY position.
-	- **c (float)** - RZ position.
-	- **speed (int)** - The velocity of the move.
+    - **x (float)** - TX position.
+    - **y (float)** - TY position.
+    - **z (float)** - TZ position.
+    - **a (float)** - RX position.
+    - **b (float)** - RY position.
+    - **c (float)** - RZ position.
+    - **speed (int)** - The velocity of the move.
 
 - **increment_cartesian_lin(x, y, z, a, b, c, speed)** - Linear increment in Cartesian space.
-	- **x (float)** - TX position.
-	- **y (float)** - TY position.
-	- **z (float)** - TZ position.
-	- **a (float)** - RX position.
-	- **b (float)** - RY position.
-	- **c (float)** - RZ position.
-	- **speed (int)** - The velocity of the move.
+    - **x (float)** - TX position.
+    - **y (float)** - TY position.
+    - **z (float)** - TZ position.
+    - **a (float)** - RX position.
+    - **b (float)** - RY position.
+    - **c (float)** - RZ position.
+    - **speed (int)** - The velocity of the move.
 
 - **set_air_pump(pwm)** - Set the pwm of the pneumatic air pump.
-	- **pwm** - The pulse width modulation frequency of the pneumatic air pump.
+    - **pwm** - The pulse width modulation frequency of the pneumatic air pump.
 
 - **set_gripper(pwm)** - Set the pwm of the gripper.
-	- **pwm** - The pulse width modulation frequency of the gripper.
+    - **pwm** - The pulse width modulation frequency of the gripper.
