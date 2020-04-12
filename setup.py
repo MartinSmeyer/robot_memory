@@ -4,7 +4,7 @@ import setuptools
 
 
 setuptools.setup(name='mirobot-py',
-                 version='0.8',
+                 version='0.9',
                  description="A Python interface library for WKlata's Mirobot",
                  author='Sourabh Cheedella',
                  author_email='cheedella.sourabh@gmail.com',
