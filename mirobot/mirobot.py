@@ -20,7 +20,7 @@ from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguo
 
 
 class Mirobot(AbstractContextManager):
-    """ A class for managing and maintaing known Mirobot operations. """
+    """ A class for managing and maintaining known Mirobot operations. """
 
     def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, reset_file=None, **serial_device_kwargs):
         """
@@ -67,7 +67,7 @@ class Mirobot(AbstractContextManager):
         # if portname was not passed in and autofindport is set to true, autosearch for a serial port
         if autofindport and not ('portname' in args_dict or 'portname' in serial_device_kwargs):
             self.default_portname = self._find_portname()
-            """ The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `Mirobot.connect`"""
+            """ The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `Mirobot.connect`. """
 
         else:
             if 'portname' in args_dict:
@@ -80,7 +80,7 @@ class Mirobot(AbstractContextManager):
         self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
 
         self.reset_file = pkg_resources.read_text('mirobot.resources', 'reset.xml') if reset_file is None else reset_file
-
+        """ The reset commands to use when resetting the Mirobot. See `Mirobot.reset_configuration` for usage and details. """
         self.debug = debug
         """ Boolean that determines if every input and output is to be printed to the screen. """
 
@@ -241,7 +241,7 @@ class Mirobot(AbstractContextManager):
 
     def get_status(self):
         """
-        Get the status of the Mirobot.
+        Get the status of the Mirobot. (Command: `?`)
 
         Returns
         -------
@@ -263,12 +263,12 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         msg : str
-            Status string that is obtained from a '?' instruction or `get_status` call.
+            Status string that is obtained from a '?' instruction or `Mirobot.get_status` call.
 
         Returns
         -------
         return_status : MirobotStatus
-            A new `MirobotStatus` object containing the new values obtained from `msg`.
+            A new `mirobot.mirobot_status.MirobotStatus` object containing the new values obtained from `msg`.
         """
 
         return_status = MirobotStatus()
@@ -855,8 +855,8 @@ message
 
         Parameters
         ----------
-        reset_file : str or Path or Collection[str]
-            (Default value = `True`) A file-like object or str containing reset values for the Mirobot. IF given a string with newlines, it will split on those newlines and pass those in as "reset commands". The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. If passed in a string without newlines, `Mirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a list-like object, `Mirobot.reset_configuration` will use each element as the message body for `Mirobot.send_msg`. One can also pass in file-like objects as well (like `open('path')`).
+        reset_file : str or Path or Collection[str] or file-like
+            (Default value = `True`) A file-like object, Collection, or string containing reset values for the Mirobot. If given a string with newlines, it will split on those newlines and pass those in as "variable reset commands". Passing in the default value (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. If passed in a string without newlines, `Mirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a Collection (list-like) object, `Mirobot.reset_configuration` will use each element as the message body for `Mirobot.send_msg`. One can also pass in file-like objects as well (like `open('path')`).
         wait : bool
             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
@@ -883,7 +883,7 @@ message
 
         elif isinstance(reset_file, (str, Path)):
             if not os.path.exists(reset_file):
-                raise MirobotResetFileError("Reset file not found or reachable: " + reset_file)
+                raise MirobotResetFileError("Reset file not found or reachable: {reset_file}")
             with open(reset_file, 'r') as f:
                 send_each_line(f.readlines())
 
@@ -894,6 +894,6 @@ message
             send_each_line(reset_file.readlines())
 
         else:
-            raise MirobotResetFileError("Unable to handle reset file of type: " + type(reset_file))
+            raise MirobotResetFileError(f"Unable to handle reset file of type: {type(reset_file)}")
 
         return output
