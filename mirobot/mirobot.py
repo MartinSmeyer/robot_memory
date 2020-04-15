@@ -1,18 +1,28 @@
+from collections.abc import Collection
 from contextlib import AbstractContextManager
 import functools
+import os
+from pathlib import Path
 import re
+from typing import TextIO, BinaryIO
+
+try:
+    import importlib.resources as pkg_resources
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`.
+    import importlib_resources as pkg_resources
 
 import serial.tools.list_ports as lp
 
 from .serial_device import SerialDevice
 from .mirobot_status import MirobotStatus
-from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError
+from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
 
 
 class Mirobot(AbstractContextManager):
     """ A class for managing and maintaing known mirobot operations. """
 
-    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, **serial_device_kwargs):
+    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, reset_file=None, **serial_device_kwargs):
         """
         Initialization of `Mirobot` class.
 
@@ -32,12 +42,14 @@ class Mirobot(AbstractContextManager):
              (Default value = `('0', '1000')`) The 'on' and 'off' values for the pnuematic pump in terms of PWM. Useful if your mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_air_pump` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.pump_pwm_values`.
         default_speed : int
              (Default value = `2000`) This speed value will be passed in at each motion command, unless speed is specified as a function argument. Having this explicitly specified fixes phantom `Unknown Feed Rate` errors. Stored in `Mirobot.default_speed`.
+        reset_file : str or Path or Collection[str] or file-like
+             (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See `Mirobot.reset_configuration` for more details.
         **serial_device_kwargs : Dict
              Keywords that are passed into the `SerialDevice` class.
 
         Returns
         -------
-        class : Mirobot
+        class : `Mirobot`
         """
 
         # Parse inputs into SerialDevice
@@ -67,9 +79,10 @@ class Mirobot(AbstractContextManager):
 
         self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
 
-        # see print statements of output
+        self.reset_file = pkg_resources.read_text('mirobot.resources', 'reset.xml') if reset_file is None else reset_file
+
         self.debug = debug
-        """ Boolean that determines if every input and output is be to printed to the screen. """
+        """ Boolean that determines if every input and output is to be printed to the screen. """
 
         self.valve_pwm_values = tuple(str(n) for n in valve_pwm_values)
         """ Collection of values to use for PWM values for valve module. First value is the 'On' position while the second is the 'Off' position. Only these values may be permitted. """
@@ -197,14 +210,16 @@ class Mirobot(AbstractContextManager):
 
     # send a message
     @wait_for_ok_decorator
-    def send_msg(self, msg, wait=True):
+    def send_msg(self, msg, var_command=False, wait=True):
         """
         Send a message to the mirobot.
 
         Parameters
         ----------
-        msg : str
+        msg : str or bytes
              A message or instruction to send to the mirobot.
+        var_command : bool
+             (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
         wait : bool
              (Default value = `True`) Whether to wait for output to end and to return that output.
 
@@ -215,7 +230,20 @@ class Mirobot(AbstractContextManager):
              If `wait` is `False`, then return whether sending the message succeeded.
         """
         if self.is_connected():
+            # convert to str from bytes
+            if isinstance(msg, bytes):
+                msg = str(msg, 'utf-8')
+
+            # remove any newlines
+            msg = msg.strip()
+
+            # check if this is supposed to be a variable command and fail if not
+            if var_command and not re.fullmatch(r'\$\d+=[\d\.]+', msg):
+                raise MirobotVariableCommandError("Message is not a variable command: " + msg)
+
+            # actually send the message
             output = self.serial_device.send(msg)
+
         if self.debug:
             print('Message sent: ', msg)
 
@@ -439,7 +467,7 @@ class Mirobot(AbstractContextManager):
 
     def unlock_shaft(self, wait=True):
         """
-        Unlock each axis on the mirobot. Homing naturally removes the lock. (Command:  "M50")
+        Unlock each axis on the mirobot. Homing naturally removes the lock. (Command: `M50`)
 
         Parameters
         ----------
@@ -832,3 +860,52 @@ message
         """
         instruction = 'M41'
         return self.send_msg(instruction, wait=wait)
+
+    def reset_configuration(self, reset_file=None, wait=True):
+        """
+        Reset the mirobot by resetting all eeprom variables to their factory settings. If provided an explicit `reset_file` on invocation, it will execute reset commands given in by `reset_file` instead of `self.reset_file`.
+
+        Parameters
+        ----------
+        reset_file : str or Path or Collection[str]
+            (Default value = `True`) A file-like object or str containing reset values for the Mirobot. IF given a string with newlines, it will split on those newlines and pass those in as "reset commands". The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. If passed in a string without newlines, `Mirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a list-like object, `Mirobot.reset_configuration` will use each element as the message body for `Mirobot.send_msg`. One can also pass in file-like objects as well (like `open('path')`).
+        wait : bool
+             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+        """
+
+        output = {}
+
+        def send_each_line(file_lines):
+            nonlocal output
+            for line in file_lines:
+                output[line] = self.send_msg(line, var_command=True, wait=wait)
+
+        reset_file = reset_file if reset_file else self.reset_file
+
+        if isinstance(reset_file, str) and '\n' in reset_file or \
+           isinstance(reset_file, bytes) and b'\n' in reset_file:
+            # if we find that we have a string and it contains new lines,
+            send_each_line(reset_file.splitlines())
+
+        elif isinstance(reset_file, (str, Path)):
+            if not os.path.exists(reset_file):
+                raise MirobotResetFileError("Reset file not found or reachable: " + reset_file)
+            with open(reset_file, 'r') as f:
+                send_each_line(f.readlines())
+
+        elif isinstance(reset_file, Collection) and not isinstance(reset_file, str):
+            send_each_line(reset_file)
+
+        elif isinstance(reset_file, (TextIO, BinaryIO)):
+            send_each_line(reset_file.readlines())
+
+        else:
+            raise MirobotResetFileError("Unable to handle reset file of type: " + type(reset_file))
+
+        return output

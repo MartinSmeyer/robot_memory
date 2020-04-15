@@ -11,7 +11,7 @@ setuptools.setup(name='mirobot-py',
                  long_description=open("README.md", "r").read(),
                  long_description_content_type='text/markdown',
                  url="https://github.com/rirze/mirobot-py",
-                 packages=setuptools.find_packages(),
+                 packages=['mirobot'],
                  classifiers=[
                      "Programming Language :: Python :: 3",
                      "License :: OSI Approved :: MIT License",
@@ -19,5 +19,6 @@ setuptools.setup(name='mirobot-py',
                  ],
                  python_requires='>=3.6',
                  install_requires=open('requirements.txt', 'r').read().splitlines(),
-                 package_data={'': ['*.xml']}
+                 package_dir={'mirobot': 'mirobot'},
+                 package_data={'mirobot': ['resources/*']}
 )

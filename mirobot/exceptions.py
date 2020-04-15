@@ -21,3 +21,13 @@ class MirobotAmbiguousPort(Exception):
 class MirobotStatusError(Exception):
     """ An inplace class for when mirobot's status message is unprocessable """
     pass
+
+
+class MirobotResetFileError(Exception):
+    """ An inplace class for when mirobot has problems using the given reset file. """
+    pass
+
+
+class MirobotVariableCommandError(Exception):
+    """ An inplace class for when mirobot finds a command that does not match variable setting-command syntax. """
+    pass
