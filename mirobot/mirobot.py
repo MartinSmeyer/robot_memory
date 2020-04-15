@@ -31,19 +31,19 @@ class Mirobot(AbstractContextManager):
         *serial_device_args : List[Any]
              Arguments that are passed into the `SerialDevice` class.
         debug : bool
-             (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `Mirobot.debug`.
+            (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `Mirobot.debug`.
         autoconnect : bool
-             (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `Mirobot.connect` is unnecessary.
+            (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `Mirobot.connect` is unnecessary.
         autofindport : bool
-             (Default value = `True`) Whether to automatically find the serial port that the Mirobot is attached to. If this is `False`, you must specify `portname='<portname>'` in `*serial_device_args`.
+            (Default value = `True`) Whether to automatically find the serial port that the Mirobot is attached to. If this is `False`, you must specify `portname='<portname>'` in `*serial_device_args`.
         valve_pwm_values : indexible-collection[str or numeric]
-             (Default value = `('65', '40')`) The 'on' and 'off' values for the valve in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_valve` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.valve_pwm_values`.
+            (Default value = `('65', '40')`) The 'on' and 'off' values for the valve in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_valve` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.valve_pwm_values`.
         pump_pwm_values : indexible-collection[str or numeric]
-             (Default value = `('0', '1000')`) The 'on' and 'off' values for the pnuematic pump in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_air_pump` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.pump_pwm_values`.
+            (Default value = `('0', '1000')`) The 'on' and 'off' values for the pnuematic pump in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_air_pump` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.pump_pwm_values`.
         default_speed : int
-             (Default value = `2000`) This speed value will be passed in at each motion command, unless speed is specified as a function argument. Having this explicitly specified fixes phantom `Unknown Feed Rate` errors. Stored in `Mirobot.default_speed`.
+            (Default value = `2000`) This speed value will be passed in at each motion command, unless speed is specified as a function argument. Having this explicitly specified fixes phantom `Unknown Feed Rate` errors. Stored in `Mirobot.default_speed`.
         reset_file : str or Path or Collection[str] or file-like
-             (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See `Mirobot.reset_configuration` for more details.
+            (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See `Mirobot.reset_configuration` for more details.
         **serial_device_kwargs : Dict
              Keywords that are passed into the `SerialDevice` class.
 
@@ -116,12 +116,12 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         reset_expected : bool
-             (Default value = `False`)
+            (Default value = `False`)
 
         Returns
         -------
         output : List[str]
-             A list of output strings upto and including the terminal string.
+            A list of output strings upto and including the terminal string.
         """
         output = ['']
 
@@ -168,12 +168,12 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         fn : func
-             Function to wrap. Must have the `wait` argument or keyword.
+            Function to wrap. Must have the `wait` argument or keyword.
 
         Returns
         -------
         wrapper : func
-             A wrapper that decorates a function.
+            A wrapper that decorates a function.
         """
 
         @functools.wraps(fn)
@@ -208,15 +208,15 @@ class Mirobot(AbstractContextManager):
         msg : str or bytes
              A message or instruction to send to the Mirobot.
         var_command : bool
-             (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
+            (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
         wait : bool
-             (Default value = `True`) Whether to wait for output to end and to return that output.
+            (Default value = `True`) Whether to wait for output to end and to return that output.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         if self.is_connected():
             # convert to str from bytes
@@ -246,7 +246,7 @@ class Mirobot(AbstractContextManager):
         Returns
         -------
         msg : List[str]
-             The list of strings returned from a '?' status command.
+            The list of strings returned from a '?' status command.
         """
         instruction = '?'
         return self.send_msg(instruction)
@@ -263,12 +263,12 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         msg : str
-             Status string that is obtained from a '?' instruction or `get_status` call.
+            Status string that is obtained from a '?' instruction or `get_status` call.
 
         Returns
         -------
         return_status : MirobotStatus
-             A new `MirobotStatus` object containing the new values obtained from `msg`.
+            A new `MirobotStatus` object containing the new values obtained from `msg`.
         """
 
         return_status = MirobotStatus()
@@ -321,7 +321,7 @@ class Mirobot(AbstractContextManager):
         Returns
         -------
         connected : bool
-             Whether the Mirobot is connected.
+            Whether the Mirobot is connected.
         """
         return self.serial_device.is_open
 
@@ -332,7 +332,7 @@ class Mirobot(AbstractContextManager):
         Returns
         -------
         device_name : str
-             The name of the device that is (most-likely) connected to the Mirobot.
+            The name of the device that is (most-likely) connected to the Mirobot.
         """
         port_objects = lp.comports()
 
@@ -350,12 +350,12 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         portname : str
-             (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
+            (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
 
         Returns
         -------
         ok_msg : List[str]
-             The output from an initial Mirobot connection.
+            The output from an initial Mirobot connection.
         """
         if portname is None:
             if self.default_portname is not None:
@@ -382,13 +382,13 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         msg = '$HH'
         return self.send_msg(msg, wait=wait)
@@ -400,13 +400,13 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         msg = '$H'
         return self.send_msg(msg, wait=wait)
@@ -419,15 +419,15 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         state : bool
-             Whether to use the hard limit (`True`) or not (`False`).
+            Whether to use the hard limit (`True`) or not (`False`).
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         msg = f'$21={int(state)}'
         return self.send_msg(msg, wait=wait)
@@ -440,9 +440,9 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         state : bool
-             Whether to use the soft limit (`True`) or not (`False`).
+            Whether to use the soft limit (`True`) or not (`False`).
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -460,13 +460,13 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         msg = 'M50'
         return self.send_msg(msg, wait=wait)
@@ -478,13 +478,13 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         return self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)
 
@@ -496,16 +496,16 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         instruction : str
-             The command to include at the beginning of the string.
+            The command to include at the beginning of the string.
         pairings : dict[str:Any]
-             A dictionary containing the pairings of argument name to argument value.
-             If a value is `None`, it and its argument name is not included in the result.
+            A dictionary containing the pairings of argument name to argument value.
+            If a value is `None`, it and its argument name is not included in the result.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
 message
              A string containing the base command followed by the correctly formatted arguments.
         """
@@ -519,28 +519,28 @@ message
 
         Parameters
         ----------
-        x : float{}
-             (Default value = `None`) Angle of axis 1.
+        x : float
+            (Default value = `None`) Angle of axis 1.
         y : float
-             (Default value = `None`) Angle of axis 2.
+            (Default value = `None`) Angle of axis 2.
         z : float
-             (Default value = `None`) Angle of axis 3.
+            (Default value = `None`) Angle of axis 3.
         a : float
-             (Default value = `None`) Angle of axis 4.
+            (Default value = `None`) Angle of axis 4.
         b : float
-             (Default value = `None`) Angle of axis 5.
+            (Default value = `None`) Angle of axis 5.
         c : float
-             (Default value = `None`) Angle of axis 6.
+            (Default value = `None`) Angle of axis 6.
         speed : int
-             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         instruction = 'M21 G90'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
         if not speed:
@@ -560,27 +560,27 @@ message
         Parameters
         ----------
         x : float
-             (Default value = `None`) Angle of axis 1.
+            (Default value = `None`) Angle of axis 1.
         y : float
-             (Default value = `None`) Angle of axis 2.
+            (Default value = `None`) Angle of axis 2.
         z : float
-             (Default value = `None`) Angle of axis 3.
+            (Default value = `None`) Angle of axis 3.
         a : float
-             (Default value = `None`) Angle of axis 4.
+            (Default value = `None`) Angle of axis 4.
         b : float
-             (Default value = `None`) Angle of axis 5.
+            (Default value = `None`) Angle of axis 5.
         c : float
-             (Default value = `None`) Angle of axis 6.
+            (Default value = `None`) Angle of axis 6.
         speed : int
-             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         instruction = 'M21 G91'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
@@ -600,28 +600,28 @@ message
 
         Parameters
         ----------
-        x :  float
-             (Default value = `None`) X-axis position.
+        x : float
+            (Default value = `None`) X-axis position.
         y : float
-             (Default value = `None`) Y-axis position.
+            (Default value = `None`) Y-axis position.
         z : float
-             (Default value = `None`) Z-axis position.
+            (Default value = `None`) Z-axis position.
         a : float
-             (Default value = `None`) Orientation angle: Roll angle
+            (Default value = `None`) Orientation angle: Roll angle
         b : float
-             (Default value = `None`) Orientation angle: Pitch angle
+            (Default value = `None`) Orientation angle: Pitch angle
         c : float
-             (Default value = `None`) Orientation angle: Yaw angle
+            (Default value = `None`) Orientation angle: Yaw angle
         speed : int
-             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         instruction = 'M20 G90 G0'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
@@ -642,27 +642,27 @@ message
         Parameters
         ----------
         x : float
-             (Default value = `None`) X-axis position.
+            (Default value = `None`) X-axis position.
         y : float
-             (Default value = `None`) Y-axis position.
+            (Default value = `None`) Y-axis position.
         z : float
-             (Default value = `None`) Z-axis position.
+            (Default value = `None`) Z-axis position.
         a : float
-             (Default value = `None`) Orientation angle: Roll angle
+            (Default value = `None`) Orientation angle: Roll angle
         b : float
-             (Default value = `None`) Orientation angle: Pitch angle
+            (Default value = `None`) Orientation angle: Pitch angle
         c : float
-             (Default value = `None`) Orientation angle: Yaw angle
+            (Default value = `None`) Orientation angle: Yaw angle
         speed : int
-             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         instruction = 'M20 G90 G1'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
@@ -683,27 +683,27 @@ message
         Parameters
         ----------
         x : float
-             (Default value = `None`) X-axis position.
+            (Default value = `None`) X-axis position.
         y : float
-             (Default value = `None`) Y-axis position.
+            (Default value = `None`) Y-axis position.
         z : float
-             (Default value = `None`) Z-axis position.
+            (Default value = `None`) Z-axis position.
         a : float
-             (Default value = `None`) Orientation angle: Roll angle
+            (Default value = `None`) Orientation angle: Roll angle
         b : float
-             (Default value = `None`) Orientation angle: Pitch angle
+            (Default value = `None`) Orientation angle: Pitch angle
         c : float
-             (Default value = `None`) Orientation angle: Yaw angle
+            (Default value = `None`) Orientation angle: Yaw angle
         speed : int
-             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         instruction = 'M20 G91 G0'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
@@ -724,27 +724,27 @@ message
         Parameters
         ----------
         x : float
-             (Default value = `None`) X-axis position
+            (Default value = `None`) X-axis position
         y : float
-             (Default value = `None`) Y-axis position
+            (Default value = `None`) Y-axis position
         z : float
-             (Default value = `None`) Z-axis position.
+            (Default value = `None`) Z-axis position.
         a : float
-             (Default value = `None`) Orientation angle: Roll angle
+            (Default value = `None`) Orientation angle: Roll angle
         b : float
-             (Default value = `None`) Orientation angle: Pitch angle
+            (Default value = `None`) Orientation angle: Pitch angle
         c : float
-             (Default value = `None`) Orientation angle: Yaw angle
+            (Default value = `None`) Orientation angle: Yaw angle
         speed : int
-             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
         instruction = 'M20 G91 G1'  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
 
@@ -766,15 +766,15 @@ message
         Parameters
         ----------
         pwm : int
-             The pulse width modulation frequency to use.
+            The pulse width modulation frequency to use.
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
 
         if isinstance(pwm, bool):
@@ -793,15 +793,15 @@ message
         Parameters
         ----------
         pwm : int
-             The pulse width modulation frequency to use.
+            The pulse width modulation frequency to use.
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
         msg : List[str] or bool
-             If `wait` is `True`, then return a list of strings which contains message output.
-             If `wait` is `False`, then return whether sending the message succeeded.
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
         """
 
         if isinstance(pwm, bool):
@@ -820,7 +820,7 @@ message
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -838,7 +838,7 @@ message
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -858,7 +858,7 @@ message
         reset_file : str or Path or Collection[str]
             (Default value = `True`) A file-like object or str containing reset values for the Mirobot. IF given a string with newlines, it will split on those newlines and pass those in as "reset commands". The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. If passed in a string without newlines, `Mirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a list-like object, `Mirobot.reset_configuration` will use each element as the message body for `Mirobot.send_msg`. One can also pass in file-like objects as well (like `open('path')`).
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+            (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
