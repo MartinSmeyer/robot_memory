@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 @dataclass
 class MirobotAngleValues:
-    """ A dataclass to hold mirobot's angular values. """
+    """ A dataclass to hold Mirobot's angular values. """
     a: float = 0.0
     """ Angle of axis 1 """
     b: float = 0.0
@@ -20,7 +20,7 @@ class MirobotAngleValues:
 
 @dataclass
 class MirobotCartesianValues:
-    """ A dataclass to hold mirobot's cartesian values and roll/pitch/yaw angles. """
+    """ A dataclass to hold Mirobot's cartesian values and roll/pitch/yaw angles. """
     x: float = 0.0
     """ Position on X-axis """
     y: float = 0.0
@@ -36,11 +36,11 @@ class MirobotCartesianValues:
 
 @dataclass
 class MirobotStatus:
-    """ A composite dataclass to hold all of mirobot's trackable quantities. """
+    """ A composite dataclass to hold all of Mirobot's trackable quantities. """
     state: str = ''
-    """ The brief descriptor string for mirobot's state. """
+    """ The brief descriptor string for Mirobot's state. """
     angle: MirobotAngleValues = MirobotAngleValues()
-    """ Dataclass that holds mirobot's angular values including the rail position value. """
+    """ Dataclass that holds Mirobot's angular values including the rail position value. """
     cartesian: MirobotCartesianValues = MirobotCartesianValues()
     """ Dataclass that holds the cartesian values and roll/pitch/yaw angles. """
     pump_pwm: int = 0
@@ -48,4 +48,4 @@ class MirobotStatus:
     valve_pwm: int = 0
     """ The current pwm of the value module. (eg. gripper) """
     motion_mode: bool = False
-    """ Whether mirobot is currently in coordinate mode or joint-motion mode """
+    """ Whether Mirobot is currently in coordinate mode or joint-motion mode """

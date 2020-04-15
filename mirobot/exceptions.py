@@ -1,15 +1,15 @@
 class MirobotError(Exception):
-    """ An inplace class for throwing mirobot errors. """
+    """ An inplace class for throwing Mirobot errors. """
     pass
 
 
 class MirobotAlarm(Warning):
-    """  An inplace class for throwing mirobot alarms. """
+    """  An inplace class for throwing Mirobot alarms. """
     pass
 
 
 class MirobotReset(Warning):
-    """ An inplace class for when mirobot resets. """
+    """ An inplace class for when Mirobot resets. """
     pass
 
 
@@ -19,15 +19,15 @@ class MirobotAmbiguousPort(Exception):
 
 
 class MirobotStatusError(Exception):
-    """ An inplace class for when mirobot's status message is unprocessable """
+    """ An inplace class for when Mirobot's status message is unprocessable. """
     pass
 
 
 class MirobotResetFileError(Exception):
-    """ An inplace class for when mirobot has problems using the given reset file. """
+    """ An inplace class for when Mirobot has problems using the given reset file. """
     pass
 
 
 class MirobotVariableCommandError(Exception):
-    """ An inplace class for when mirobot finds a command that does not match variable setting-command syntax. """
+    """ An inplace class for when Mirobot finds a command that does not match variable setting-command syntax. """
     pass

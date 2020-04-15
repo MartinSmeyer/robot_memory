@@ -20,7 +20,7 @@ from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguo
 
 
 class Mirobot(AbstractContextManager):
-    """ A class for managing and maintaing known mirobot operations. """
+    """ A class for managing and maintaing known Mirobot operations. """
 
     def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, reset_file=None, **serial_device_kwargs):
         """
@@ -33,13 +33,13 @@ class Mirobot(AbstractContextManager):
         debug : bool
              (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `Mirobot.debug`.
         autoconnect : bool
-             (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is set to `True`, manually connecting with `mirobot.connect()` is unnecessary.
+             (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `Mirobot.connect` is unnecessary.
         autofindport : bool
-             (Default value = `True`) Whether to automatically find the serial port that the mirobot is attached to. If this is `False`, you must specify `portname='<portname>'` in `*serial_device_args`.
+             (Default value = `True`) Whether to automatically find the serial port that the Mirobot is attached to. If this is `False`, you must specify `portname='<portname>'` in `*serial_device_args`.
         valve_pwm_values : indexible-collection[str or numeric]
-             (Default value = `('65', '40')`) The 'on' and 'off' values for the valve in terms of PWM. Useful if your mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_valve` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.valve_pwm_values`.
+             (Default value = `('65', '40')`) The 'on' and 'off' values for the valve in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_valve` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.valve_pwm_values`.
         pump_pwm_values : indexible-collection[str or numeric]
-             (Default value = `('0', '1000')`) The 'on' and 'off' values for the pnuematic pump in terms of PWM. Useful if your mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_air_pump` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.pump_pwm_values`.
+             (Default value = `('0', '1000')`) The 'on' and 'off' values for the pnuematic pump in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_air_pump` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.pump_pwm_values`.
         default_speed : int
              (Default value = `2000`) This speed value will be passed in at each motion command, unless speed is specified as a function argument. Having this explicitly specified fixes phantom `Unknown Feed Rate` errors. Stored in `Mirobot.default_speed`.
         reset_file : str or Path or Collection[str] or file-like
@@ -92,7 +92,7 @@ class Mirobot(AbstractContextManager):
         """ The default speed to use when issuing commands that involve the speed parameter. """
 
         self.status = MirobotStatus()
-        """ Dataclass that holds tracks mirobot's coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details."""
+        """ Dataclass that holds tracks Mirobot's coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details."""
 
         # do this at the very end, after everything is setup
         if autoconnect:
@@ -103,18 +103,7 @@ class Mirobot(AbstractContextManager):
         return self
 
     def __exit__(self, *exc):
-        """
-        Magic method for contextManagers
-
-        Parameters
-        ----------
-        *exc :
-
-
-        Returns
-        -------
-
-        """
+        """ Magic method for contextManagers """
         self.disconnect()
 
     # COMMUNICATION #
@@ -212,12 +201,12 @@ class Mirobot(AbstractContextManager):
     @wait_for_ok_decorator
     def send_msg(self, msg, var_command=False, wait=True):
         """
-        Send a message to the mirobot.
+        Send a message to the Mirobot.
 
         Parameters
         ----------
         msg : str or bytes
-             A message or instruction to send to the mirobot.
+             A message or instruction to send to the Mirobot.
         var_command : bool
              (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
         wait : bool
@@ -252,7 +241,7 @@ class Mirobot(AbstractContextManager):
 
     def get_status(self):
         """
-        Get the status of the mirobot.
+        Get the status of the Mirobot.
 
         Returns
         -------
@@ -263,14 +252,13 @@ class Mirobot(AbstractContextManager):
         return self.send_msg(instruction)
 
     def update_status(self):
-        """ Update the status of the mirobot. """
-        status_msg = self.get_status()[0]
-        new_status = self._parse_status(status_msg)
-        self.status = new_status
+        """ Update the status of the Mirobot. """
+        status_msg = self.get_status()[0]  # get only the status message and not 'ok'
+        self.status = self._parse_status(status_msg)
 
     def _parse_status(self, msg):
         """
-        Parse the status string of the mirobot and store the various values as class variables.
+        Parse the status string of the Mirobot and store the various values as class variables.
 
         Parameters
         ----------
@@ -328,23 +316,23 @@ class Mirobot(AbstractContextManager):
 
     def is_connected(self):
         """
-        Check if mirobot is connected.
+        Check if Mirobot is connected.
 
         Returns
         -------
         connected : bool
-             Whether the mirobot is connected.
+             Whether the Mirobot is connected.
         """
         return self.serial_device.is_open
 
     def _find_portname(self):
         """
-        Find the port that might potentially be connected to the mirobot.
+        Find the port that might potentially be connected to the Mirobot.
 
         Returns
         -------
         device_name : str
-             The name of the device that is (most-likely) connected to the mirobot.
+             The name of the device that is (most-likely) connected to the Mirobot.
         """
         port_objects = lp.comports()
 
@@ -357,7 +345,7 @@ class Mirobot(AbstractContextManager):
 
     def connect(self, portname=None):
         """
-        Connect to the mirobot.
+        Connect to the Mirobot.
 
         Parameters
         ----------
@@ -367,7 +355,7 @@ class Mirobot(AbstractContextManager):
         Returns
         -------
         ok_msg : List[str]
-             The output from an initial mirobot connection.
+             The output from an initial Mirobot connection.
         """
         if portname is None:
             if self.default_portname is not None:
@@ -382,7 +370,7 @@ class Mirobot(AbstractContextManager):
         return self.wait_for_ok(reset_expected=True)
 
     def disconnect(self):
-        """ Disconnect from the mirobot. Close the serial device connection. """
+        """ Disconnect from the Mirobot. Close the serial device connection. """
         self.serial_device.close()
 
     # COMMANDS #
@@ -394,7 +382,7 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -412,7 +400,7 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -433,7 +421,7 @@ class Mirobot(AbstractContextManager):
         state : bool
              Whether to use the hard limit (`True`) or not (`False`).
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -454,7 +442,7 @@ class Mirobot(AbstractContextManager):
         state : bool
              Whether to use the soft limit (`True`) or not (`False`).
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -467,12 +455,12 @@ class Mirobot(AbstractContextManager):
 
     def unlock_shaft(self, wait=True):
         """
-        Unlock each axis on the mirobot. Homing naturally removes the lock. (Command: `M50`)
+        Unlock each axis on the Mirobot. Homing naturally removes the lock. (Command: `M50`)
 
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -490,7 +478,7 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -544,9 +532,9 @@ message
         c : float
              (Default value = `None`) Angle of axis 6.
         speed : int
-             (Default value = `None`) The speed in which the mirobot moves during this operation. (mm/s)
+             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -584,9 +572,9 @@ message
         c : float
              (Default value = `None`) Angle of axis 6.
         speed : int
-             (Default value = `None`) The speed in which the mirobot moves during this operation. (mm/s)
+             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -625,9 +613,9 @@ message
         c : float
              (Default value = `None`) Orientation angle: Yaw angle
         speed : int
-             (Default value = `None`) The speed in which the mirobot moves during this operation. (mm/s)
+             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -666,9 +654,9 @@ message
         c : float
              (Default value = `None`) Orientation angle: Yaw angle
         speed : int
-             (Default value = `None`) The speed in which the mirobot moves during this operation. (mm/s)
+             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -707,9 +695,9 @@ message
         c : float
              (Default value = `None`) Orientation angle: Yaw angle
         speed : int
-             (Default value = `None`) The speed in which the mirobot moves during this operation. (mm/s)
+             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -748,9 +736,9 @@ message
         c : float
              (Default value = `None`) Orientation angle: Yaw angle
         speed : int
-             (Default value = `None`) The speed in which the mirobot moves during this operation. (mm/s)
+             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -780,7 +768,7 @@ message
         pwm : int
              The pulse width modulation frequency to use.
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -807,7 +795,7 @@ message
         pwm : int
              The pulse width modulation frequency to use.
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -832,7 +820,7 @@ message
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -850,7 +838,7 @@ message
         Parameters
         ----------
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
@@ -863,14 +851,14 @@ message
 
     def reset_configuration(self, reset_file=None, wait=True):
         """
-        Reset the mirobot by resetting all eeprom variables to their factory settings. If provided an explicit `reset_file` on invocation, it will execute reset commands given in by `reset_file` instead of `self.reset_file`.
+        Reset the Mirobot by resetting all eeprom variables to their factory settings. If provided an explicit `reset_file` on invocation, it will execute reset commands given in by `reset_file` instead of `self.reset_file`.
 
         Parameters
         ----------
         reset_file : str or Path or Collection[str]
             (Default value = `True`) A file-like object or str containing reset values for the Mirobot. IF given a string with newlines, it will split on those newlines and pass those in as "reset commands". The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. If passed in a string without newlines, `Mirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a list-like object, `Mirobot.reset_configuration` will use each element as the message body for `Mirobot.send_msg`. One can also pass in file-like objects as well (like `open('path')`).
         wait : bool
-             (Default value = `True`) Whether to wait for output to return from the mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
+             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
         Returns
         -------
