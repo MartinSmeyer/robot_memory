@@ -26,6 +26,13 @@
 </summary>
 <pre><code class="python">from .mirobot import Mirobot
 
+# don&#39;t document our resources directory duh
+__pdoc__ = {}
+__pdoc__[&#39;resources&#39;] = False
+__pdoc__[&#39;resources.__init__&#39;] = False
+
+
+# if someone imports by &#39;*&#39; then import everything in mirobot
 __all__ = [&#39;mirobot&#39;]</code></pre>
 </details>
 </section>

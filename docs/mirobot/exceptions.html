@@ -25,17 +25,17 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MirobotError(Exception):
-    &#34;&#34;&#34; An inplace class for throwing mirobot errors. &#34;&#34;&#34;
+    &#34;&#34;&#34; An inplace class for throwing Mirobot errors. &#34;&#34;&#34;
     pass
 
 
 class MirobotAlarm(Warning):
-    &#34;&#34;&#34;  An inplace class for throwing mirobot alarms. &#34;&#34;&#34;
+    &#34;&#34;&#34;  An inplace class for throwing Mirobot alarms. &#34;&#34;&#34;
     pass
 
 
 class MirobotReset(Warning):
-    &#34;&#34;&#34; An inplace class for when mirobot resets. &#34;&#34;&#34;
+    &#34;&#34;&#34; An inplace class for when Mirobot resets. &#34;&#34;&#34;
     pass
 
 
@@ -45,7 +45,17 @@ class MirobotAmbiguousPort(Exception):
 
 
 class MirobotStatusError(Exception):
-    &#34;&#34;&#34; An inplace class for when mirobot&#39;s status message is unprocessable &#34;&#34;&#34;
+    &#34;&#34;&#34; An inplace class for when Mirobot&#39;s status message is unprocessable. &#34;&#34;&#34;
+    pass
+
+
+class MirobotResetFileError(Exception):
+    &#34;&#34;&#34; An inplace class for when Mirobot has problems using the given reset file. &#34;&#34;&#34;
+    pass
+
+
+class MirobotVariableCommandError(Exception):
+    &#34;&#34;&#34; An inplace class for when Mirobot finds a command that does not match variable setting-command syntax. &#34;&#34;&#34;
     pass</code></pre>
 </details>
 </section>
@@ -63,13 +73,13 @@ class MirobotStatusError(Exception):
 <span>(</span><span>...)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>An inplace class for throwing mirobot alarms.</p></section>
+<section class="desc"><p>An inplace class for throwing Mirobot alarms.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MirobotAlarm(Warning):
-    &#34;&#34;&#34;  An inplace class for throwing mirobot alarms. &#34;&#34;&#34;
+    &#34;&#34;&#34;  An inplace class for throwing Mirobot alarms. &#34;&#34;&#34;
     pass</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -104,13 +114,13 @@ class MirobotStatusError(Exception):
 <span>(</span><span>...)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>An inplace class for throwing mirobot errors.</p></section>
+<section class="desc"><p>An inplace class for throwing Mirobot errors.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MirobotError(Exception):
-    &#34;&#34;&#34; An inplace class for throwing mirobot errors. &#34;&#34;&#34;
+    &#34;&#34;&#34; An inplace class for throwing Mirobot errors. &#34;&#34;&#34;
     pass</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -124,13 +134,13 @@ class MirobotStatusError(Exception):
 <span>(</span><span>...)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>An inplace class for when mirobot resets.</p></section>
+<section class="desc"><p>An inplace class for when Mirobot resets.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MirobotReset(Warning):
-    &#34;&#34;&#34; An inplace class for when mirobot resets. &#34;&#34;&#34;
+    &#34;&#34;&#34; An inplace class for when Mirobot resets. &#34;&#34;&#34;
     pass</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -140,18 +150,58 @@ class MirobotStatusError(Exception):
 <li>builtins.BaseException</li>
 </ul>
 </dd>
+<dt id="mirobot.exceptions.MirobotResetFileError"><code class="flex name class">
+<span>class <span class="ident">MirobotResetFileError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>An inplace class for when Mirobot has problems using the given reset file.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MirobotResetFileError(Exception):
+    &#34;&#34;&#34; An inplace class for when Mirobot has problems using the given reset file. &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
 <dt id="mirobot.exceptions.MirobotStatusError"><code class="flex name class">
 <span>class <span class="ident">MirobotStatusError</span></span>
 <span>(</span><span>...)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>An inplace class for when mirobot's status message is unprocessable</p></section>
+<section class="desc"><p>An inplace class for when Mirobot's status message is unprocessable.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MirobotStatusError(Exception):
-    &#34;&#34;&#34; An inplace class for when mirobot&#39;s status message is unprocessable &#34;&#34;&#34;
+    &#34;&#34;&#34; An inplace class for when Mirobot&#39;s status message is unprocessable. &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="mirobot.exceptions.MirobotVariableCommandError"><code class="flex name class">
+<span>class <span class="ident">MirobotVariableCommandError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>An inplace class for when Mirobot finds a command that does not match variable setting-command syntax.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MirobotVariableCommandError(Exception):
+    &#34;&#34;&#34; An inplace class for when Mirobot finds a command that does not match variable setting-command syntax. &#34;&#34;&#34;
     pass</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -189,7 +239,13 @@ class MirobotStatusError(Exception):
 <h4><code><a title="mirobot.exceptions.MirobotReset" href="#mirobot.exceptions.MirobotReset">MirobotReset</a></code></h4>
 </li>
 <li>
+<h4><code><a title="mirobot.exceptions.MirobotResetFileError" href="#mirobot.exceptions.MirobotResetFileError">MirobotResetFileError</a></code></h4>
+</li>
+<li>
 <h4><code><a title="mirobot.exceptions.MirobotStatusError" href="#mirobot.exceptions.MirobotStatusError">MirobotStatusError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="mirobot.exceptions.MirobotVariableCommandError" href="#mirobot.exceptions.MirobotVariableCommandError">MirobotVariableCommandError</a></code></h4>
 </li>
 </ul>
 </li>
