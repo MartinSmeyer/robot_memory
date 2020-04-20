@@ -254,9 +254,10 @@ class BaseMirobot(AbstractContextManager):
     def update_status(self):
         """ Update the status of the Mirobot. """
         status_msg = self.get_status()[0]  # get only the status message and not 'ok'
-        self.status = self._parse_status(status_msg)
+        self.state, self.status = self._parse_status(status_msg)
 
-    def _parse_status(self, msg):
+    @staticmethod
+    def _parse_status(msg):
         """
         Parse the status string of the Mirobot and store the various values as class variables.
 
@@ -267,6 +268,8 @@ class BaseMirobot(AbstractContextManager):
 
         Returns
         -------
+        return_state : str
+            A string representing the state of the Mirobot. (eg. `'Idle'`)
         return_status : MirobotStatus
             A new `mirobot.mirobot_status.MirobotStatus` object containing the new values obtained from `msg`.
         """
@@ -280,7 +283,6 @@ class BaseMirobot(AbstractContextManager):
         if regex_match:
             try:
                 state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
-                self.status.state = state
 
                 a, b, c, d, x, y, z = map(float, angles.split(','))
 
@@ -310,7 +312,7 @@ class BaseMirobot(AbstractContextManager):
                 raise Exception([MirobotStatusError(f'Could not parse status message "{msg}"'),
                                  exception])
             else:
-                return return_status
+                return state, return_status
         else:
             raise MirobotStatusError(f'Could not parse status message "{msg}"')
 
