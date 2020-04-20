@@ -7,4 +7,4 @@ __pdoc__['resources.__init__'] = False
 
 
 # if someone imports by '*' then import everything in mirobot
-__all__ = ['mirobot']
+__all__ = ['base_mirobot']
