@@ -123,7 +123,7 @@ class BaseMirobot(AbstractContextManager):
         reset_expected : bool
             (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `'Using reset pos!'` rather than the traditional `'Ok'`)
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily in `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
 
         Returns
         -------
@@ -169,8 +169,7 @@ class BaseMirobot(AbstractContextManager):
     def wait_decorator(fn):
         """
         A decorator that will use the `wait` argument/keyword for a method to
-        automatically use the `self.wait_for_ok` function call at the end of the
-        wrapped function.
+        automatically use the `BaseMirobot.wait_for_ok` and conditionally, the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
 
         Parameters
         ----------
@@ -225,7 +224,7 @@ class BaseMirobot(AbstractContextManager):
         var_command : bool
             (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily in `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
         wait : bool
             (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
 
@@ -263,7 +262,7 @@ class BaseMirobot(AbstractContextManager):
         Parameters
         ----------
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily in `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
 
         Returns
         -------
@@ -282,7 +281,7 @@ class BaseMirobot(AbstractContextManager):
         Parameters
         ----------
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily in `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
 
         """
         status_msg = self.get_status(disable_debug=disable_debug)[0]  # get only the status message and not 'ok'
