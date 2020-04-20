@@ -15,7 +15,7 @@ except ImportError:
 import serial.tools.list_ports as lp
 
 from .serial_device import SerialDevice
-from .mirobot_status import MirobotStatus
+from .mirobot_status import MirobotStatus, MirobotAngleValues, MirobotCartesianValues
 from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
 
 
@@ -254,7 +254,7 @@ class BaseMirobot(AbstractContextManager):
     def update_status(self):
         """ Update the status of the Mirobot. """
         status_msg = self.get_status()[0]  # get only the status message and not 'ok'
-        self.state, self.status = self._parse_status(status_msg)
+        self.status = self._parse_status(status_msg)
 
     @staticmethod
     def _parse_status(msg):
@@ -268,8 +268,6 @@ class BaseMirobot(AbstractContextManager):
 
         Returns
         -------
-        return_state : str
-            A string representing the state of the Mirobot. (eg. `'Idle'`)
         return_status : MirobotStatus
             A new `mirobot.mirobot_status.MirobotStatus` object containing the new values obtained from `msg`.
         """
@@ -284,35 +282,22 @@ class BaseMirobot(AbstractContextManager):
             try:
                 state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
 
-                a, b, c, d, x, y, z = map(float, angles.split(','))
+                return_angles = MirobotAngleValues(map(float, angles.split(',')))
 
-                return_status.angle.a = a
-                return_status.angle.b = b
-                return_status.angle.c = c
-                return_status.angle.d = d
-                return_status.angle.x = x
-                return_status.angle.y = y
-                return_status.angle.z = z
+                return_cartesians = MirobotCartesianValues(map(float, cartesians.split(',')))
 
-                x, y, z, a, b, c = map(float, cartesians.split(','))
-                return_status.cartesian.x = x
-                return_status.cartesian.y = y
-                return_status.cartesian.z = z
-                return_status.cartesian.a = a
-                return_status.cartesian.b = b
-                return_status.cartesian.c = c
-
-                return_status.pump_pwm = int(pump_pwm)
-
-                return_status.valve_pwm = int(valve_pwm)
-
-                return_status.motion_mode = bool(motion_mode)
+                return_status = MirobotStatus(state,
+                                              return_angles,
+                                              return_cartesians,
+                                              int(pump_pwm),
+                                              int(valve_pwm),
+                                              bool(motion_mode))
 
             except Exception as exception:
                 raise Exception([MirobotStatusError(f'Could not parse status message "{msg}"'),
                                  exception])
             else:
-                return state, return_status
+                return return_status
         else:
             raise MirobotStatusError(f'Could not parse status message "{msg}"')
 

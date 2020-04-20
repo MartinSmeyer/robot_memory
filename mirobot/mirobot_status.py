@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class MirobotAngleValues:
     """ A dataclass to hold Mirobot's angular values. """
@@ -9,14 +10,15 @@ class MirobotAngleValues:
     """ Angle of axis 2 """
     c: float = 0.0
     """ Angle of axis 3 """
+    d: float = 0.0
+    """ Location of rail or stepper module """
     x: float = 0.0
     """ Angle of axis 4 """
     y: float = 0.0
     """ Angle of axis 5 """
     z: float = 0.0
     """ Angle of axis 6 """
-    d: float = 0.0
-    """ Location of rail or stepper module """
+
 
 @dataclass
 class MirobotCartesianValues:
@@ -33,6 +35,7 @@ class MirobotCartesianValues:
     """ Position of Pitch angle """
     c: float = 0.0
     """ Position of Yaw angle """
+
 
 @dataclass
 class MirobotStatus:
