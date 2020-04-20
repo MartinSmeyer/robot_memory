@@ -19,37 +19,37 @@ from .mirobot_status import MirobotStatus
 from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
 
 
-class Mirobot(AbstractContextManager):
+class BaseMirobot(AbstractContextManager):
     """ A class for managing and maintaining known Mirobot operations. """
 
     def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, reset_file=None, **serial_device_kwargs):
         """
-        Initialization of `Mirobot` class.
+        Initialization of `BaseMirobot` class.
 
         Parameters
         ----------
         *serial_device_args : List[Any]
              Arguments that are passed into the `SerialDevice` class.
         debug : bool
-            (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `Mirobot.debug`.
+            (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
         autoconnect : bool
-            (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `Mirobot.connect` is unnecessary.
+            (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `BaseMirobot.connect` is unnecessary.
         autofindport : bool
             (Default value = `True`) Whether to automatically find the serial port that the Mirobot is attached to. If this is `False`, you must specify `portname='<portname>'` in `*serial_device_args`.
         valve_pwm_values : indexible-collection[str or numeric]
-            (Default value = `('65', '40')`) The 'on' and 'off' values for the valve in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_valve` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.valve_pwm_values`.
+            (Default value = `('65', '40')`) The 'on' and 'off' values for the valve in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `BaseMirobot.set_valve` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `BaseMirobot.valve_pwm_values`.
         pump_pwm_values : indexible-collection[str or numeric]
-            (Default value = `('0', '1000')`) The 'on' and 'off' values for the pnuematic pump in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `Mirobot.set_air_pump` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `Mirobot.pump_pwm_values`.
+            (Default value = `('0', '1000')`) The 'on' and 'off' values for the pnuematic pump in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `BaseMirobot.set_air_pump` will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in `BaseMirobot.pump_pwm_values`.
         default_speed : int
-            (Default value = `2000`) This speed value will be passed in at each motion command, unless speed is specified as a function argument. Having this explicitly specified fixes phantom `Unknown Feed Rate` errors. Stored in `Mirobot.default_speed`.
+            (Default value = `2000`) This speed value will be passed in at each motion command, unless speed is specified as a function argument. Having this explicitly specified fixes phantom `Unknown Feed Rate` errors. Stored in `BaseMirobot.default_speed`.
         reset_file : str or Path or Collection[str] or file-like
-            (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See `Mirobot.reset_configuration` for more details.
+            (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See `BaseMirobot.reset_configuration` for more details.
         **serial_device_kwargs : Dict
              Keywords that are passed into the `SerialDevice` class.
 
         Returns
         -------
-        class : `Mirobot`
+        class : `BaseMirobot`
         """
 
         # Parse inputs into SerialDevice
@@ -67,7 +67,7 @@ class Mirobot(AbstractContextManager):
         # if portname was not passed in and autofindport is set to true, autosearch for a serial port
         if autofindport and not ('portname' in args_dict or 'portname' in serial_device_kwargs):
             self.default_portname = self._find_portname()
-            """ The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `Mirobot.connect`. """
+            """ The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `BaseMirobot.connect`. """
 
         else:
             if 'portname' in args_dict:
@@ -80,7 +80,7 @@ class Mirobot(AbstractContextManager):
         self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
 
         self.reset_file = pkg_resources.read_text('mirobot.resources', 'reset.xml') if reset_file is None else reset_file
-        """ The reset commands to use when resetting the Mirobot. See `Mirobot.reset_configuration` for usage and details. """
+        """ The reset commands to use when resetting the Mirobot. See `BaseMirobot.reset_configuration` for usage and details. """
         self.debug = debug
         """ Boolean that determines if every input and output is to be printed to the screen. """
 
@@ -263,7 +263,7 @@ class Mirobot(AbstractContextManager):
         Parameters
         ----------
         msg : str
-            Status string that is obtained from a '?' instruction or `Mirobot.get_status` call.
+            Status string that is obtained from a '?' instruction or `BaseMirobot.get_status` call.
 
         Returns
         -------
@@ -856,7 +856,7 @@ message
         Parameters
         ----------
         reset_file : str or Path or Collection[str] or file-like
-            (Default value = `True`) A file-like object, Collection, or string containing reset values for the Mirobot. If given a string with newlines, it will split on those newlines and pass those in as "variable reset commands". Passing in the default value (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. If passed in a string without newlines, `Mirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a Collection (list-like) object, `Mirobot.reset_configuration` will use each element as the message body for `Mirobot.send_msg`. One can also pass in file-like objects as well (like `open('path')`).
+            (Default value = `True`) A file-like object, Collection, or string containing reset values for the Mirobot. If given a string with newlines, it will split on those newlines and pass those in as "variable reset commands". Passing in the default value (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. If passed in a string without newlines, `BaseMirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a Collection (list-like) object, `BaseMirobot.reset_configuration` will use each element as the message body for `BaseMirobot.send_msg`. One can also pass in file-like objects as well (like `open('path')`).
         wait : bool
             (Default value = `True`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback.
 
