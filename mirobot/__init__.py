@@ -1,4 +1,4 @@
-from .mirobot import Mirobot
+from .base_mirobot import BaseMirobot as Mirobot
 
 # don't document our resources directory duh
 __pdoc__ = {}

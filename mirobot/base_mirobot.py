@@ -4,6 +4,7 @@ import functools
 import os
 from pathlib import Path
 import re
+import time
 from typing import TextIO, BinaryIO
 
 try:
@@ -112,15 +113,17 @@ class BaseMirobot(AbstractContextManager):
 
     # COMMUNICATION #
 
-    def wait_for_ok(self, reset_expected=False):
+    def wait_for_ok(self, reset_expected=False, disable_debug=False):
         """
         Continously loops over and collects message output from the serial device.
-        It stops when it encounters and 'ok' or otherwise terminal condition phrase.
+        It stops when it encounters an 'ok' or otherwise terminal condition phrase.
 
         Parameters
         ----------
         reset_expected : bool
-            (Default value = `False`)
+            (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `'Using reset pos!'` rather than the traditional `'Ok'`)
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily in `BaseMirobot.wait_until_idle`.
 
         Returns
         -------
@@ -147,7 +150,7 @@ class BaseMirobot(AbstractContextManager):
         while not matches_eol_strings(eols, output[-1]):
             msg = self.serial_device.listen_to_device()
 
-            if self.debug:
+            if self.debug and not disable_debug:
                 print(msg)
 
             if 'error' in msg:
@@ -163,7 +166,7 @@ class BaseMirobot(AbstractContextManager):
 
         return output[1:]  # don't include the dummy empty string at first index
 
-    def wait_for_ok_decorator(fn):
+    def wait_decorator(fn):
         """
         A decorator that will use the `wait` argument/keyword for a method to
         automatically use the `self.wait_for_ok` function call at the end of the
@@ -181,29 +184,37 @@ class BaseMirobot(AbstractContextManager):
         """
 
         @functools.wraps(fn)
-        def wait_for_ok_wrapper(self, *args, **kwargs):
+        def wait_wrapper(self, *args, **kwargs):
             args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
             args_dict = dict(zip(args_names, args))
 
-            if 'wait' in args_dict:
-                wait = args_dict.get('wait')
-            elif 'wait' in kwargs:
-                wait = kwargs.get('wait')
-            else:
-                wait = True
+            def get_arg(arg_name, default=None):
+                if arg_name in args_dict:
+                    return args_dict.get(arg_name)
+                elif arg_name in kwargs:
+                    return kwargs.get(arg_name)
+                else:
+                    return default
+
+            wait = get_arg('wait', True)
+            disable_debug = get_arg('disable_debug', False)
+            wait_idle = get_arg('wait_idle', True)
 
             output = fn(self, *args, **kwargs)
 
             if wait or (wait is None and self.wait):
-                return self.wait_for_ok()
-            else:
-                return output
+                output = self.wait_for_ok(disable_debug=disable_debug)
 
-        return wait_for_ok_wrapper
+            if wait_idle:
+                self.wait_until_idle()
+
+            return output
+
+        return wait_wrapper
 
     # send a message
-    @wait_for_ok_decorator
-    def send_msg(self, msg, var_command=False, wait=None):
+    @wait_decorator
+    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
         """
         Send a message to the Mirobot.
 
@@ -213,6 +224,8 @@ class BaseMirobot(AbstractContextManager):
              A message or instruction to send to the Mirobot.
         var_command : bool
             (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily in `BaseMirobot.wait_until_idle`.
         wait : bool
             (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
 
@@ -237,27 +250,42 @@ class BaseMirobot(AbstractContextManager):
             # actually send the message
             output = self.serial_device.send(msg)
 
-        if self.debug:
+        if self.debug and not disable_debug:
             print('Message sent: ', msg)
 
-        if not wait:
+        if (wait is not None and not self.wait) or not wait:
             return output
 
-    def get_status(self):
+    def get_status(self, disable_debug=False):
         """
         Get the status of the Mirobot. (Command: `?`)
+
+        Parameters
+        ----------
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily in `BaseMirobot.wait_until_idle`.
 
         Returns
         -------
         msg : List[str]
             The list of strings returned from a '?' status command.
+
         """
         instruction = '?'
-        return self.send_msg(instruction)
+        # we don't want to wait for idling when checking status-- this leads to unbroken recursion!!
+        return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)
 
-    def update_status(self):
-        """ Update the status of the Mirobot. """
-        status_msg = self.get_status()[0]  # get only the status message and not 'ok'
+    def update_status(self, disable_debug=False):
+        """
+        Update the status of the Mirobot.
+
+        Parameters
+        ----------
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily in `BaseMirobot.wait_until_idle`.
+
+        """
+        status_msg = self.get_status(disable_debug=disable_debug)[0]  # get only the status message and not 'ok'
         self.status = self._parse_status(status_msg)
 
     @staticmethod
@@ -304,6 +332,29 @@ class BaseMirobot(AbstractContextManager):
                 return return_status
         else:
             raise MirobotStatusError(f'Could not parse status message "{msg}"')
+
+    def wait_until_idle(self, refresh_rate=0.1):
+        """
+        Continuously loops over and refreshes state of the Mirobot.
+        It stops when it encounters an 'Idle' state string.
+
+        Parameters
+        ----------
+        refresh_rate : float
+            (Default value = `0.1`) The rate in seconds to check for the 'Idle' state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
+
+        Returns
+        -------
+        output : List[str]
+            A list of output strings upto and including the terminal string.
+        """
+        self.update_status(disable_debug=True)
+        if self.status.state == 'Idle':
+            return
+
+        while self.status.state != 'Idle':
+            time.sleep(refresh_rate)
+            self.update_status(disable_debug=True)
 
     def is_connected(self):
         """
@@ -403,7 +454,6 @@ class BaseMirobot(AbstractContextManager):
         msg = '$H'
         return self.send_msg(msg, wait=wait)
 
-    #
     def set_hard_limit(self, state, wait=None):
         """
         Set the hard limit state.
