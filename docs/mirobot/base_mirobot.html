@@ -1,0 +1,3396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.7.5" />
+<title>mirobot.base_mirobot API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>mirobot.base_mirobot</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from collections.abc import Collection
+from contextlib import AbstractContextManager
+import functools
+import os
+from pathlib import Path
+import re
+import time
+from typing import TextIO, BinaryIO
+
+try:
+    import importlib.resources as pkg_resources
+except ImportError:
+    # Try backported to PY&lt;37 `importlib_resources`.
+    import importlib_resources as pkg_resources
+
+import serial.tools.list_ports as lp
+
+from .serial_device import SerialDevice
+from .mirobot_status import MirobotStatus, MirobotAngleValues, MirobotCartesianValues
+from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
+
+
+class BaseMirobot(AbstractContextManager):
+    &#34;&#34;&#34; A class for managing and maintaining known Mirobot operations. &#34;&#34;&#34;
+
+    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=(&#39;65&#39;, &#39;40&#39;), pump_pwm_values=(&#39;0&#39;, &#39;1000&#39;), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs):
+        &#34;&#34;&#34;
+        Initialization of `BaseMirobot` class.
+
+        Parameters
+        ----------
+        *serial_device_args : List[Any]
+             Arguments that are passed into the `SerialDevice` class.
+        debug : bool
+            (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
+        autoconnect : bool
+            (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `BaseMirobot.connect` is unnecessary.
+        autofindport : bool
+            (Default value = `True`) Whether to automatically find the serial port that the Mirobot is attached to. If this is `False`, you must specify `portname=&#39;&lt;portname&gt;&#39;` in `*serial_device_args`.
+        valve_pwm_values : indexible-collection[str or numeric]
+            (Default value = `(&#39;65&#39;, &#39;40&#39;)`) The &#39;on&#39; and &#39;off&#39; values for the valve in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `BaseMirobot.set_valve` will only accept booleans and the values in this parameter, so if you have additional values you&#39;d like to use, pass them in as additional elements in this tuple. Stored in `BaseMirobot.valve_pwm_values`.
+        pump_pwm_values : indexible-collection[str or numeric]
+            (Default value = `(&#39;0&#39;, &#39;1000&#39;)`) The &#39;on&#39; and &#39;off&#39; values for the pnuematic pump in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `BaseMirobot.set_air_pump` will only accept booleans and the values in this parameter, so if you have additional values you&#39;d like to use, pass them in as additional elements in this tuple. Stored in `BaseMirobot.pump_pwm_values`.
+        default_speed : int
+            (Default value = `2000`) This speed value will be passed in at each motion command, unless speed is specified as a function argument. Having this explicitly specified fixes phantom `Unknown Feed Rate` errors. Stored in `BaseMirobot.default_speed`.
+        reset_file : str or Path or Collection[str] or file-like
+            (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in &#34;reset.xml&#34; provided by WLkata to reset the Mirobot. See `BaseMirobot.reset_configuration` for more details.
+        wait : bool
+            (Default value = `True`) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored `BaseMirobot.wait`.
+        **serial_device_kwargs : Dict
+             Keywords that are passed into the `SerialDevice` class.
+
+        Returns
+        -------
+        class : `BaseMirobot`
+        &#34;&#34;&#34;
+
+        # Parse inputs into SerialDevice
+        serial_device_init_fn = SerialDevice.__init__
+        args_names = serial_device_init_fn.__code__.co_varnames[:serial_device_init_fn.__code__.co_argcount]
+        args_dict = dict(zip(args_names, serial_device_args))
+
+        # check if baudrate was passed in args or kwargs, if not use the default value instead
+        if not (&#39;baudrate&#39; in args_dict or &#39;baudrate&#39; in serial_device_kwargs):
+            serial_device_kwargs[&#39;baudrate&#39;] = 115200
+        # check if stopbits was passed in args or kwargs, if not use the default value instead
+        if not (&#39;stopbits&#39; in args_dict or &#39;stopbits&#39; in serial_device_kwargs):
+            serial_device_kwargs[&#39;stopbits&#39;] = 1
+
+        # if portname was not passed in and autofindport is set to true, autosearch for a serial port
+        if autofindport and not (&#39;portname&#39; in args_dict or &#39;portname&#39; in serial_device_kwargs):
+            self.default_portname = self._find_portname()
+            &#34;&#34;&#34; The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `BaseMirobot.connect`. &#34;&#34;&#34;
+
+        else:
+            if &#39;portname&#39; in args_dict:
+                self.default_portname = args_dict[&#39;portname&#39;]
+            elif &#39;portname&#39; in serial_device_kwargs:
+                self.default_portname = serial_device_kwargs[&#39;portname&#39;]
+            else:
+                self.default_portname = None
+
+        self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
+
+        self.reset_file = pkg_resources.read_text(&#39;mirobot.resources&#39;, &#39;reset.xml&#39;) if reset_file is None else reset_file
+        &#34;&#34;&#34; The reset commands to use when resetting the Mirobot. See `BaseMirobot.reset_configuration` for usage and details. &#34;&#34;&#34;
+        self.debug = debug
+        &#34;&#34;&#34; Boolean that determines if every input and output is to be printed to the screen. &#34;&#34;&#34;
+
+        self.valve_pwm_values = tuple(str(n) for n in valve_pwm_values)
+        &#34;&#34;&#34; Collection of values to use for PWM values for valve module. First value is the &#39;On&#39; position while the second is the &#39;Off&#39; position. Only these values may be permitted. &#34;&#34;&#34;
+        self.pump_pwm_values = tuple(str(n) for n in pump_pwm_values)
+        &#34;&#34;&#34; Collection of values to use for PWM values for pnuematic pump module. First value is the &#39;On&#39; position while the second is the &#39;Off&#39; position. Only these values may be permitted. &#34;&#34;&#34;
+        self.default_speed = default_speed
+        &#34;&#34;&#34; The default speed to use when issuing commands that involve the speed parameter. &#34;&#34;&#34;
+        self.wait = wait
+        &#34;&#34;&#34; Boolean that determines if every command should wait for a status message to return before unblocking function evaluation. Can be overridden on an individual basis by providing the `wait=` parameter to all command functions. &#34;&#34;&#34;
+
+        self.status = MirobotStatus()
+        &#34;&#34;&#34; Dataclass that holds tracks Mirobot&#39;s coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details.&#34;&#34;&#34;
+
+        # do this at the very end, after everything is setup
+        if autoconnect:
+            self.connect()
+
+    def __enter__(self):
+        &#34;&#34;&#34; Magic method for contextManagers &#34;&#34;&#34;
+        return self
+
+    def __exit__(self, *exc):
+        &#34;&#34;&#34; Magic method for contextManagers &#34;&#34;&#34;
+        self.disconnect()
+
+    # COMMUNICATION #
+
+    def wait_for_ok(self, reset_expected=False, disable_debug=False):
+        &#34;&#34;&#34;
+        Continously loops over and collects message output from the serial device.
+        It stops when it encounters an &#39;ok&#39; or otherwise terminal condition phrase.
+
+        Parameters
+        ----------
+        reset_expected : bool
+            (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `&#39;Using reset pos!&#39;` rather than the traditional `&#39;Ok&#39;`)
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
+
+        Returns
+        -------
+        output : List[str]
+            A list of output strings upto and including the terminal string.
+        &#34;&#34;&#34;
+        output = [&#39;&#39;]
+
+        ok_eols = [&#39;ok&#39;]
+
+        reset_strings = [&#39;Using reset pos!&#39;]
+
+        def matches_eol_strings(terms, s):
+            for eol in terms:
+                if s.endswith(eol):
+                    return True
+            return False
+
+        if reset_expected:
+            eols = ok_eols + reset_strings
+        else:
+            eols = ok_eols
+
+        while not matches_eol_strings(eols, output[-1]):
+            msg = self.serial_device.listen_to_device()
+
+            if self.debug and not disable_debug:
+                print(msg)
+
+            if &#39;error&#39; in msg:
+                raise MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;))
+            if &#39;ALARM&#39; in msg:
+                raise MirobotAlarm(msg.split(&#39;ALARM: &#39;)[1])
+
+            output.append(msg)
+
+            if not reset_expected and matches_eol_strings(reset_strings, msg):
+                raise MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;)
+                break
+
+        return output[1:]  # don&#39;t include the dummy empty string at first index
+
+    def wait_decorator(fn):
+        &#34;&#34;&#34;
+        A decorator that will use the `wait` argument/keyword for a method to
+        automatically use the `BaseMirobot.wait_for_ok` and conditionally, the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
+
+        Parameters
+        ----------
+        fn : func
+            Function to wrap. Must have the `wait` argument or keyword.
+
+        Returns
+        -------
+        wrapper : func
+            A wrapper that decorates a function.
+        &#34;&#34;&#34;
+
+        @functools.wraps(fn)
+        def wait_wrapper(self, *args, **kwargs):
+            args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+            args_dict = dict(zip(args_names, args))
+
+            def get_arg(arg_name, default=None):
+                if arg_name in args_dict:
+                    return args_dict.get(arg_name)
+                elif arg_name in kwargs:
+                    return kwargs.get(arg_name)
+                else:
+                    return default
+
+            wait = get_arg(&#39;wait&#39;, True)
+            disable_debug = get_arg(&#39;disable_debug&#39;, False)
+            wait_idle = get_arg(&#39;wait_idle&#39;, True)
+
+            output = fn(self, *args, **kwargs)
+
+            if wait or (wait is None and self.wait):
+                output = self.wait_for_ok(disable_debug=disable_debug)
+
+            if wait_idle:
+                self.wait_until_idle()
+
+            return output
+
+        return wait_wrapper
+
+    # send a message
+    @wait_decorator
+    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
+        &#34;&#34;&#34;
+        Send a message to the Mirobot.
+
+        Parameters
+        ----------
+        msg : str or bytes
+             A message or instruction to send to the Mirobot.
+        var_command : bool
+            (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+        wait : bool
+            (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        if self.is_connected():
+            # convert to str from bytes
+            if isinstance(msg, bytes):
+                msg = str(msg, &#39;utf-8&#39;)
+
+            # remove any newlines
+            msg = msg.strip()
+
+            # check if this is supposed to be a variable command and fail if not
+            if var_command and not re.fullmatch(r&#39;\$\d+=[\d\.]+&#39;, msg):
+                raise MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg)
+
+            # actually send the message
+            output = self.serial_device.send(msg)
+
+        if self.debug and not disable_debug:
+            print(&#39;Message sent: &#39;, msg)
+
+        if (wait is not None and not self.wait) or not wait:
+            return output
+
+    def get_status(self, disable_debug=False):
+        &#34;&#34;&#34;
+        Get the status of the Mirobot. (Command: `?`)
+
+        Parameters
+        ----------
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+
+        Returns
+        -------
+        msg : List[str]
+            The list of strings returned from a &#39;?&#39; status command.
+
+        &#34;&#34;&#34;
+        instruction = &#39;?&#39;
+        # we don&#39;t want to wait for idling when checking status-- this leads to unbroken recursion!!
+        return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)
+
+    def update_status(self, disable_debug=False):
+        &#34;&#34;&#34;
+        Update the status of the Mirobot.
+
+        Parameters
+        ----------
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+
+        &#34;&#34;&#34;
+        status_msg = self.get_status(disable_debug=disable_debug)[0]  # get only the status message and not &#39;ok&#39;
+        self.status = self._parse_status(status_msg)
+
+    @staticmethod
+    def _parse_status(msg):
+        &#34;&#34;&#34;
+        Parse the status string of the Mirobot and store the various values as class variables.
+
+        Parameters
+        ----------
+        msg : str
+            Status string that is obtained from a &#39;?&#39; instruction or `BaseMirobot.get_status` call.
+
+        Returns
+        -------
+        return_status : MirobotStatus
+            A new `mirobot.mirobot_status.MirobotStatus` object containing the new values obtained from `msg`.
+        &#34;&#34;&#34;
+
+        return_status = MirobotStatus()
+
+        state_regex = r&#39;&lt;([^,]*),Angle\(ABCDXYZ\):([-\.\d,]*),Cartesian coordinate\(XYZ RxRyRz\):([-.\d,]*),Pump PWM:(\d+),Valve PWM:(\d+),Motion_MODE:(\d)&gt;&#39;
+
+        regex_match = re.fullmatch(state_regex, msg)
+
+        if regex_match:
+            try:
+                state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
+
+                return_angles = MirobotAngleValues(*map(float, angles.split(&#39;,&#39;)))
+
+                return_cartesians = MirobotCartesianValues(*map(float, cartesians.split(&#39;,&#39;)))
+
+                return_status = MirobotStatus(state,
+                                              return_angles,
+                                              return_cartesians,
+                                              int(pump_pwm),
+                                              int(valve_pwm),
+                                              bool(motion_mode))
+
+            except Exception as exception:
+                raise Exception([MirobotStatusError(f&#39;Could not parse status message &#34;{msg}&#34;&#39;),
+                                 exception])
+            else:
+                return return_status
+        else:
+            raise MirobotStatusError(f&#39;Could not parse status message &#34;{msg}&#34;&#39;)
+
+    def wait_until_idle(self, refresh_rate=0.1):
+        &#34;&#34;&#34;
+        Continuously loops over and refreshes state of the Mirobot.
+        It stops when it encounters an &#39;Idle&#39; state string.
+
+        Parameters
+        ----------
+        refresh_rate : float
+            (Default value = `0.1`) The rate in seconds to check for the &#39;Idle&#39; state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
+
+        Returns
+        -------
+        output : List[str]
+            A list of output strings upto and including the terminal string.
+        &#34;&#34;&#34;
+        self.update_status(disable_debug=True)
+        if self.status.state == &#39;Idle&#39;:
+            return
+
+        while self.status.state != &#39;Idle&#39;:
+            time.sleep(refresh_rate)
+            self.update_status(disable_debug=True)
+
+    def is_connected(self):
+        &#34;&#34;&#34;
+        Check if Mirobot is connected.
+
+        Returns
+        -------
+        connected : bool
+            Whether the Mirobot is connected.
+        &#34;&#34;&#34;
+        return self.serial_device.is_open
+
+    @staticmethod
+    def _find_portname():
+        &#34;&#34;&#34;
+        Find the port that might potentially be connected to the Mirobot.
+
+        Returns
+        -------
+        device_name : str
+            The name of the device that is (most-likely) connected to the Mirobot.
+        &#34;&#34;&#34;
+        port_objects = lp.comports()
+
+        if not port_objects:
+            raise MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;)
+
+        if len(port_objects) &gt; 1:
+            raise MirobotAmbiguousPort(f&#34;Unable to determine which port to automatically connect to!\nFound these ports: {[p.device for p in port_objects]}.\nTo fix this, please provide port name explicitly.&#34;)
+        return port_objects[0].device
+
+    def connect(self, portname=None):
+        &#34;&#34;&#34;
+        Connect to the Mirobot.
+
+        Parameters
+        ----------
+        portname : str
+            (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
+
+        Returns
+        -------
+        ok_msg : List[str]
+            The output from an initial Mirobot connection.
+        &#34;&#34;&#34;
+        if portname is None:
+            if self.default_portname is not None:
+                portname = self.default_portname
+            else:
+                raise ValueError(&#39;Portname must be provided! like so `portname=\&#39;COM3\&#39;`&#39;)
+
+        self.serial_device.portname = portname
+
+        self.serial_device.open()
+
+        return self.wait_for_ok(reset_expected=True)
+
+    def disconnect(self):
+        &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
+        self.serial_device.close()
+
+    # COMMANDS #
+
+    def home_individual(self, wait=None):
+        &#34;&#34;&#34;
+        Home each axis individually. (Command: `$HH`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = &#39;$HH&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def home_simultaneous(self, wait=None):
+        &#34;&#34;&#34;
+        Home all axes simultaneously. (Command:`$H`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = &#39;$H&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def set_hard_limit(self, state, wait=None):
+        &#34;&#34;&#34;
+        Set the hard limit state.
+
+        Parameters
+        ----------
+        state : bool
+            Whether to use the hard limit (`True`) or not (`False`).
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = f&#39;$21={int(state)}&#39;
+        return self.send_msg(msg, wait=wait)
+
+    # set the soft limit state
+    def set_soft_limit(self, state, wait=None):
+        &#34;&#34;&#34;
+        Set the soft limit state.
+
+        Parameters
+        ----------
+        state : bool
+            Whether to use the soft limit (`True`) or not (`False`).
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = f&#39;$20={int(state)}&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def unlock_shaft(self, wait=None):
+        &#34;&#34;&#34;
+        Unlock each axis on the Mirobot. Homing naturally removes the lock. (Command: `M50`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = &#39;M50&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def go_to_zero(self, wait=None):
+        &#34;&#34;&#34;
+        Send all axes to their respective zero positions.
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        return self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)
+
+    @staticmethod
+    def _generate_args_string(instruction, pairings):
+        &#34;&#34;&#34;
+        A helper methods to generate argument strings for the various movement instructions.
+
+        Parameters
+        ----------
+        instruction : str
+            The command to include at the beginning of the string.
+        pairings : dict[str:Any]
+            A dictionary containing the pairings of argument name to argument value.
+            If a value is `None`, it and its argument name is not included in the result.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+message
+             A string containing the base command followed by the correctly formatted arguments.
+        &#34;&#34;&#34;
+        args = [f&#39;{arg_key}{value}&#39; for arg_key, value in pairings.items() if value is not None]
+
+        return &#39; &#39;.join([instruction] + args)
+
+    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Send all axes to a specific position in angular coordinates. (Command: `M21 G90`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) Angle of axis 1.
+        y : float
+            (Default value = `None`) Angle of axis 2.
+        z : float
+            (Default value = `None`) Angle of axis 3.
+        a : float
+            (Default value = `None`) Angle of axis 4.
+        b : float
+            (Default value = `None`) Angle of axis 5.
+        c : float
+            (Default value = `None`) Angle of axis 6.
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M21 G90&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Increment all axes a specified amount in angular coordinates. (Command: `M21 G91`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) Angle of axis 1.
+        y : float
+            (Default value = `None`) Angle of axis 2.
+        z : float
+            (Default value = `None`) Angle of axis 3.
+        a : float
+            (Default value = `None`) Angle of axis 4.
+        b : float
+            (Default value = `None`) Angle of axis 5.
+        c : float
+            (Default value = `None`) Angle of axis 6.
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M21 G91&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Point-to-point move to a position in cartesian coordinates. (Command: `M20 G90 G0`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) X-axis position.
+        y : float
+            (Default value = `None`) Y-axis position.
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M20 G90 G0&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Linear move to a position in cartesian coordinates. (Command: `M20 G90 G1`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) X-axis position.
+        y : float
+            (Default value = `None`) Y-axis position.
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M20 G90 G1&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Point-to-point increment in cartesian coordinates. (Command: `M20 G91 G0`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) X-axis position.
+        y : float
+            (Default value = `None`) Y-axis position.
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M20 G91 G0&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Linear increment in cartesian coordinates.
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) X-axis position
+        y : float
+            (Default value = `None`) Y-axis position
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M20 G91 G1&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    # set the pwm of the air pump
+    def set_air_pump(self, pwm, wait=None):
+        &#34;&#34;&#34;
+        Sets the PWM of the pnuematic pump module.
+
+        Parameters
+        ----------
+        pwm : int
+            The pulse width modulation frequency to use.
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+
+        if isinstance(pwm, bool):
+            pwm = self.pump_pwm_values[not pwm]
+
+        if str(pwm) not in self.pump_pwm_values:
+            raise ValueError(f&#39;pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.&#39;)
+
+        msg = f&#39;M3S{pwm}&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def set_valve(self, pwm, wait=None):
+        &#34;&#34;&#34;
+        Sets the PWM of the valve module.
+
+        Parameters
+        ----------
+        pwm : int
+            The pulse width modulation frequency to use.
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+
+        if isinstance(pwm, bool):
+            pwm = self.valve_pwm_values[not pwm]
+
+        if str(pwm) not in self.valve_pwm_values:
+            raise ValueError(f&#39;pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.&#39;)
+
+        msg = f&#39;M4E{pwm}&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def start_calibration(self, wait=None):
+        &#34;&#34;&#34;
+        Starts the calibration sequence by setting all eeprom variables to zero. (Command: `M40`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M40&#39;
+        return self.send_msg(instruction, wait=wait)
+
+    def finish_calibration(self, wait=None):
+        &#34;&#34;&#34;
+        Stop the calibration sequence and write results into eeprom variables. (Command: `M41`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M41&#39;
+        return self.send_msg(instruction, wait=wait)
+
+    def reset_configuration(self, reset_file=None, wait=None):
+        &#34;&#34;&#34;
+        Reset the Mirobot by resetting all eeprom variables to their factory settings. If provided an explicit `reset_file` on invocation, it will execute reset commands given in by `reset_file` instead of `self.reset_file`.
+
+        Parameters
+        ----------
+        reset_file : str or Path or Collection[str] or file-like
+            (Default value = `True`) A file-like object, Collection, or string containing reset values for the Mirobot. If given a string with newlines, it will split on those newlines and pass those in as &#34;variable reset commands&#34;. Passing in the default value (None) will use the commands in &#34;reset.xml&#34; provided by WLkata to reset the Mirobot. If passed in a string without newlines, `BaseMirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a Collection (list-like) object, `BaseMirobot.reset_configuration` will use each element as the message body for `BaseMirobot.send_msg`. One can also pass in file-like objects as well (like `open(&#39;path&#39;)`).
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+
+        output = {}
+
+        def send_each_line(file_lines):
+            nonlocal output
+            for line in file_lines:
+                output[line] = self.send_msg(line, var_command=True, wait=wait)
+
+        reset_file = reset_file if reset_file else self.reset_file
+
+        if isinstance(reset_file, str) and &#39;\n&#39; in reset_file or \
+           isinstance(reset_file, bytes) and b&#39;\n&#39; in reset_file:
+            # if we find that we have a string and it contains new lines,
+            send_each_line(reset_file.splitlines())
+
+        elif isinstance(reset_file, (str, Path)):
+            if not os.path.exists(reset_file):
+                raise MirobotResetFileError(&#34;Reset file not found or reachable: {reset_file}&#34;)
+            with open(reset_file, &#39;r&#39;) as f:
+                send_each_line(f.readlines())
+
+        elif isinstance(reset_file, Collection) and not isinstance(reset_file, str):
+            send_each_line(reset_file)
+
+        elif isinstance(reset_file, (TextIO, BinaryIO)):
+            send_each_line(reset_file.readlines())
+
+        else:
+            raise MirobotResetFileError(f&#34;Unable to handle reset file of type: {type(reset_file)}&#34;)
+
+        return output</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="mirobot.base_mirobot.BaseMirobot"><code class="flex name class">
+<span>class <span class="ident">BaseMirobot</span></span>
+<span>(</span><span>*serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>A class for managing and maintaining known Mirobot operations. </p>
+<p>Initialization of <a title="mirobot.base_mirobot.BaseMirobot" href="#mirobot.base_mirobot.BaseMirobot"><code>BaseMirobot</code></a> class.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>*serial_device_args</code></strong> :&ensp;<code>List</code>[<code>Any</code>]</dt>
+<dd>Arguments that are passed into the <code>SerialDevice</code> class.</dd>
+<dt><strong><code>debug</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether to print gcode input and output to STDOUT. Stored in <a title="mirobot.base_mirobot.BaseMirobot.debug" href="#mirobot.base_mirobot.BaseMirobot.debug"><code>BaseMirobot.debug</code></a>.</dd>
+<dt><strong><code>autoconnect</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>True</code>) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is <code>True</code>, manually connecting with <a title="mirobot.base_mirobot.BaseMirobot.connect" href="#mirobot.base_mirobot.BaseMirobot.connect"><code>BaseMirobot.connect()</code></a> is unnecessary.</dd>
+<dt><strong><code>autofindport</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>True</code>) Whether to automatically find the serial port that the Mirobot is attached to. If this is <code>False</code>, you must specify <code>portname='&lt;portname&gt;'</code> in <code>*serial_device_args</code>.</dd>
+<dt><strong><code>valve_pwm_values</code></strong> :&ensp;<code>indexible</code>-<code>collection</code>[<code>str</code> or <code>numeric</code>]</dt>
+<dd>(Default value = <code>('65', '40')</code>) The 'on' and 'off' values for the valve in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. <a title="mirobot.base_mirobot.BaseMirobot.set_valve" href="#mirobot.base_mirobot.BaseMirobot.set_valve"><code>BaseMirobot.set_valve()</code></a> will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in <a title="mirobot.base_mirobot.BaseMirobot.valve_pwm_values" href="#mirobot.base_mirobot.BaseMirobot.valve_pwm_values"><code>BaseMirobot.valve_pwm_values</code></a>.</dd>
+<dt><strong><code>pump_pwm_values</code></strong> :&ensp;<code>indexible</code>-<code>collection</code>[<code>str</code> or <code>numeric</code>]</dt>
+<dd>(Default value = <code>('0', '1000')</code>) The 'on' and 'off' values for the pnuematic pump in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. <a title="mirobot.base_mirobot.BaseMirobot.set_air_pump" href="#mirobot.base_mirobot.BaseMirobot.set_air_pump"><code>BaseMirobot.set_air_pump()</code></a> will only accept booleans and the values in this parameter, so if you have additional values you'd like to use, pass them in as additional elements in this tuple. Stored in <a title="mirobot.base_mirobot.BaseMirobot.pump_pwm_values" href="#mirobot.base_mirobot.BaseMirobot.pump_pwm_values"><code>BaseMirobot.pump_pwm_values</code></a>.</dd>
+<dt><strong><code>default_speed</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = <code>2000</code>) This speed value will be passed in at each motion command, unless speed is specified as a function argument. Having this explicitly specified fixes phantom <code>Unknown Feed Rate</code> errors. Stored in <a title="mirobot.base_mirobot.BaseMirobot.default_speed" href="#mirobot.base_mirobot.BaseMirobot.default_speed"><code>BaseMirobot.default_speed</code></a>.</dd>
+<dt><strong><code>reset_file</code></strong> :&ensp;<code>str</code> or <code>Path</code> or <code>Collection</code>[<code>str</code>] or <code>file</code>-<code>like</code></dt>
+<dd>(Default value = <code>None</code>) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See <a title="mirobot.base_mirobot.BaseMirobot.reset_configuration" href="#mirobot.base_mirobot.BaseMirobot.reset_configuration"><code>BaseMirobot.reset_configuration()</code></a> for more details.</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>True</code>) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a>.</dd>
+<dt><strong><code>**serial_device_kwargs</code></strong> :&ensp;<code>Dict</code></dt>
+<dd>Keywords that are passed into the <code>SerialDevice</code> class.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>class</code></strong> :&ensp;<code>BaseMirobot</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BaseMirobot(AbstractContextManager):
+    &#34;&#34;&#34; A class for managing and maintaining known Mirobot operations. &#34;&#34;&#34;
+
+    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=(&#39;65&#39;, &#39;40&#39;), pump_pwm_values=(&#39;0&#39;, &#39;1000&#39;), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs):
+        &#34;&#34;&#34;
+        Initialization of `BaseMirobot` class.
+
+        Parameters
+        ----------
+        *serial_device_args : List[Any]
+             Arguments that are passed into the `SerialDevice` class.
+        debug : bool
+            (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
+        autoconnect : bool
+            (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `BaseMirobot.connect` is unnecessary.
+        autofindport : bool
+            (Default value = `True`) Whether to automatically find the serial port that the Mirobot is attached to. If this is `False`, you must specify `portname=&#39;&lt;portname&gt;&#39;` in `*serial_device_args`.
+        valve_pwm_values : indexible-collection[str or numeric]
+            (Default value = `(&#39;65&#39;, &#39;40&#39;)`) The &#39;on&#39; and &#39;off&#39; values for the valve in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `BaseMirobot.set_valve` will only accept booleans and the values in this parameter, so if you have additional values you&#39;d like to use, pass them in as additional elements in this tuple. Stored in `BaseMirobot.valve_pwm_values`.
+        pump_pwm_values : indexible-collection[str or numeric]
+            (Default value = `(&#39;0&#39;, &#39;1000&#39;)`) The &#39;on&#39; and &#39;off&#39; values for the pnuematic pump in terms of PWM. Useful if your Mirobot is not calibrated correctly and requires different values to open and close. `BaseMirobot.set_air_pump` will only accept booleans and the values in this parameter, so if you have additional values you&#39;d like to use, pass them in as additional elements in this tuple. Stored in `BaseMirobot.pump_pwm_values`.
+        default_speed : int
+            (Default value = `2000`) This speed value will be passed in at each motion command, unless speed is specified as a function argument. Having this explicitly specified fixes phantom `Unknown Feed Rate` errors. Stored in `BaseMirobot.default_speed`.
+        reset_file : str or Path or Collection[str] or file-like
+            (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in &#34;reset.xml&#34; provided by WLkata to reset the Mirobot. See `BaseMirobot.reset_configuration` for more details.
+        wait : bool
+            (Default value = `True`) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored `BaseMirobot.wait`.
+        **serial_device_kwargs : Dict
+             Keywords that are passed into the `SerialDevice` class.
+
+        Returns
+        -------
+        class : `BaseMirobot`
+        &#34;&#34;&#34;
+
+        # Parse inputs into SerialDevice
+        serial_device_init_fn = SerialDevice.__init__
+        args_names = serial_device_init_fn.__code__.co_varnames[:serial_device_init_fn.__code__.co_argcount]
+        args_dict = dict(zip(args_names, serial_device_args))
+
+        # check if baudrate was passed in args or kwargs, if not use the default value instead
+        if not (&#39;baudrate&#39; in args_dict or &#39;baudrate&#39; in serial_device_kwargs):
+            serial_device_kwargs[&#39;baudrate&#39;] = 115200
+        # check if stopbits was passed in args or kwargs, if not use the default value instead
+        if not (&#39;stopbits&#39; in args_dict or &#39;stopbits&#39; in serial_device_kwargs):
+            serial_device_kwargs[&#39;stopbits&#39;] = 1
+
+        # if portname was not passed in and autofindport is set to true, autosearch for a serial port
+        if autofindport and not (&#39;portname&#39; in args_dict or &#39;portname&#39; in serial_device_kwargs):
+            self.default_portname = self._find_portname()
+            &#34;&#34;&#34; The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `BaseMirobot.connect`. &#34;&#34;&#34;
+
+        else:
+            if &#39;portname&#39; in args_dict:
+                self.default_portname = args_dict[&#39;portname&#39;]
+            elif &#39;portname&#39; in serial_device_kwargs:
+                self.default_portname = serial_device_kwargs[&#39;portname&#39;]
+            else:
+                self.default_portname = None
+
+        self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
+
+        self.reset_file = pkg_resources.read_text(&#39;mirobot.resources&#39;, &#39;reset.xml&#39;) if reset_file is None else reset_file
+        &#34;&#34;&#34; The reset commands to use when resetting the Mirobot. See `BaseMirobot.reset_configuration` for usage and details. &#34;&#34;&#34;
+        self.debug = debug
+        &#34;&#34;&#34; Boolean that determines if every input and output is to be printed to the screen. &#34;&#34;&#34;
+
+        self.valve_pwm_values = tuple(str(n) for n in valve_pwm_values)
+        &#34;&#34;&#34; Collection of values to use for PWM values for valve module. First value is the &#39;On&#39; position while the second is the &#39;Off&#39; position. Only these values may be permitted. &#34;&#34;&#34;
+        self.pump_pwm_values = tuple(str(n) for n in pump_pwm_values)
+        &#34;&#34;&#34; Collection of values to use for PWM values for pnuematic pump module. First value is the &#39;On&#39; position while the second is the &#39;Off&#39; position. Only these values may be permitted. &#34;&#34;&#34;
+        self.default_speed = default_speed
+        &#34;&#34;&#34; The default speed to use when issuing commands that involve the speed parameter. &#34;&#34;&#34;
+        self.wait = wait
+        &#34;&#34;&#34; Boolean that determines if every command should wait for a status message to return before unblocking function evaluation. Can be overridden on an individual basis by providing the `wait=` parameter to all command functions. &#34;&#34;&#34;
+
+        self.status = MirobotStatus()
+        &#34;&#34;&#34; Dataclass that holds tracks Mirobot&#39;s coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details.&#34;&#34;&#34;
+
+        # do this at the very end, after everything is setup
+        if autoconnect:
+            self.connect()
+
+    def __enter__(self):
+        &#34;&#34;&#34; Magic method for contextManagers &#34;&#34;&#34;
+        return self
+
+    def __exit__(self, *exc):
+        &#34;&#34;&#34; Magic method for contextManagers &#34;&#34;&#34;
+        self.disconnect()
+
+    # COMMUNICATION #
+
+    def wait_for_ok(self, reset_expected=False, disable_debug=False):
+        &#34;&#34;&#34;
+        Continously loops over and collects message output from the serial device.
+        It stops when it encounters an &#39;ok&#39; or otherwise terminal condition phrase.
+
+        Parameters
+        ----------
+        reset_expected : bool
+            (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `&#39;Using reset pos!&#39;` rather than the traditional `&#39;Ok&#39;`)
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
+
+        Returns
+        -------
+        output : List[str]
+            A list of output strings upto and including the terminal string.
+        &#34;&#34;&#34;
+        output = [&#39;&#39;]
+
+        ok_eols = [&#39;ok&#39;]
+
+        reset_strings = [&#39;Using reset pos!&#39;]
+
+        def matches_eol_strings(terms, s):
+            for eol in terms:
+                if s.endswith(eol):
+                    return True
+            return False
+
+        if reset_expected:
+            eols = ok_eols + reset_strings
+        else:
+            eols = ok_eols
+
+        while not matches_eol_strings(eols, output[-1]):
+            msg = self.serial_device.listen_to_device()
+
+            if self.debug and not disable_debug:
+                print(msg)
+
+            if &#39;error&#39; in msg:
+                raise MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;))
+            if &#39;ALARM&#39; in msg:
+                raise MirobotAlarm(msg.split(&#39;ALARM: &#39;)[1])
+
+            output.append(msg)
+
+            if not reset_expected and matches_eol_strings(reset_strings, msg):
+                raise MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;)
+                break
+
+        return output[1:]  # don&#39;t include the dummy empty string at first index
+
+    def wait_decorator(fn):
+        &#34;&#34;&#34;
+        A decorator that will use the `wait` argument/keyword for a method to
+        automatically use the `BaseMirobot.wait_for_ok` and conditionally, the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
+
+        Parameters
+        ----------
+        fn : func
+            Function to wrap. Must have the `wait` argument or keyword.
+
+        Returns
+        -------
+        wrapper : func
+            A wrapper that decorates a function.
+        &#34;&#34;&#34;
+
+        @functools.wraps(fn)
+        def wait_wrapper(self, *args, **kwargs):
+            args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+            args_dict = dict(zip(args_names, args))
+
+            def get_arg(arg_name, default=None):
+                if arg_name in args_dict:
+                    return args_dict.get(arg_name)
+                elif arg_name in kwargs:
+                    return kwargs.get(arg_name)
+                else:
+                    return default
+
+            wait = get_arg(&#39;wait&#39;, True)
+            disable_debug = get_arg(&#39;disable_debug&#39;, False)
+            wait_idle = get_arg(&#39;wait_idle&#39;, True)
+
+            output = fn(self, *args, **kwargs)
+
+            if wait or (wait is None and self.wait):
+                output = self.wait_for_ok(disable_debug=disable_debug)
+
+            if wait_idle:
+                self.wait_until_idle()
+
+            return output
+
+        return wait_wrapper
+
+    # send a message
+    @wait_decorator
+    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
+        &#34;&#34;&#34;
+        Send a message to the Mirobot.
+
+        Parameters
+        ----------
+        msg : str or bytes
+             A message or instruction to send to the Mirobot.
+        var_command : bool
+            (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+        wait : bool
+            (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        if self.is_connected():
+            # convert to str from bytes
+            if isinstance(msg, bytes):
+                msg = str(msg, &#39;utf-8&#39;)
+
+            # remove any newlines
+            msg = msg.strip()
+
+            # check if this is supposed to be a variable command and fail if not
+            if var_command and not re.fullmatch(r&#39;\$\d+=[\d\.]+&#39;, msg):
+                raise MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg)
+
+            # actually send the message
+            output = self.serial_device.send(msg)
+
+        if self.debug and not disable_debug:
+            print(&#39;Message sent: &#39;, msg)
+
+        if (wait is not None and not self.wait) or not wait:
+            return output
+
+    def get_status(self, disable_debug=False):
+        &#34;&#34;&#34;
+        Get the status of the Mirobot. (Command: `?`)
+
+        Parameters
+        ----------
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+
+        Returns
+        -------
+        msg : List[str]
+            The list of strings returned from a &#39;?&#39; status command.
+
+        &#34;&#34;&#34;
+        instruction = &#39;?&#39;
+        # we don&#39;t want to wait for idling when checking status-- this leads to unbroken recursion!!
+        return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)
+
+    def update_status(self, disable_debug=False):
+        &#34;&#34;&#34;
+        Update the status of the Mirobot.
+
+        Parameters
+        ----------
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+
+        &#34;&#34;&#34;
+        status_msg = self.get_status(disable_debug=disable_debug)[0]  # get only the status message and not &#39;ok&#39;
+        self.status = self._parse_status(status_msg)
+
+    @staticmethod
+    def _parse_status(msg):
+        &#34;&#34;&#34;
+        Parse the status string of the Mirobot and store the various values as class variables.
+
+        Parameters
+        ----------
+        msg : str
+            Status string that is obtained from a &#39;?&#39; instruction or `BaseMirobot.get_status` call.
+
+        Returns
+        -------
+        return_status : MirobotStatus
+            A new `mirobot.mirobot_status.MirobotStatus` object containing the new values obtained from `msg`.
+        &#34;&#34;&#34;
+
+        return_status = MirobotStatus()
+
+        state_regex = r&#39;&lt;([^,]*),Angle\(ABCDXYZ\):([-\.\d,]*),Cartesian coordinate\(XYZ RxRyRz\):([-.\d,]*),Pump PWM:(\d+),Valve PWM:(\d+),Motion_MODE:(\d)&gt;&#39;
+
+        regex_match = re.fullmatch(state_regex, msg)
+
+        if regex_match:
+            try:
+                state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
+
+                return_angles = MirobotAngleValues(*map(float, angles.split(&#39;,&#39;)))
+
+                return_cartesians = MirobotCartesianValues(*map(float, cartesians.split(&#39;,&#39;)))
+
+                return_status = MirobotStatus(state,
+                                              return_angles,
+                                              return_cartesians,
+                                              int(pump_pwm),
+                                              int(valve_pwm),
+                                              bool(motion_mode))
+
+            except Exception as exception:
+                raise Exception([MirobotStatusError(f&#39;Could not parse status message &#34;{msg}&#34;&#39;),
+                                 exception])
+            else:
+                return return_status
+        else:
+            raise MirobotStatusError(f&#39;Could not parse status message &#34;{msg}&#34;&#39;)
+
+    def wait_until_idle(self, refresh_rate=0.1):
+        &#34;&#34;&#34;
+        Continuously loops over and refreshes state of the Mirobot.
+        It stops when it encounters an &#39;Idle&#39; state string.
+
+        Parameters
+        ----------
+        refresh_rate : float
+            (Default value = `0.1`) The rate in seconds to check for the &#39;Idle&#39; state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
+
+        Returns
+        -------
+        output : List[str]
+            A list of output strings upto and including the terminal string.
+        &#34;&#34;&#34;
+        self.update_status(disable_debug=True)
+        if self.status.state == &#39;Idle&#39;:
+            return
+
+        while self.status.state != &#39;Idle&#39;:
+            time.sleep(refresh_rate)
+            self.update_status(disable_debug=True)
+
+    def is_connected(self):
+        &#34;&#34;&#34;
+        Check if Mirobot is connected.
+
+        Returns
+        -------
+        connected : bool
+            Whether the Mirobot is connected.
+        &#34;&#34;&#34;
+        return self.serial_device.is_open
+
+    @staticmethod
+    def _find_portname():
+        &#34;&#34;&#34;
+        Find the port that might potentially be connected to the Mirobot.
+
+        Returns
+        -------
+        device_name : str
+            The name of the device that is (most-likely) connected to the Mirobot.
+        &#34;&#34;&#34;
+        port_objects = lp.comports()
+
+        if not port_objects:
+            raise MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;)
+
+        if len(port_objects) &gt; 1:
+            raise MirobotAmbiguousPort(f&#34;Unable to determine which port to automatically connect to!\nFound these ports: {[p.device for p in port_objects]}.\nTo fix this, please provide port name explicitly.&#34;)
+        return port_objects[0].device
+
+    def connect(self, portname=None):
+        &#34;&#34;&#34;
+        Connect to the Mirobot.
+
+        Parameters
+        ----------
+        portname : str
+            (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
+
+        Returns
+        -------
+        ok_msg : List[str]
+            The output from an initial Mirobot connection.
+        &#34;&#34;&#34;
+        if portname is None:
+            if self.default_portname is not None:
+                portname = self.default_portname
+            else:
+                raise ValueError(&#39;Portname must be provided! like so `portname=\&#39;COM3\&#39;`&#39;)
+
+        self.serial_device.portname = portname
+
+        self.serial_device.open()
+
+        return self.wait_for_ok(reset_expected=True)
+
+    def disconnect(self):
+        &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
+        self.serial_device.close()
+
+    # COMMANDS #
+
+    def home_individual(self, wait=None):
+        &#34;&#34;&#34;
+        Home each axis individually. (Command: `$HH`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = &#39;$HH&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def home_simultaneous(self, wait=None):
+        &#34;&#34;&#34;
+        Home all axes simultaneously. (Command:`$H`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = &#39;$H&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def set_hard_limit(self, state, wait=None):
+        &#34;&#34;&#34;
+        Set the hard limit state.
+
+        Parameters
+        ----------
+        state : bool
+            Whether to use the hard limit (`True`) or not (`False`).
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = f&#39;$21={int(state)}&#39;
+        return self.send_msg(msg, wait=wait)
+
+    # set the soft limit state
+    def set_soft_limit(self, state, wait=None):
+        &#34;&#34;&#34;
+        Set the soft limit state.
+
+        Parameters
+        ----------
+        state : bool
+            Whether to use the soft limit (`True`) or not (`False`).
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = f&#39;$20={int(state)}&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def unlock_shaft(self, wait=None):
+        &#34;&#34;&#34;
+        Unlock each axis on the Mirobot. Homing naturally removes the lock. (Command: `M50`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        msg = &#39;M50&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def go_to_zero(self, wait=None):
+        &#34;&#34;&#34;
+        Send all axes to their respective zero positions.
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        return self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)
+
+    @staticmethod
+    def _generate_args_string(instruction, pairings):
+        &#34;&#34;&#34;
+        A helper methods to generate argument strings for the various movement instructions.
+
+        Parameters
+        ----------
+        instruction : str
+            The command to include at the beginning of the string.
+        pairings : dict[str:Any]
+            A dictionary containing the pairings of argument name to argument value.
+            If a value is `None`, it and its argument name is not included in the result.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+message
+             A string containing the base command followed by the correctly formatted arguments.
+        &#34;&#34;&#34;
+        args = [f&#39;{arg_key}{value}&#39; for arg_key, value in pairings.items() if value is not None]
+
+        return &#39; &#39;.join([instruction] + args)
+
+    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Send all axes to a specific position in angular coordinates. (Command: `M21 G90`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) Angle of axis 1.
+        y : float
+            (Default value = `None`) Angle of axis 2.
+        z : float
+            (Default value = `None`) Angle of axis 3.
+        a : float
+            (Default value = `None`) Angle of axis 4.
+        b : float
+            (Default value = `None`) Angle of axis 5.
+        c : float
+            (Default value = `None`) Angle of axis 6.
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M21 G90&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Increment all axes a specified amount in angular coordinates. (Command: `M21 G91`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) Angle of axis 1.
+        y : float
+            (Default value = `None`) Angle of axis 2.
+        z : float
+            (Default value = `None`) Angle of axis 3.
+        a : float
+            (Default value = `None`) Angle of axis 4.
+        b : float
+            (Default value = `None`) Angle of axis 5.
+        c : float
+            (Default value = `None`) Angle of axis 6.
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M21 G91&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Point-to-point move to a position in cartesian coordinates. (Command: `M20 G90 G0`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) X-axis position.
+        y : float
+            (Default value = `None`) Y-axis position.
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M20 G90 G0&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Linear move to a position in cartesian coordinates. (Command: `M20 G90 G1`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) X-axis position.
+        y : float
+            (Default value = `None`) Y-axis position.
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M20 G90 G1&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Point-to-point increment in cartesian coordinates. (Command: `M20 G91 G0`)
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) X-axis position.
+        y : float
+            (Default value = `None`) Y-axis position.
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M20 G91 G0&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        &#34;&#34;&#34;
+        Linear increment in cartesian coordinates.
+
+        Parameters
+        ----------
+        x : float
+            (Default value = `None`) X-axis position
+        y : float
+            (Default value = `None`) Y-axis position
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M20 G91 G1&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+        if not speed:
+            speed = self.default_speed
+        if speed:
+            speed = int(speed)
+
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        msg = self._generate_args_string(instruction, pairings)
+
+        return self.send_msg(msg, wait=wait)
+
+    # set the pwm of the air pump
+    def set_air_pump(self, pwm, wait=None):
+        &#34;&#34;&#34;
+        Sets the PWM of the pnuematic pump module.
+
+        Parameters
+        ----------
+        pwm : int
+            The pulse width modulation frequency to use.
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+
+        if isinstance(pwm, bool):
+            pwm = self.pump_pwm_values[not pwm]
+
+        if str(pwm) not in self.pump_pwm_values:
+            raise ValueError(f&#39;pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.&#39;)
+
+        msg = f&#39;M3S{pwm}&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def set_valve(self, pwm, wait=None):
+        &#34;&#34;&#34;
+        Sets the PWM of the valve module.
+
+        Parameters
+        ----------
+        pwm : int
+            The pulse width modulation frequency to use.
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+
+        if isinstance(pwm, bool):
+            pwm = self.valve_pwm_values[not pwm]
+
+        if str(pwm) not in self.valve_pwm_values:
+            raise ValueError(f&#39;pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.&#39;)
+
+        msg = f&#39;M4E{pwm}&#39;
+        return self.send_msg(msg, wait=wait)
+
+    def start_calibration(self, wait=None):
+        &#34;&#34;&#34;
+        Starts the calibration sequence by setting all eeprom variables to zero. (Command: `M40`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M40&#39;
+        return self.send_msg(instruction, wait=wait)
+
+    def finish_calibration(self, wait=None):
+        &#34;&#34;&#34;
+        Stop the calibration sequence and write results into eeprom variables. (Command: `M41`)
+
+        Parameters
+        ----------
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+        instruction = &#39;M41&#39;
+        return self.send_msg(instruction, wait=wait)
+
+    def reset_configuration(self, reset_file=None, wait=None):
+        &#34;&#34;&#34;
+        Reset the Mirobot by resetting all eeprom variables to their factory settings. If provided an explicit `reset_file` on invocation, it will execute reset commands given in by `reset_file` instead of `self.reset_file`.
+
+        Parameters
+        ----------
+        reset_file : str or Path or Collection[str] or file-like
+            (Default value = `True`) A file-like object, Collection, or string containing reset values for the Mirobot. If given a string with newlines, it will split on those newlines and pass those in as &#34;variable reset commands&#34;. Passing in the default value (None) will use the commands in &#34;reset.xml&#34; provided by WLkata to reset the Mirobot. If passed in a string without newlines, `BaseMirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a Collection (list-like) object, `BaseMirobot.reset_configuration` will use each element as the message body for `BaseMirobot.send_msg`. One can also pass in file-like objects as well (like `open(&#39;path&#39;)`).
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+        &#34;&#34;&#34;
+
+        output = {}
+
+        def send_each_line(file_lines):
+            nonlocal output
+            for line in file_lines:
+                output[line] = self.send_msg(line, var_command=True, wait=wait)
+
+        reset_file = reset_file if reset_file else self.reset_file
+
+        if isinstance(reset_file, str) and &#39;\n&#39; in reset_file or \
+           isinstance(reset_file, bytes) and b&#39;\n&#39; in reset_file:
+            # if we find that we have a string and it contains new lines,
+            send_each_line(reset_file.splitlines())
+
+        elif isinstance(reset_file, (str, Path)):
+            if not os.path.exists(reset_file):
+                raise MirobotResetFileError(&#34;Reset file not found or reachable: {reset_file}&#34;)
+            with open(reset_file, &#39;r&#39;) as f:
+                send_each_line(f.readlines())
+
+        elif isinstance(reset_file, Collection) and not isinstance(reset_file, str):
+            send_each_line(reset_file)
+
+        elif isinstance(reset_file, (TextIO, BinaryIO)):
+            send_each_line(reset_file.readlines())
+
+        else:
+            raise MirobotResetFileError(f&#34;Unable to handle reset file of type: {type(reset_file)}&#34;)
+
+        return output</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>contextlib.AbstractContextManager</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="mirobot.base_mirobot.BaseMirobot.debug"><code class="name">var <span class="ident">debug</span></code></dt>
+<dd>
+<section class="desc"><p>Boolean that determines if every input and output is to be printed to the screen.</p></section>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.default_speed"><code class="name">var <span class="ident">default_speed</span></code></dt>
+<dd>
+<section class="desc"><p>The default speed to use when issuing commands that involve the speed parameter.</p></section>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.pump_pwm_values"><code class="name">var <span class="ident">pump_pwm_values</span></code></dt>
+<dd>
+<section class="desc"><p>Collection of values to use for PWM values for pnuematic pump module. First value is the 'On' position while the second is the 'Off' position. Only these values may be permitted.</p></section>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.reset_file"><code class="name">var <span class="ident">reset_file</span></code></dt>
+<dd>
+<section class="desc"><p>The reset commands to use when resetting the Mirobot. See <a title="mirobot.base_mirobot.BaseMirobot.reset_configuration" href="#mirobot.base_mirobot.BaseMirobot.reset_configuration"><code>BaseMirobot.reset_configuration()</code></a> for usage and details.</p></section>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.status"><code class="name">var <span class="ident">status</span></code></dt>
+<dd>
+<section class="desc"><p>Dataclass that holds tracks Mirobot's coordinates and pwm values among other quantities. See <a title="mirobot.mirobot_status.MirobotStatus" href="mirobot_status.html#mirobot.mirobot_status.MirobotStatus"><code>MirobotStatus</code></a> for more details.</p></section>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.valve_pwm_values"><code class="name">var <span class="ident">valve_pwm_values</span></code></dt>
+<dd>
+<section class="desc"><p>Collection of values to use for PWM values for valve module. First value is the 'On' position while the second is the 'Off' position. Only these values may be permitted.</p></section>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.wait"><code class="name">var <span class="ident">wait</span></code></dt>
+<dd>
+<section class="desc"><p>Boolean that determines if every command should wait for a status message to return before unblocking function evaluation. Can be overridden on an individual basis by providing the <code>wait=</code> parameter to all command functions.</p></section>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="mirobot.base_mirobot.BaseMirobot.connect"><code class="name flex">
+<span>def <span class="ident">connect</span></span>(<span>self, portname=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Connect to the Mirobot.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>portname</code></strong> :&ensp;<code>str</code></dt>
+<dd>(Default value = <code>None</code>) The name of the port to connnect to. If this is <code>None</code>, then it will try to use <code>self.default_portname</code>. If both are <code>None</code>, then an error will be thrown. To avoid this, specify a portname.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>ok_msg</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
+<dd>The output from an initial Mirobot connection.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def connect(self, portname=None):
+    &#34;&#34;&#34;
+    Connect to the Mirobot.
+
+    Parameters
+    ----------
+    portname : str
+        (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
+
+    Returns
+    -------
+    ok_msg : List[str]
+        The output from an initial Mirobot connection.
+    &#34;&#34;&#34;
+    if portname is None:
+        if self.default_portname is not None:
+            portname = self.default_portname
+        else:
+            raise ValueError(&#39;Portname must be provided! like so `portname=\&#39;COM3\&#39;`&#39;)
+
+    self.serial_device.portname = portname
+
+    self.serial_device.open()
+
+    return self.wait_for_ok(reset_expected=True)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.disconnect"><code class="name flex">
+<span>def <span class="ident">disconnect</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Disconnect from the Mirobot. Close the serial device connection.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def disconnect(self):
+    &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
+    self.serial_device.close()</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.finish_calibration"><code class="name flex">
+<span>def <span class="ident">finish_calibration</span></span>(<span>self, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Stop the calibration sequence and write results into eeprom variables. (Command: <code>M41</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def finish_calibration(self, wait=None):
+    &#34;&#34;&#34;
+    Stop the calibration sequence and write results into eeprom variables. (Command: `M41`)
+
+    Parameters
+    ----------
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+         If `wait` is `True`, then return a list of strings which contains message output.
+         If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    instruction = &#39;M41&#39;
+    return self.send_msg(instruction, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.get_status"><code class="name flex">
+<span>def <span class="ident">get_status</span></span>(<span>self, disable_debug=False)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Get the status of the Mirobot. (Command: <code>?</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>disable_debug</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
+<dd>The list of strings returned from a '?' status command.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_status(self, disable_debug=False):
+    &#34;&#34;&#34;
+    Get the status of the Mirobot. (Command: `?`)
+
+    Parameters
+    ----------
+    disable_debug : bool
+        (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+
+    Returns
+    -------
+    msg : List[str]
+        The list of strings returned from a &#39;?&#39; status command.
+
+    &#34;&#34;&#34;
+    instruction = &#39;?&#39;
+    # we don&#39;t want to wait for idling when checking status-- this leads to unbroken recursion!!
+    return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.go_to_axis"><code class="name flex">
+<span>def <span class="ident">go_to_axis</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Send all axes to a specific position in angular coordinates. (Command: <code>M21 G90</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 1.</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 2.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 3.</dd>
+<dt><strong><code>a</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 4.</dd>
+<dt><strong><code>b</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 5.</dd>
+<dt><strong><code>c</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 6.</dd>
+<dt><strong><code>speed</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = <code>None</code>) The speed in which the Mirobot moves during this operation. (mm/s)</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    &#34;&#34;&#34;
+    Send all axes to a specific position in angular coordinates. (Command: `M21 G90`)
+
+    Parameters
+    ----------
+    x : float
+        (Default value = `None`) Angle of axis 1.
+    y : float
+        (Default value = `None`) Angle of axis 2.
+    z : float
+        (Default value = `None`) Angle of axis 3.
+    a : float
+        (Default value = `None`) Angle of axis 4.
+    b : float
+        (Default value = `None`) Angle of axis 5.
+    c : float
+        (Default value = `None`) Angle of axis 6.
+    speed : int
+        (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    instruction = &#39;M21 G90&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+    if not speed:
+        speed = self.default_speed
+    if speed:
+        speed = int(speed)
+
+    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+    msg = self._generate_args_string(instruction, pairings)
+
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.go_to_cartesian_lin"><code class="name flex">
+<span>def <span class="ident">go_to_cartesian_lin</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Linear move to a position in cartesian coordinates. (Command: <code>M20 G90 G1</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) X-axis position.</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Y-axis position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Z-axis position.</dd>
+<dt><strong><code>a</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Roll angle</dd>
+<dt><strong><code>b</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Pitch angle</dd>
+<dt><strong><code>c</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Yaw angle</dd>
+<dt><strong><code>speed</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = <code>None</code>) The speed in which the Mirobot moves during this operation. (mm/s)</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    &#34;&#34;&#34;
+    Linear move to a position in cartesian coordinates. (Command: `M20 G90 G1`)
+
+    Parameters
+    ----------
+    x : float
+        (Default value = `None`) X-axis position.
+    y : float
+        (Default value = `None`) Y-axis position.
+    z : float
+        (Default value = `None`) Z-axis position.
+    a : float
+        (Default value = `None`) Orientation angle: Roll angle
+    b : float
+        (Default value = `None`) Orientation angle: Pitch angle
+    c : float
+        (Default value = `None`) Orientation angle: Yaw angle
+    speed : int
+        (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    instruction = &#39;M20 G90 G1&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+    if not speed:
+        speed = self.default_speed
+    if speed:
+        speed = int(speed)
+
+    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+    msg = self._generate_args_string(instruction, pairings)
+
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.go_to_cartesian_ptp"><code class="name flex">
+<span>def <span class="ident">go_to_cartesian_ptp</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Point-to-point move to a position in cartesian coordinates. (Command: <code>M20 G90 G0</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) X-axis position.</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Y-axis position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Z-axis position.</dd>
+<dt><strong><code>a</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Roll angle</dd>
+<dt><strong><code>b</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Pitch angle</dd>
+<dt><strong><code>c</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Yaw angle</dd>
+<dt><strong><code>speed</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = <code>None</code>) The speed in which the Mirobot moves during this operation. (mm/s)</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    &#34;&#34;&#34;
+    Point-to-point move to a position in cartesian coordinates. (Command: `M20 G90 G0`)
+
+    Parameters
+    ----------
+    x : float
+        (Default value = `None`) X-axis position.
+    y : float
+        (Default value = `None`) Y-axis position.
+    z : float
+        (Default value = `None`) Z-axis position.
+    a : float
+        (Default value = `None`) Orientation angle: Roll angle
+    b : float
+        (Default value = `None`) Orientation angle: Pitch angle
+    c : float
+        (Default value = `None`) Orientation angle: Yaw angle
+    speed : int
+        (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    instruction = &#39;M20 G90 G0&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+    if not speed:
+        speed = self.default_speed
+    if speed:
+        speed = int(speed)
+
+    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+    msg = self._generate_args_string(instruction, pairings)
+
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.go_to_zero"><code class="name flex">
+<span>def <span class="ident">go_to_zero</span></span>(<span>self, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Send all axes to their respective zero positions.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def go_to_zero(self, wait=None):
+    &#34;&#34;&#34;
+    Send all axes to their respective zero positions.
+
+    Parameters
+    ----------
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    return self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.home_individual"><code class="name flex">
+<span>def <span class="ident">home_individual</span></span>(<span>self, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Home each axis individually. (Command: <code>$HH</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def home_individual(self, wait=None):
+    &#34;&#34;&#34;
+    Home each axis individually. (Command: `$HH`)
+
+    Parameters
+    ----------
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    msg = &#39;$HH&#39;
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.home_simultaneous"><code class="name flex">
+<span>def <span class="ident">home_simultaneous</span></span>(<span>self, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Home all axes simultaneously. (Command:<code>$H</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def home_simultaneous(self, wait=None):
+    &#34;&#34;&#34;
+    Home all axes simultaneously. (Command:`$H`)
+
+    Parameters
+    ----------
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    msg = &#39;$H&#39;
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.increment_axis"><code class="name flex">
+<span>def <span class="ident">increment_axis</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Increment all axes a specified amount in angular coordinates. (Command: <code>M21 G91</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 1.</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 2.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 3.</dd>
+<dt><strong><code>a</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 4.</dd>
+<dt><strong><code>b</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 5.</dd>
+<dt><strong><code>c</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Angle of axis 6.</dd>
+<dt><strong><code>speed</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = <code>None</code>) The speed in which the Mirobot moves during this operation. (mm/s)</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    &#34;&#34;&#34;
+    Increment all axes a specified amount in angular coordinates. (Command: `M21 G91`)
+
+    Parameters
+    ----------
+    x : float
+        (Default value = `None`) Angle of axis 1.
+    y : float
+        (Default value = `None`) Angle of axis 2.
+    z : float
+        (Default value = `None`) Angle of axis 3.
+    a : float
+        (Default value = `None`) Angle of axis 4.
+    b : float
+        (Default value = `None`) Angle of axis 5.
+    c : float
+        (Default value = `None`) Angle of axis 6.
+    speed : int
+        (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    instruction = &#39;M21 G91&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+    if not speed:
+        speed = self.default_speed
+    if speed:
+        speed = int(speed)
+
+    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+    msg = self._generate_args_string(instruction, pairings)
+
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.increment_cartesian_lin"><code class="name flex">
+<span>def <span class="ident">increment_cartesian_lin</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Linear increment in cartesian coordinates.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) X-axis position</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Y-axis position</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Z-axis position.</dd>
+<dt><strong><code>a</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Roll angle</dd>
+<dt><strong><code>b</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Pitch angle</dd>
+<dt><strong><code>c</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Yaw angle</dd>
+<dt><strong><code>speed</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = <code>None</code>) The speed in which the Mirobot moves during this operation. (mm/s)</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    &#34;&#34;&#34;
+    Linear increment in cartesian coordinates.
+
+    Parameters
+    ----------
+    x : float
+        (Default value = `None`) X-axis position
+    y : float
+        (Default value = `None`) Y-axis position
+    z : float
+        (Default value = `None`) Z-axis position.
+    a : float
+        (Default value = `None`) Orientation angle: Roll angle
+    b : float
+        (Default value = `None`) Orientation angle: Pitch angle
+    c : float
+        (Default value = `None`) Orientation angle: Yaw angle
+    speed : int
+        (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    instruction = &#39;M20 G91 G1&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+    if not speed:
+        speed = self.default_speed
+    if speed:
+        speed = int(speed)
+
+    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+    msg = self._generate_args_string(instruction, pairings)
+
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.increment_cartesian_ptp"><code class="name flex">
+<span>def <span class="ident">increment_cartesian_ptp</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Point-to-point increment in cartesian coordinates. (Command: <code>M20 G91 G0</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) X-axis position.</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Y-axis position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Z-axis position.</dd>
+<dt><strong><code>a</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Roll angle</dd>
+<dt><strong><code>b</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Pitch angle</dd>
+<dt><strong><code>c</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Orientation angle: Yaw angle</dd>
+<dt><strong><code>speed</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = <code>None</code>) The speed in which the Mirobot moves during this operation. (mm/s)</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    &#34;&#34;&#34;
+    Point-to-point increment in cartesian coordinates. (Command: `M20 G91 G0`)
+
+    Parameters
+    ----------
+    x : float
+        (Default value = `None`) X-axis position.
+    y : float
+        (Default value = `None`) Y-axis position.
+    z : float
+        (Default value = `None`) Z-axis position.
+    a : float
+        (Default value = `None`) Orientation angle: Roll angle
+    b : float
+        (Default value = `None`) Orientation angle: Pitch angle
+    c : float
+        (Default value = `None`) Orientation angle: Yaw angle
+    speed : int
+        (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    instruction = &#39;M20 G91 G0&#39;  # X{x} Y{y} Z{z} A{a} B{b} C{c} F{speed}
+
+    if not speed:
+        speed = self.default_speed
+    if speed:
+        speed = int(speed)
+
+    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+    msg = self._generate_args_string(instruction, pairings)
+
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.is_connected"><code class="name flex">
+<span>def <span class="ident">is_connected</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Check if Mirobot is connected.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>connected</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether the Mirobot is connected.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_connected(self):
+    &#34;&#34;&#34;
+    Check if Mirobot is connected.
+
+    Returns
+    -------
+    connected : bool
+        Whether the Mirobot is connected.
+    &#34;&#34;&#34;
+    return self.serial_device.is_open</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.reset_configuration"><code class="name flex">
+<span>def <span class="ident">reset_configuration</span></span>(<span>self, reset_file=None, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Reset the Mirobot by resetting all eeprom variables to their factory settings. If provided an explicit <code>reset_file</code> on invocation, it will execute reset commands given in by <code>reset_file</code> instead of <code>self.reset_file</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>reset_file</code></strong> :&ensp;<code>str</code> or <code>Path</code> or <code>Collection</code>[<code>str</code>] or <code>file</code>-<code>like</code></dt>
+<dd>(Default value = <code>True</code>) A file-like object, Collection, or string containing reset values for the Mirobot. If given a string with newlines, it will split on those newlines and pass those in as "variable reset commands". Passing in the default value (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. If passed in a string without newlines, <a title="mirobot.base_mirobot.BaseMirobot.reset_configuration" href="#mirobot.base_mirobot.BaseMirobot.reset_configuration"><code>BaseMirobot.reset_configuration()</code></a> will try to open the file specified by the string and read from it. A <code>Path</code> object will be processed similarly. With a Collection (list-like) object, <a title="mirobot.base_mirobot.BaseMirobot.reset_configuration" href="#mirobot.base_mirobot.BaseMirobot.reset_configuration"><code>BaseMirobot.reset_configuration()</code></a> will use each element as the message body for <a title="mirobot.base_mirobot.BaseMirobot.send_msg" href="#mirobot.base_mirobot.BaseMirobot.send_msg"><code>BaseMirobot.send_msg()</code></a>. One can also pass in file-like objects as well (like <code>open('path')</code>).</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_configuration(self, reset_file=None, wait=None):
+    &#34;&#34;&#34;
+    Reset the Mirobot by resetting all eeprom variables to their factory settings. If provided an explicit `reset_file` on invocation, it will execute reset commands given in by `reset_file` instead of `self.reset_file`.
+
+    Parameters
+    ----------
+    reset_file : str or Path or Collection[str] or file-like
+        (Default value = `True`) A file-like object, Collection, or string containing reset values for the Mirobot. If given a string with newlines, it will split on those newlines and pass those in as &#34;variable reset commands&#34;. Passing in the default value (None) will use the commands in &#34;reset.xml&#34; provided by WLkata to reset the Mirobot. If passed in a string without newlines, `BaseMirobot.reset_configuration` will try to open the file specified by the string and read from it. A `Path` object will be processed similarly. With a Collection (list-like) object, `BaseMirobot.reset_configuration` will use each element as the message body for `BaseMirobot.send_msg`. One can also pass in file-like objects as well (like `open(&#39;path&#39;)`).
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+         If `wait` is `True`, then return a list of strings which contains message output.
+         If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+
+    output = {}
+
+    def send_each_line(file_lines):
+        nonlocal output
+        for line in file_lines:
+            output[line] = self.send_msg(line, var_command=True, wait=wait)
+
+    reset_file = reset_file if reset_file else self.reset_file
+
+    if isinstance(reset_file, str) and &#39;\n&#39; in reset_file or \
+       isinstance(reset_file, bytes) and b&#39;\n&#39; in reset_file:
+        # if we find that we have a string and it contains new lines,
+        send_each_line(reset_file.splitlines())
+
+    elif isinstance(reset_file, (str, Path)):
+        if not os.path.exists(reset_file):
+            raise MirobotResetFileError(&#34;Reset file not found or reachable: {reset_file}&#34;)
+        with open(reset_file, &#39;r&#39;) as f:
+            send_each_line(f.readlines())
+
+    elif isinstance(reset_file, Collection) and not isinstance(reset_file, str):
+        send_each_line(reset_file)
+
+    elif isinstance(reset_file, (TextIO, BinaryIO)):
+        send_each_line(reset_file.readlines())
+
+    else:
+        raise MirobotResetFileError(f&#34;Unable to handle reset file of type: {type(reset_file)}&#34;)
+
+    return output</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.send_msg"><code class="name flex">
+<span>def <span class="ident">send_msg</span></span>(<span>self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Send a message to the Mirobot.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>str</code> or <code>bytes</code></dt>
+<dd>A message or instruction to send to the Mirobot.</dd>
+<dt><strong><code>var_command</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether <code>msg</code> is a variable command (of form <code>$num=value</code>). Will throw an error if does not validate correctly.</dd>
+<dt><strong><code>disable_debug</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a>.</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to end and to return that output. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@wait_decorator
+def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
+    &#34;&#34;&#34;
+    Send a message to the Mirobot.
+
+    Parameters
+    ----------
+    msg : str or bytes
+         A message or instruction to send to the Mirobot.
+    var_command : bool
+        (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
+    disable_debug : bool
+        (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+    wait : bool
+        (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    if self.is_connected():
+        # convert to str from bytes
+        if isinstance(msg, bytes):
+            msg = str(msg, &#39;utf-8&#39;)
+
+        # remove any newlines
+        msg = msg.strip()
+
+        # check if this is supposed to be a variable command and fail if not
+        if var_command and not re.fullmatch(r&#39;\$\d+=[\d\.]+&#39;, msg):
+            raise MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg)
+
+        # actually send the message
+        output = self.serial_device.send(msg)
+
+    if self.debug and not disable_debug:
+        print(&#39;Message sent: &#39;, msg)
+
+    if (wait is not None and not self.wait) or not wait:
+        return output</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.set_air_pump"><code class="name flex">
+<span>def <span class="ident">set_air_pump</span></span>(<span>self, pwm, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Sets the PWM of the pnuematic pump module.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>pwm</code></strong> :&ensp;<code>int</code></dt>
+<dd>The pulse width modulation frequency to use.</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_air_pump(self, pwm, wait=None):
+    &#34;&#34;&#34;
+    Sets the PWM of the pnuematic pump module.
+
+    Parameters
+    ----------
+    pwm : int
+        The pulse width modulation frequency to use.
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+
+    if isinstance(pwm, bool):
+        pwm = self.pump_pwm_values[not pwm]
+
+    if str(pwm) not in self.pump_pwm_values:
+        raise ValueError(f&#39;pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.&#39;)
+
+    msg = f&#39;M3S{pwm}&#39;
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.set_hard_limit"><code class="name flex">
+<span>def <span class="ident">set_hard_limit</span></span>(<span>self, state, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Set the hard limit state.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>state</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to use the hard limit (<code>True</code>) or not (<code>False</code>).</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_hard_limit(self, state, wait=None):
+    &#34;&#34;&#34;
+    Set the hard limit state.
+
+    Parameters
+    ----------
+    state : bool
+        Whether to use the hard limit (`True`) or not (`False`).
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    msg = f&#39;$21={int(state)}&#39;
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.set_soft_limit"><code class="name flex">
+<span>def <span class="ident">set_soft_limit</span></span>(<span>self, state, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Set the soft limit state.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>state</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to use the soft limit (<code>True</code>) or not (<code>False</code>).</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_soft_limit(self, state, wait=None):
+    &#34;&#34;&#34;
+    Set the soft limit state.
+
+    Parameters
+    ----------
+    state : bool
+        Whether to use the soft limit (`True`) or not (`False`).
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+         If `wait` is `True`, then return a list of strings which contains message output.
+         If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    msg = f&#39;$20={int(state)}&#39;
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.set_valve"><code class="name flex">
+<span>def <span class="ident">set_valve</span></span>(<span>self, pwm, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Sets the PWM of the valve module.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>pwm</code></strong> :&ensp;<code>int</code></dt>
+<dd>The pulse width modulation frequency to use.</dd>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_valve(self, pwm, wait=None):
+    &#34;&#34;&#34;
+    Sets the PWM of the valve module.
+
+    Parameters
+    ----------
+    pwm : int
+        The pulse width modulation frequency to use.
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+
+    if isinstance(pwm, bool):
+        pwm = self.valve_pwm_values[not pwm]
+
+    if str(pwm) not in self.valve_pwm_values:
+        raise ValueError(f&#39;pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.&#39;)
+
+    msg = f&#39;M4E{pwm}&#39;
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.start_calibration"><code class="name flex">
+<span>def <span class="ident">start_calibration</span></span>(<span>self, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Starts the calibration sequence by setting all eeprom variables to zero. (Command: <code>M40</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def start_calibration(self, wait=None):
+    &#34;&#34;&#34;
+    Starts the calibration sequence by setting all eeprom variables to zero. (Command: `M40`)
+
+    Parameters
+    ----------
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+         If `wait` is `True`, then return a list of strings which contains message output.
+         If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    instruction = &#39;M40&#39;
+    return self.send_msg(instruction, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.unlock_shaft"><code class="name flex">
+<span>def <span class="ident">unlock_shaft</span></span>(<span>self, wait=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Unlock each axis on the Mirobot. Homing naturally removes the lock. (Command: <code>M50</code>)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
+<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
+If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def unlock_shaft(self, wait=None):
+    &#34;&#34;&#34;
+    Unlock each axis on the Mirobot. Homing naturally removes the lock. (Command: `M50`)
+
+    Parameters
+    ----------
+    wait : bool
+        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+    Returns
+    -------
+    msg : List[str] or bool
+        If `wait` is `True`, then return a list of strings which contains message output.
+        If `wait` is `False`, then return whether sending the message succeeded.
+    &#34;&#34;&#34;
+    msg = &#39;M50&#39;
+    return self.send_msg(msg, wait=wait)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.update_status"><code class="name flex">
+<span>def <span class="ident">update_status</span></span>(<span>self, disable_debug=False)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Update the status of the Mirobot.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>disable_debug</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a>.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_status(self, disable_debug=False):
+    &#34;&#34;&#34;
+    Update the status of the Mirobot.
+
+    Parameters
+    ----------
+    disable_debug : bool
+        (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+
+    &#34;&#34;&#34;
+    status_msg = self.get_status(disable_debug=disable_debug)[0]  # get only the status message and not &#39;ok&#39;
+    self.status = self._parse_status(status_msg)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.wait_decorator"><code class="name flex">
+<span>def <span class="ident">wait_decorator</span></span>(<span>fn)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>A decorator that will use the <code>wait</code> argument/keyword for a method to
+automatically use the <a title="mirobot.base_mirobot.BaseMirobot.wait_for_ok" href="#mirobot.base_mirobot.BaseMirobot.wait_for_ok"><code>BaseMirobot.wait_for_ok()</code></a> and conditionally, the <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a> function calls at the end of the wrapped function.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>fn</code></strong> :&ensp;<code>func</code></dt>
+<dd>Function to wrap. Must have the <code>wait</code> argument or keyword.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>wrapper</code></strong> :&ensp;<code>func</code></dt>
+<dd>A wrapper that decorates a function.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_decorator(fn):
+    &#34;&#34;&#34;
+    A decorator that will use the `wait` argument/keyword for a method to
+    automatically use the `BaseMirobot.wait_for_ok` and conditionally, the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
+
+    Parameters
+    ----------
+    fn : func
+        Function to wrap. Must have the `wait` argument or keyword.
+
+    Returns
+    -------
+    wrapper : func
+        A wrapper that decorates a function.
+    &#34;&#34;&#34;
+
+    @functools.wraps(fn)
+    def wait_wrapper(self, *args, **kwargs):
+        args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+        args_dict = dict(zip(args_names, args))
+
+        def get_arg(arg_name, default=None):
+            if arg_name in args_dict:
+                return args_dict.get(arg_name)
+            elif arg_name in kwargs:
+                return kwargs.get(arg_name)
+            else:
+                return default
+
+        wait = get_arg(&#39;wait&#39;, True)
+        disable_debug = get_arg(&#39;disable_debug&#39;, False)
+        wait_idle = get_arg(&#39;wait_idle&#39;, True)
+
+        output = fn(self, *args, **kwargs)
+
+        if wait or (wait is None and self.wait):
+            output = self.wait_for_ok(disable_debug=disable_debug)
+
+        if wait_idle:
+            self.wait_until_idle()
+
+        return output
+
+    return wait_wrapper</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.wait_for_ok"><code class="name flex">
+<span>def <span class="ident">wait_for_ok</span></span>(<span>self, reset_expected=False, disable_debug=False)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Continously loops over and collects message output from the serial device.
+It stops when it encounters an 'ok' or otherwise terminal condition phrase.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>reset_expected</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a <code>'Using reset pos!'</code> rather than the traditional <code>'Ok'</code>)</dd>
+<dt><strong><code>disable_debug</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>output</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
+<dd>A list of output strings upto and including the terminal string.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_ok(self, reset_expected=False, disable_debug=False):
+    &#34;&#34;&#34;
+    Continously loops over and collects message output from the serial device.
+    It stops when it encounters an &#39;ok&#39; or otherwise terminal condition phrase.
+
+    Parameters
+    ----------
+    reset_expected : bool
+        (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `&#39;Using reset pos!&#39;` rather than the traditional `&#39;Ok&#39;`)
+    disable_debug : bool
+        (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
+
+    Returns
+    -------
+    output : List[str]
+        A list of output strings upto and including the terminal string.
+    &#34;&#34;&#34;
+    output = [&#39;&#39;]
+
+    ok_eols = [&#39;ok&#39;]
+
+    reset_strings = [&#39;Using reset pos!&#39;]
+
+    def matches_eol_strings(terms, s):
+        for eol in terms:
+            if s.endswith(eol):
+                return True
+        return False
+
+    if reset_expected:
+        eols = ok_eols + reset_strings
+    else:
+        eols = ok_eols
+
+    while not matches_eol_strings(eols, output[-1]):
+        msg = self.serial_device.listen_to_device()
+
+        if self.debug and not disable_debug:
+            print(msg)
+
+        if &#39;error&#39; in msg:
+            raise MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;))
+        if &#39;ALARM&#39; in msg:
+            raise MirobotAlarm(msg.split(&#39;ALARM: &#39;)[1])
+
+        output.append(msg)
+
+        if not reset_expected and matches_eol_strings(reset_strings, msg):
+            raise MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;)
+            break
+
+    return output[1:]  # don&#39;t include the dummy empty string at first index</code></pre>
+</details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code class="name flex">
+<span>def <span class="ident">wait_until_idle</span></span>(<span>self, refresh_rate=0.1)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Continuously loops over and refreshes state of the Mirobot.
+It stops when it encounters an 'Idle' state string.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>refresh_rate</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>0.1</code>) The rate in seconds to check for the 'Idle' state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>output</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
+<dd>A list of output strings upto and including the terminal string.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_until_idle(self, refresh_rate=0.1):
+    &#34;&#34;&#34;
+    Continuously loops over and refreshes state of the Mirobot.
+    It stops when it encounters an &#39;Idle&#39; state string.
+
+    Parameters
+    ----------
+    refresh_rate : float
+        (Default value = `0.1`) The rate in seconds to check for the &#39;Idle&#39; state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
+
+    Returns
+    -------
+    output : List[str]
+        A list of output strings upto and including the terminal string.
+    &#34;&#34;&#34;
+    self.update_status(disable_debug=True)
+    if self.status.state == &#39;Idle&#39;:
+        return
+
+    while self.status.state != &#39;Idle&#39;:
+        time.sleep(refresh_rate)
+        self.update_status(disable_debug=True)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="mirobot" href="index.html">mirobot</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="mirobot.base_mirobot.BaseMirobot" href="#mirobot.base_mirobot.BaseMirobot">BaseMirobot</a></code></h4>
+<ul class="">
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.connect" href="#mirobot.base_mirobot.BaseMirobot.connect">connect</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.debug" href="#mirobot.base_mirobot.BaseMirobot.debug">debug</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.default_speed" href="#mirobot.base_mirobot.BaseMirobot.default_speed">default_speed</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.disconnect" href="#mirobot.base_mirobot.BaseMirobot.disconnect">disconnect</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.finish_calibration" href="#mirobot.base_mirobot.BaseMirobot.finish_calibration">finish_calibration</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.get_status" href="#mirobot.base_mirobot.BaseMirobot.get_status">get_status</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.go_to_axis" href="#mirobot.base_mirobot.BaseMirobot.go_to_axis">go_to_axis</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.go_to_cartesian_lin" href="#mirobot.base_mirobot.BaseMirobot.go_to_cartesian_lin">go_to_cartesian_lin</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.go_to_cartesian_ptp" href="#mirobot.base_mirobot.BaseMirobot.go_to_cartesian_ptp">go_to_cartesian_ptp</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.go_to_zero" href="#mirobot.base_mirobot.BaseMirobot.go_to_zero">go_to_zero</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.home_individual" href="#mirobot.base_mirobot.BaseMirobot.home_individual">home_individual</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.home_simultaneous" href="#mirobot.base_mirobot.BaseMirobot.home_simultaneous">home_simultaneous</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.increment_axis" href="#mirobot.base_mirobot.BaseMirobot.increment_axis">increment_axis</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.increment_cartesian_lin" href="#mirobot.base_mirobot.BaseMirobot.increment_cartesian_lin">increment_cartesian_lin</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.increment_cartesian_ptp" href="#mirobot.base_mirobot.BaseMirobot.increment_cartesian_ptp">increment_cartesian_ptp</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.is_connected" href="#mirobot.base_mirobot.BaseMirobot.is_connected">is_connected</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.pump_pwm_values" href="#mirobot.base_mirobot.BaseMirobot.pump_pwm_values">pump_pwm_values</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.reset_configuration" href="#mirobot.base_mirobot.BaseMirobot.reset_configuration">reset_configuration</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.reset_file" href="#mirobot.base_mirobot.BaseMirobot.reset_file">reset_file</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.send_msg" href="#mirobot.base_mirobot.BaseMirobot.send_msg">send_msg</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.set_air_pump" href="#mirobot.base_mirobot.BaseMirobot.set_air_pump">set_air_pump</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.set_hard_limit" href="#mirobot.base_mirobot.BaseMirobot.set_hard_limit">set_hard_limit</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.set_soft_limit" href="#mirobot.base_mirobot.BaseMirobot.set_soft_limit">set_soft_limit</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.set_valve" href="#mirobot.base_mirobot.BaseMirobot.set_valve">set_valve</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.start_calibration" href="#mirobot.base_mirobot.BaseMirobot.start_calibration">start_calibration</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.status" href="#mirobot.base_mirobot.BaseMirobot.status">status</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.unlock_shaft" href="#mirobot.base_mirobot.BaseMirobot.unlock_shaft">unlock_shaft</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.update_status" href="#mirobot.base_mirobot.BaseMirobot.update_status">update_status</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.valve_pwm_values" href="#mirobot.base_mirobot.BaseMirobot.valve_pwm_values">valve_pwm_values</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait">wait</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait_decorator" href="#mirobot.base_mirobot.BaseMirobot.wait_decorator">wait_decorator</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait_for_ok" href="#mirobot.base_mirobot.BaseMirobot.wait_for_ok">wait_for_ok</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle">wait_until_idle</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.5</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

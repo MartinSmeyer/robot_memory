@@ -24,7 +24,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from .mirobot import Mirobot
+<pre><code class="python">from .base_mirobot import BaseMirobot as Mirobot
 
 # don&#39;t document our resources directory duh
 __pdoc__ = {}
@@ -33,17 +33,17 @@ __pdoc__[&#39;resources.__init__&#39;] = False
 
 
 # if someone imports by &#39;*&#39; then import everything in mirobot
-__all__ = [&#39;mirobot&#39;]</code></pre>
+__all__ = [&#39;base_mirobot&#39;]</code></pre>
 </details>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
-<dt><code class="name"><a title="mirobot.exceptions" href="exceptions.html">mirobot.exceptions</a></code></dt>
+<dt><code class="name"><a title="mirobot.base_mirobot" href="base_mirobot.html">mirobot.base_mirobot</a></code></dt>
 <dd>
 <section class="desc"></section>
 </dd>
-<dt><code class="name"><a title="mirobot.mirobot" href="mirobot.html">mirobot.mirobot</a></code></dt>
+<dt><code class="name"><a title="mirobot.exceptions" href="exceptions.html">mirobot.exceptions</a></code></dt>
 <dd>
 <section class="desc"></section>
 </dd>
@@ -72,8 +72,8 @@ __all__ = [&#39;mirobot&#39;]</code></pre>
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
+<li><code><a title="mirobot.base_mirobot" href="base_mirobot.html">mirobot.base_mirobot</a></code></li>
 <li><code><a title="mirobot.exceptions" href="exceptions.html">mirobot.exceptions</a></code></li>
-<li><code><a title="mirobot.mirobot" href="mirobot.html">mirobot.mirobot</a></code></li>
 <li><code><a title="mirobot.mirobot_status" href="mirobot_status.html">mirobot.mirobot_status</a></code></li>
 <li><code><a title="mirobot.serial_device" href="serial_device.html">mirobot.serial_device</a></code></li>
 </ul>

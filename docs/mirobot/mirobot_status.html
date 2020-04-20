@@ -26,6 +26,7 @@
 </summary>
 <pre><code class="python">from dataclasses import dataclass
 
+
 @dataclass
 class MirobotAngleValues:
     &#34;&#34;&#34; A dataclass to hold Mirobot&#39;s angular values. &#34;&#34;&#34;
@@ -35,14 +36,15 @@ class MirobotAngleValues:
     &#34;&#34;&#34; Angle of axis 2 &#34;&#34;&#34;
     c: float = 0.0
     &#34;&#34;&#34; Angle of axis 3 &#34;&#34;&#34;
+    d: float = 0.0
+    &#34;&#34;&#34; Location of rail or stepper module &#34;&#34;&#34;
     x: float = 0.0
     &#34;&#34;&#34; Angle of axis 4 &#34;&#34;&#34;
     y: float = 0.0
     &#34;&#34;&#34; Angle of axis 5 &#34;&#34;&#34;
     z: float = 0.0
     &#34;&#34;&#34; Angle of axis 6 &#34;&#34;&#34;
-    d: float = 0.0
-    &#34;&#34;&#34; Location of rail or stepper module &#34;&#34;&#34;
+
 
 @dataclass
 class MirobotCartesianValues:
@@ -59,6 +61,7 @@ class MirobotCartesianValues:
     &#34;&#34;&#34; Position of Pitch angle &#34;&#34;&#34;
     c: float = 0.0
     &#34;&#34;&#34; Position of Yaw angle &#34;&#34;&#34;
+
 
 @dataclass
 class MirobotStatus:
@@ -88,7 +91,7 @@ class MirobotStatus:
 <dl>
 <dt id="mirobot.mirobot_status.MirobotAngleValues"><code class="flex name class">
 <span>class <span class="ident">MirobotAngleValues</span></span>
-<span>(</span><span>a=0.0, b=0.0, c=0.0, x=0.0, y=0.0, z=0.0, d=0.0)</span>
+<span>(</span><span>a=0.0, b=0.0, c=0.0, d=0.0, x=0.0, y=0.0, z=0.0)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A dataclass to hold Mirobot's angular values.</p></section>
@@ -104,14 +107,14 @@ class MirobotStatus:
     &#34;&#34;&#34; Angle of axis 2 &#34;&#34;&#34;
     c: float = 0.0
     &#34;&#34;&#34; Angle of axis 3 &#34;&#34;&#34;
+    d: float = 0.0
+    &#34;&#34;&#34; Location of rail or stepper module &#34;&#34;&#34;
     x: float = 0.0
     &#34;&#34;&#34; Angle of axis 4 &#34;&#34;&#34;
     y: float = 0.0
     &#34;&#34;&#34; Angle of axis 5 &#34;&#34;&#34;
     z: float = 0.0
-    &#34;&#34;&#34; Angle of axis 6 &#34;&#34;&#34;
-    d: float = 0.0
-    &#34;&#34;&#34; Location of rail or stepper module &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34; Angle of axis 6 &#34;&#34;&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -200,7 +203,7 @@ class MirobotStatus:
 </dd>
 <dt id="mirobot.mirobot_status.MirobotStatus"><code class="flex name class">
 <span>class <span class="ident">MirobotStatus</span></span>
-<span>(</span><span>state='', angle=MirobotAngleValues(a=0.0, b=0.0, c=0.0, x=0.0, y=0.0, z=0.0, d=0.0), cartesian=MirobotCartesianValues(x=0.0, y=0.0, z=0.0, a=0.0, b=0.0, c=0.0), pump_pwm=0, valve_pwm=0, motion_mode=False)</span>
+<span>(</span><span>state='', angle=MirobotAngleValues(a=0.0, b=0.0, c=0.0, d=0.0, x=0.0, y=0.0, z=0.0), cartesian=MirobotCartesianValues(x=0.0, y=0.0, z=0.0, a=0.0, b=0.0, c=0.0), pump_pwm=0, valve_pwm=0, motion_mode=False)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A composite dataclass to hold all of Mirobot's trackable quantities.</p></section>
