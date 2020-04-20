@@ -314,9 +314,9 @@ class BaseMirobot(AbstractContextManager):
             try:
                 state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
 
-                return_angles = MirobotAngleValues(map(float, angles.split(',')))
+                return_angles = MirobotAngleValues(*map(float, angles.split(',')))
 
-                return_cartesians = MirobotCartesianValues(map(float, cartesians.split(',')))
+                return_cartesians = MirobotCartesianValues(*map(float, cartesians.split(',')))
 
                 return_status = MirobotStatus(state,
                                               return_angles,
