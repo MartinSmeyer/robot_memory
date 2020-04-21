@@ -1,3 +1,4 @@
+import portalocker
 import serial
 import sys
 import os
@@ -5,38 +6,36 @@ import os
 
 class SerialDevice:
     """ A class for establishing a connection to a serial device. """
-    def __init__(self, portname='', baudrate=0, stopbits=1):
+    def __init__(self, portname='', baudrate=0, stopbits=1, exclusive=True):
         """ Initialization of `SerialDevice` class
 
         Parameters
         ----------
-        portname :
-             (Default value = '') Name of the port to connect to. (Example: 'COM3' or '/dev/ttyUSB1')
-        baudrate :
-             (Default value = 0) Baud rate of the connection.
-        stopbits :
-             (Default value = 1) Stopbits of the connection.
+        portname : str
+             (Default value = `''`) Name of the port to connect to. (Example: 'COM3' or '/dev/ttyUSB1')
+        baudrate : int
+             (Default value = `0`) Baud rate of the connection.
+        stopbits : int
+             (Default value = `1`) Stopbits of the connection.
+        exclusive : bool
+             (Default value = `True`) Whether to (try) forcing exclusivity of serial ports. If another `mirobot.SerialDevice` is connected to this port, then don't connect at all. On the other hand, if no other `Mirobot.SerialDevice` is connected, then create a lock-file signaling that this serial port is in use.
 
         Returns
         -------
         class : SerialDevice
 
         """
-        self.portname = portname
+        self.portname = str(portname)
         self.baudrate = int(baudrate)
         self.stopbits = int(stopbits)
-        self.timeout = None
+        self.exclusive = exclusive
+
         self.serialport = serial.Serial()
         self._is_open = False
 
     def __del__(self):
         """ Close the serial port when the class is deleted """
-        try:
-            if self._is_open:
-                self.serialport.close()
-        except Exception as e:
-            print(e)
-            print("Destructor error closing COM port: ", sys.exc_info()[0])
+        self.close()
 
     @property
     def is_open(self):
@@ -72,6 +71,12 @@ class SerialDevice:
             self.serialport.port = self.portname
             self.serialport.baudrate = self.baudrate
             self.serialport.stopbits = self.stopbits
+            if self.exclusive:
+                try:
+                    portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
+                except Exception:
+                    raise Exception(f"Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!")
+
             try:
                 self.serialport.open()
                 self._is_open = True
@@ -88,6 +93,11 @@ class SerialDevice:
             except Exception as e:
                 print(e)
                 print("Close error closing COM port: ", sys.exc_info()[0])
+            try:
+                portalocker.unlock(self.serialport)
+            except Exception as e:
+                print("Error unlocking serial port: ", sys.exc_info()[0])
+                raise e
 
     def send(self, message, terminator=os.linesep):
         """ Send a message to the serial port.
