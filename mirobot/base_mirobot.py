@@ -1,6 +1,7 @@
 from collections.abc import Collection
 from contextlib import AbstractContextManager
 import functools
+import logging
 import os
 from pathlib import Path
 import re
@@ -98,6 +99,15 @@ class BaseMirobot(AbstractContextManager):
 
         self.status = MirobotStatus()
         """ Dataclass that holds tracks Mirobot's coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details."""
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+
+        self.stream_handler = logging.StreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+
+        formatter = logging.Formatter(f"[{self.default_portname}] [%(levelname)s] %(message)s")
+        self.stream_handler.setFormatter(formatter)
+        self.logger.addHandler(self.stream_handler)
 
         # do this at the very end, after everything is setup
         if autoconnect:
@@ -151,7 +161,7 @@ class BaseMirobot(AbstractContextManager):
             msg = self.serial_device.listen_to_device()
 
             if self.debug and not disable_debug:
-                print(msg)
+                self.logger.debug(f"[RECV] {msg}")
 
             if 'error' in msg:
                 raise MirobotError(msg.replace('error: ', ''))
@@ -250,7 +260,7 @@ class BaseMirobot(AbstractContextManager):
             output = self.serial_device.send(msg)
 
         if self.debug and not disable_debug:
-            print('Message sent: ', msg)
+            self.logger.debug(f"[SENT] {msg}")
 
         if (wait is not None and not self.wait) or not wait:
             return output
@@ -271,7 +281,7 @@ class BaseMirobot(AbstractContextManager):
 
         """
         instruction = '?'
-        # we don't want to wait for idling when checking status-- this leads to unbroken recursion!!
+        # we don't want to wait for idle when checking status-- this leads to unbroken recursion!!
         return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)
 
     def update_status(self, disable_debug=False):
@@ -284,7 +294,8 @@ class BaseMirobot(AbstractContextManager):
             (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
 
         """
-        status_msg = self.get_status(disable_debug=disable_debug)[0]  # get only the status message and not 'ok'
+        # get only the status message and not 'ok'
+        status_msg = self.get_status(disable_debug=disable_debug)[0]
         self.status = self._parse_status(status_msg)
 
     @staticmethod
