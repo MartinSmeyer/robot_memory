@@ -121,6 +121,9 @@ class BaseMirobot(AbstractContextManager):
         """ Magic method for contextManagers """
         self.disconnect()
 
+    def __del__(self):
+        """ Magic method for object deletion """
+        self.disconnect()
 
     def wait_for_ok(self, reset_expected=False, disable_debug=False):
         """
