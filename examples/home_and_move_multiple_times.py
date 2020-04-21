@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from mirobot import Mirobot
 
 # Default for `wait=` is `True`, but explicitly state it here to showcase this.
