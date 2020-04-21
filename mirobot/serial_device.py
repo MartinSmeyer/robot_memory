@@ -72,12 +72,6 @@ class SerialDevice:
             self.serialport.baudrate = self.baudrate
             self.serialport.stopbits = self.stopbits
 
-            if self.exclusive:
-                try:
-                    portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
-                except Exception:
-                    raise Exception(f"Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!")
-
             try:
                 self.serialport.open()
                 self._is_open = True
@@ -85,19 +79,26 @@ class SerialDevice:
                 print("Error opening port: ", sys.exc_info()[0])
                 raise e
 
+            if self.exclusive:
+                try:
+                    portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
+                except Exception:
+                    raise Exception(f"Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!")
+
     def close(self):
         """ Close the serial port. """
         if self._is_open:
+            try:
+                portalocker.unlock(self.serialport)
+            except Exception as e:
+                print("Error unlocking serial port: ", sys.exc_info()[0])
+                raise e
+
             try:
                 self._is_open = False
                 self.serialport.close()
             except Exception as e:
                 print("Error closing port: ", sys.exc_info()[0])
-                raise e
-            try:
-                portalocker.unlock(self.serialport)
-            except Exception as e:
-                print("Error unlocking serial port: ", sys.exc_info()[0])
                 raise e
 
     def send(self, message, terminator=os.linesep):
