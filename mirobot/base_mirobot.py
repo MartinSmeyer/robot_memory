@@ -16,7 +16,7 @@ except ImportError:
 import serial.tools.list_ports as lp
 
 from .serial_device import SerialDevice
-from .mirobot_status import MirobotStatus, MirobotAngleValues, MirobotCartesianValues
+from .mirobot_status import MirobotStatus, MirobotAngles, MirobotCartesians
 from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
 
 
@@ -313,9 +313,9 @@ class BaseMirobot(AbstractContextManager):
             try:
                 state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
 
-                return_angles = MirobotAngleValues(*map(float, angles.split(',')))
+                return_angles = MirobotAngles(*map(float, angles.split(',')))
 
-                return_cartesians = MirobotCartesianValues(*map(float, cartesians.split(',')))
+                return_cartesians = MirobotCartesians(*map(float, cartesians.split(',')))
 
                 return_status = MirobotStatus(state,
                                               return_angles,

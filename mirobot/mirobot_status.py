@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class MirobotAngleValues:
+class MirobotAngles:
     """ A dataclass to hold Mirobot's angular values. """
     a: float = 0.0
     """ Angle of axis 1 """
@@ -21,7 +21,7 @@ class MirobotAngleValues:
 
 
 @dataclass
-class MirobotCartesianValues:
+class MirobotCartesians:
     """ A dataclass to hold Mirobot's cartesian values and roll/pitch/yaw angles. """
     x: float = 0.0
     """ Position on X-axis """
@@ -42,9 +42,9 @@ class MirobotStatus:
     """ A composite dataclass to hold all of Mirobot's trackable quantities. """
     state: str = ''
     """ The brief descriptor string for Mirobot's state. """
-    angle: MirobotAngleValues = MirobotAngleValues()
+    angle: MirobotAngles = MirobotAngles()
     """ Dataclass that holds Mirobot's angular values including the rail position value. """
-    cartesian: MirobotCartesianValues = MirobotCartesianValues()
+    cartesian: MirobotCartesians = MirobotCartesians()
     """ Dataclass that holds the cartesian values and roll/pitch/yaw angles. """
     pump_pwm: int = 0
     """ The current pwm of the pnuematic pump module. """
