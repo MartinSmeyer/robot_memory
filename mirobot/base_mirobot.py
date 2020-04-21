@@ -121,7 +121,6 @@ class BaseMirobot(AbstractContextManager):
         """ Magic method for contextManagers """
         self.disconnect()
 
-    # COMMUNICATION #
 
     def wait_for_ok(self, reset_expected=False, disable_debug=False):
         """
@@ -221,7 +220,6 @@ class BaseMirobot(AbstractContextManager):
 
         return wait_wrapper
 
-    # send a message
     @wait_decorator
     def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
         """
@@ -425,8 +423,6 @@ class BaseMirobot(AbstractContextManager):
     def disconnect(self):
         """ Disconnect from the Mirobot. Close the serial device connection. """
         self.serial_device.close()
-
-    # COMMANDS #
 
     def home_individual(self, wait=None):
         """

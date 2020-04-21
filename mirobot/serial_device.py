@@ -61,8 +61,8 @@ class SerialDevice:
                     return msg
 
             except Exception as e:
-                print(e)
                 print("Error reading port: ", sys.exc_info()[0])
+                raise e
 
     def open(self):
         """ Open the serial port. """
@@ -71,6 +71,7 @@ class SerialDevice:
             self.serialport.port = self.portname
             self.serialport.baudrate = self.baudrate
             self.serialport.stopbits = self.stopbits
+
             if self.exclusive:
                 try:
                     portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
@@ -81,7 +82,7 @@ class SerialDevice:
                 self.serialport.open()
                 self._is_open = True
             except Exception as e:
-                print("Error opening COM port: ", sys.exc_info()[0])
+                print("Error opening port: ", sys.exc_info()[0])
                 raise e
 
     def close(self):
@@ -91,8 +92,8 @@ class SerialDevice:
                 self._is_open = False
                 self.serialport.close()
             except Exception as e:
-                print(e)
-                print("Close error closing COM port: ", sys.exc_info()[0])
+                print("Error closing port: ", sys.exc_info()[0])
+                raise e
             try:
                 portalocker.unlock(self.serialport)
             except Exception as e:
@@ -104,10 +105,11 @@ class SerialDevice:
 
         Parameters
         ----------
-        message :
+        message : str
+            The string to send to serial port.
 
-        terminator :
-             (Default value = os.linesep)
+        terminator : str
+             (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `'\r\n'` for windows and `'\n'` for modern operating systems.
 
         Returns
         -------
@@ -121,8 +123,8 @@ class SerialDevice:
                     message += terminator
                 self.serialport.write(message.encode('utf-8'))
             except Exception as e:
-                print(e)
                 print("Error sending message: ", sys.exc_info()[0])
+                raise e
             else:
                 return True
         else:
