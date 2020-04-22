@@ -202,13 +202,12 @@ class BaseMirobot(AbstractContextManager):
 
     def wait_decorator(fn):
         """
-        A decorator that will use the `wait` argument/keyword for a method to
-        automatically use the `BaseMirobot.wait_for_ok` and conditionally, the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
+        A decorator that will use the `wait` argument for a method to automatically use the `BaseMirobot.wait_for_ok` and respectively, the `wait_idle` argument, for the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
 
         Parameters
         ----------
         fn : func
-            Function to wrap. Must have the `wait` argument or keyword.
+            Function to wrap. Must have the `wait` and or `wait_idle` argument or keyword.
 
         Returns
         -------
@@ -229,9 +228,9 @@ class BaseMirobot(AbstractContextManager):
                 else:
                     return default
 
-            wait = get_arg('wait', True)
-            disable_debug = get_arg('disable_debug', False)
-            wait_idle = get_arg('wait_idle', True)
+            wait = get_arg('wait')
+            disable_debug = get_arg('disable_debug')
+            wait_idle = get_arg('wait_idle')
 
             output = fn(self, *args, **kwargs)
 
@@ -246,7 +245,7 @@ class BaseMirobot(AbstractContextManager):
         return wait_wrapper
 
     @wait_decorator
-    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
+    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False):
         """
         Send a message to the Mirobot.
 
@@ -260,6 +259,8 @@ class BaseMirobot(AbstractContextManager):
             (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
         wait : bool
             (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
+        wait_idle : bool
+            (Default value = `False`) Whether to wait for Mirobot to be idle before returning.
 
         Returns
         -------
@@ -475,7 +476,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `False`, then return whether sending the message succeeded.
         """
         msg = '$HH'
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def home_simultaneous(self, wait=None):
         """
@@ -493,7 +494,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `False`, then return whether sending the message succeeded.
         """
         msg = '$H'
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def set_hard_limit(self, state, wait=None):
         """
@@ -513,7 +514,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `False`, then return whether sending the message succeeded.
         """
         msg = f'$21={int(state)}'
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, var_command=True, wait=wait)
 
     # set the soft limit state
     def set_soft_limit(self, state, wait=None):
@@ -534,7 +535,7 @@ class BaseMirobot(AbstractContextManager):
              If `wait` is `False`, then return whether sending the message succeeded.
         """
         msg = f'$20={int(state)}'
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, var_command=True, wait=wait)
 
     def unlock_shaft(self, wait=None):
         """
@@ -590,7 +591,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `True`, then return a list of strings which contains message output.
             If `wait` is `False`, then return whether sending the message succeeded.
 message
-             A string containing the base command followed by the correctly formatted arguments.
+            A string containing the base command followed by the correctly formatted arguments.
         """
         args = [f'{arg_key}{value}' for arg_key, value in pairings.items() if value is not None]
 
@@ -634,7 +635,7 @@ message
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         """
@@ -675,7 +676,7 @@ message
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         """
@@ -716,7 +717,7 @@ message
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         """
@@ -757,7 +758,7 @@ message
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         """
@@ -798,7 +799,7 @@ message
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         """
@@ -839,7 +840,7 @@ message
         pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     # set the pwm of the air pump
     def set_air_pump(self, pwm, wait=None):
@@ -867,7 +868,7 @@ message
             raise ValueError(f'pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.')
 
         msg = f'M3S{pwm}'
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def set_valve(self, pwm, wait=None):
         """
@@ -894,7 +895,7 @@ message
             raise ValueError(f'pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.')
 
         msg = f'M4E{pwm}'
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def start_calibration(self, wait=None):
         """
