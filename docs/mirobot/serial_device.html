@@ -24,45 +24,44 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import serial
+<pre><code class="python">import portalocker
+import serial
 import sys
 import os
 
 
 class SerialDevice:
     &#34;&#34;&#34; A class for establishing a connection to a serial device. &#34;&#34;&#34;
-    def __init__(self, portname=&#39;&#39;, baudrate=0, stopbits=1):
+    def __init__(self, portname=&#39;&#39;, baudrate=0, stopbits=1, exclusive=True):
         &#34;&#34;&#34; Initialization of `SerialDevice` class
 
         Parameters
         ----------
-        portname :
-             (Default value = &#39;&#39;) Name of the port to connect to. (Example: &#39;COM3&#39; or &#39;/dev/ttyUSB1&#39;)
-        baudrate :
-             (Default value = 0) Baud rate of the connection.
-        stopbits :
-             (Default value = 1) Stopbits of the connection.
+        portname : str
+             (Default value = `&#39;&#39;`) Name of the port to connect to. (Example: &#39;COM3&#39; or &#39;/dev/ttyUSB1&#39;)
+        baudrate : int
+             (Default value = `0`) Baud rate of the connection.
+        stopbits : int
+             (Default value = `1`) Stopbits of the connection.
+        exclusive : bool
+             (Default value = `True`) Whether to (try) forcing exclusivity of serial ports. If another `mirobot.serial_device.SerialDevice` is connected to this port, then don&#39;t connect at all. On the other hand, if no other `mirobot.serial_device.SerialDevice` is connected, then create a lock-file signaling that this serial port is in use.
 
         Returns
         -------
         class : SerialDevice
 
         &#34;&#34;&#34;
-        self.portname = portname
+        self.portname = str(portname)
         self.baudrate = int(baudrate)
         self.stopbits = int(stopbits)
-        self.timeout = None
+        self.exclusive = exclusive
+
         self.serialport = serial.Serial()
         self._is_open = False
 
     def __del__(self):
         &#34;&#34;&#34; Close the serial port when the class is deleted &#34;&#34;&#34;
-        try:
-            if self._is_open:
-                self.serialport.close()
-        except Exception as e:
-            print(e)
-            print(&#34;Destructor error closing COM port: &#34;, sys.exc_info()[0])
+        self.close()
 
     @property
     def is_open(self):
@@ -88,8 +87,8 @@ class SerialDevice:
                     return msg
 
             except Exception as e:
-                print(e)
                 print(&#34;Error reading port: &#34;, sys.exc_info()[0])
+                raise e
 
     def open(self):
         &#34;&#34;&#34; Open the serial port. &#34;&#34;&#34;
@@ -98,32 +97,46 @@ class SerialDevice:
             self.serialport.port = self.portname
             self.serialport.baudrate = self.baudrate
             self.serialport.stopbits = self.stopbits
+
             try:
                 self.serialport.open()
                 self._is_open = True
             except Exception as e:
-                print(&#34;Error opening COM port: &#34;, sys.exc_info()[0])
+                print(&#34;Error opening port: &#34;, sys.exc_info()[0])
                 raise e
+
+            if self.exclusive:
+                try:
+                    portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
+                except Exception:
+                    raise Exception(f&#34;Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;)
 
     def close(self):
         &#34;&#34;&#34; Close the serial port. &#34;&#34;&#34;
         if self._is_open:
             try:
+                portalocker.unlock(self.serialport)
+            except Exception as e:
+                print(&#34;Error unlocking serial port: &#34;, sys.exc_info()[0])
+                raise e
+
+            try:
                 self._is_open = False
                 self.serialport.close()
             except Exception as e:
-                print(e)
-                print(&#34;Close error closing COM port: &#34;, sys.exc_info()[0])
+                print(&#34;Error closing port: &#34;, sys.exc_info()[0])
+                raise e
 
     def send(self, message, terminator=os.linesep):
         &#34;&#34;&#34; Send a message to the serial port.
 
         Parameters
         ----------
-        message :
+        message : str
+            The string to send to serial port.
 
-        terminator :
-             (Default value = os.linesep)
+        terminator : str
+             (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `&#39;\r\n&#39;` for windows and `&#39;\n&#39;` for modern operating systems.
 
         Returns
         -------
@@ -137,8 +150,8 @@ class SerialDevice:
                     message += terminator
                 self.serialport.write(message.encode(&#39;utf-8&#39;))
             except Exception as e:
-                print(e)
                 print(&#34;Error sending message: &#34;, sys.exc_info()[0])
+                raise e
             else:
                 return True
         else:
@@ -156,18 +169,22 @@ class SerialDevice:
 <dl>
 <dt id="mirobot.serial_device.SerialDevice"><code class="flex name class">
 <span>class <span class="ident">SerialDevice</span></span>
-<span>(</span><span>portname='', baudrate=0, stopbits=1)</span>
+<span>(</span><span>portname='', baudrate=0, stopbits=1, exclusive=True)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A class for establishing a connection to a serial device. </p>
 <p>Initialization of <a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> class</p>
 <h2 id="parameters">Parameters</h2>
-<p>portname :
-(Default value = '') Name of the port to connect to. (Example: 'COM3' or '/dev/ttyUSB1')
-baudrate :
-(Default value = 0) Baud rate of the connection.
-stopbits :
-(Default value = 1) Stopbits of the connection.</p>
+<dl>
+<dt><strong><code>portname</code></strong> :&ensp;<code>str</code></dt>
+<dd>(Default value = <code>''</code>) Name of the port to connect to. (Example: 'COM3' or '/dev/ttyUSB1')</dd>
+<dt><strong><code>baudrate</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = <code>0</code>) Baud rate of the connection.</dd>
+<dt><strong><code>stopbits</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = <code>1</code>) Stopbits of the connection.</dd>
+<dt><strong><code>exclusive</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>True</code>) Whether to (try) forcing exclusivity of serial ports. If another <a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> is connected to this port, then don't connect at all. On the other hand, if no other <a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> is connected, then create a lock-file signaling that this serial port is in use.</dd>
+</dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><strong><code>class</code></strong> :&ensp;<a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a></dt>
@@ -179,38 +196,36 @@ stopbits :
 </summary>
 <pre><code class="python">class SerialDevice:
     &#34;&#34;&#34; A class for establishing a connection to a serial device. &#34;&#34;&#34;
-    def __init__(self, portname=&#39;&#39;, baudrate=0, stopbits=1):
+    def __init__(self, portname=&#39;&#39;, baudrate=0, stopbits=1, exclusive=True):
         &#34;&#34;&#34; Initialization of `SerialDevice` class
 
         Parameters
         ----------
-        portname :
-             (Default value = &#39;&#39;) Name of the port to connect to. (Example: &#39;COM3&#39; or &#39;/dev/ttyUSB1&#39;)
-        baudrate :
-             (Default value = 0) Baud rate of the connection.
-        stopbits :
-             (Default value = 1) Stopbits of the connection.
+        portname : str
+             (Default value = `&#39;&#39;`) Name of the port to connect to. (Example: &#39;COM3&#39; or &#39;/dev/ttyUSB1&#39;)
+        baudrate : int
+             (Default value = `0`) Baud rate of the connection.
+        stopbits : int
+             (Default value = `1`) Stopbits of the connection.
+        exclusive : bool
+             (Default value = `True`) Whether to (try) forcing exclusivity of serial ports. If another `mirobot.serial_device.SerialDevice` is connected to this port, then don&#39;t connect at all. On the other hand, if no other `mirobot.serial_device.SerialDevice` is connected, then create a lock-file signaling that this serial port is in use.
 
         Returns
         -------
         class : SerialDevice
 
         &#34;&#34;&#34;
-        self.portname = portname
+        self.portname = str(portname)
         self.baudrate = int(baudrate)
         self.stopbits = int(stopbits)
-        self.timeout = None
+        self.exclusive = exclusive
+
         self.serialport = serial.Serial()
         self._is_open = False
 
     def __del__(self):
         &#34;&#34;&#34; Close the serial port when the class is deleted &#34;&#34;&#34;
-        try:
-            if self._is_open:
-                self.serialport.close()
-        except Exception as e:
-            print(e)
-            print(&#34;Destructor error closing COM port: &#34;, sys.exc_info()[0])
+        self.close()
 
     @property
     def is_open(self):
@@ -236,8 +251,8 @@ stopbits :
                     return msg
 
             except Exception as e:
-                print(e)
                 print(&#34;Error reading port: &#34;, sys.exc_info()[0])
+                raise e
 
     def open(self):
         &#34;&#34;&#34; Open the serial port. &#34;&#34;&#34;
@@ -246,32 +261,46 @@ stopbits :
             self.serialport.port = self.portname
             self.serialport.baudrate = self.baudrate
             self.serialport.stopbits = self.stopbits
+
             try:
                 self.serialport.open()
                 self._is_open = True
             except Exception as e:
-                print(&#34;Error opening COM port: &#34;, sys.exc_info()[0])
+                print(&#34;Error opening port: &#34;, sys.exc_info()[0])
                 raise e
+
+            if self.exclusive:
+                try:
+                    portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
+                except Exception:
+                    raise Exception(f&#34;Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;)
 
     def close(self):
         &#34;&#34;&#34; Close the serial port. &#34;&#34;&#34;
         if self._is_open:
             try:
+                portalocker.unlock(self.serialport)
+            except Exception as e:
+                print(&#34;Error unlocking serial port: &#34;, sys.exc_info()[0])
+                raise e
+
+            try:
                 self._is_open = False
                 self.serialport.close()
             except Exception as e:
-                print(e)
-                print(&#34;Close error closing COM port: &#34;, sys.exc_info()[0])
+                print(&#34;Error closing port: &#34;, sys.exc_info()[0])
+                raise e
 
     def send(self, message, terminator=os.linesep):
         &#34;&#34;&#34; Send a message to the serial port.
 
         Parameters
         ----------
-        message :
+        message : str
+            The string to send to serial port.
 
-        terminator :
-             (Default value = os.linesep)
+        terminator : str
+             (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `&#39;\r\n&#39;` for windows and `&#39;\n&#39;` for modern operating systems.
 
         Returns
         -------
@@ -285,8 +314,8 @@ stopbits :
                     message += terminator
                 self.serialport.write(message.encode(&#39;utf-8&#39;))
             except Exception as e:
-                print(e)
                 print(&#34;Error sending message: &#34;, sys.exc_info()[0])
+                raise e
             else:
                 return True
         else:
@@ -324,11 +353,17 @@ def is_open(self):
     &#34;&#34;&#34; Close the serial port. &#34;&#34;&#34;
     if self._is_open:
         try:
+            portalocker.unlock(self.serialport)
+        except Exception as e:
+            print(&#34;Error unlocking serial port: &#34;, sys.exc_info()[0])
+            raise e
+
+        try:
             self._is_open = False
             self.serialport.close()
         except Exception as e:
-            print(e)
-            print(&#34;Close error closing COM port: &#34;, sys.exc_info()[0])</code></pre>
+            print(&#34;Error closing port: &#34;, sys.exc_info()[0])
+            raise e</code></pre>
 </details>
 </dd>
 <dt id="mirobot.serial_device.SerialDevice.listen_to_device"><code class="name flex">
@@ -363,8 +398,8 @@ def is_open(self):
                 return msg
 
         except Exception as e:
-            print(e)
-            print(&#34;Error reading port: &#34;, sys.exc_info()[0])</code></pre>
+            print(&#34;Error reading port: &#34;, sys.exc_info()[0])
+            raise e</code></pre>
 </details>
 </dd>
 <dt id="mirobot.serial_device.SerialDevice.open"><code class="name flex">
@@ -383,12 +418,19 @@ def is_open(self):
         self.serialport.port = self.portname
         self.serialport.baudrate = self.baudrate
         self.serialport.stopbits = self.stopbits
+
         try:
             self.serialport.open()
             self._is_open = True
         except Exception as e:
-            print(&#34;Error opening COM port: &#34;, sys.exc_info()[0])
-            raise e</code></pre>
+            print(&#34;Error opening port: &#34;, sys.exc_info()[0])
+            raise e
+
+        if self.exclusive:
+            try:
+                portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
+            except Exception:
+                raise Exception(f&#34;Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.serial_device.SerialDevice.send"><code class="name flex">
@@ -396,15 +438,21 @@ def is_open(self):
 </code></dt>
 <dd>
 <section class="desc"><p>Send a message to the serial port.</p>
-<h2 id="parameters">Parameters</h2>
-<p>message :</p>
-<p>terminator :
-(Default value = os.linesep)</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>result</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether the sending of <code>message</code> succeeded.</dd>
-</dl></section>
+<pre><code>    Parameters
+    ----------
+    message : str
+        The string to send to serial port.
+
+    terminator : str
+         (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `'
+</code></pre>
+<p>'<code>for windows and</code>'
+'` for modern operating systems.</p>
+<pre><code>    Returns
+    -------
+    result : bool
+        Whether the sending of `message` succeeded.
+</code></pre></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -414,10 +462,11 @@ def is_open(self):
 
     Parameters
     ----------
-    message :
+    message : str
+        The string to send to serial port.
 
-    terminator :
-         (Default value = os.linesep)
+    terminator : str
+         (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `&#39;\r\n&#39;` for windows and `&#39;\n&#39;` for modern operating systems.
 
     Returns
     -------
@@ -431,8 +480,8 @@ def is_open(self):
                 message += terminator
             self.serialport.write(message.encode(&#39;utf-8&#39;))
         except Exception as e:
-            print(e)
             print(&#34;Error sending message: &#34;, sys.exc_info()[0])
+            raise e
         else:
             return True
     else:

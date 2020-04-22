@@ -27,8 +27,10 @@
 <pre><code class="python">from collections.abc import Collection
 from contextlib import AbstractContextManager
 import functools
+import logging
 import os
 from pathlib import Path
+import portalocker
 import re
 import time
 from typing import TextIO, BinaryIO
@@ -124,6 +126,15 @@ class BaseMirobot(AbstractContextManager):
 
         self.status = MirobotStatus()
         &#34;&#34;&#34; Dataclass that holds tracks Mirobot&#39;s coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details.&#34;&#34;&#34;
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+
+        self.stream_handler = logging.StreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+
+        formatter = logging.Formatter(f&#34;[{self.default_portname}] [%(levelname)s] %(message)s&#34;)
+        self.stream_handler.setFormatter(formatter)
+        self.logger.addHandler(self.stream_handler)
 
         # do this at the very end, after everything is setup
         if autoconnect:
@@ -137,7 +148,9 @@ class BaseMirobot(AbstractContextManager):
         &#34;&#34;&#34; Magic method for contextManagers &#34;&#34;&#34;
         self.disconnect()
 
-    # COMMUNICATION #
+    def __del__(self):
+        &#34;&#34;&#34; Magic method for object deletion &#34;&#34;&#34;
+        self.disconnect()
 
     def wait_for_ok(self, reset_expected=False, disable_debug=False):
         &#34;&#34;&#34;
@@ -177,7 +190,7 @@ class BaseMirobot(AbstractContextManager):
             msg = self.serial_device.listen_to_device()
 
             if self.debug and not disable_debug:
-                print(msg)
+                self.logger.debug(f&#34;[RECV] {msg}&#34;)
 
             if &#39;error&#39; in msg:
                 raise MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;))
@@ -237,7 +250,6 @@ class BaseMirobot(AbstractContextManager):
 
         return wait_wrapper
 
-    # send a message
     @wait_decorator
     def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
         &#34;&#34;&#34;
@@ -276,7 +288,7 @@ class BaseMirobot(AbstractContextManager):
             output = self.serial_device.send(msg)
 
         if self.debug and not disable_debug:
-            print(&#39;Message sent: &#39;, msg)
+            self.logger.debug(f&#34;[SENT] {msg}&#34;)
 
         if (wait is not None and not self.wait) or not wait:
             return output
@@ -297,7 +309,7 @@ class BaseMirobot(AbstractContextManager):
 
         &#34;&#34;&#34;
         instruction = &#39;?&#39;
-        # we don&#39;t want to wait for idling when checking status-- this leads to unbroken recursion!!
+        # we don&#39;t want to wait for idle when checking status-- this leads to unbroken recursion!!
         return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)
 
     def update_status(self, disable_debug=False):
@@ -310,7 +322,8 @@ class BaseMirobot(AbstractContextManager):
             (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
 
         &#34;&#34;&#34;
-        status_msg = self.get_status(disable_debug=disable_debug)[0]  # get only the status message and not &#39;ok&#39;
+        # get only the status message and not &#39;ok&#39;
+        status_msg = self.get_status(disable_debug=disable_debug)[0]
         self.status = self._parse_status(status_msg)
 
     @staticmethod
@@ -407,9 +420,18 @@ class BaseMirobot(AbstractContextManager):
         if not port_objects:
             raise MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;)
 
-        if len(port_objects) &gt; 1:
-            raise MirobotAmbiguousPort(f&#34;Unable to determine which port to automatically connect to!\nFound these ports: {[p.device for p in port_objects]}.\nTo fix this, please provide port name explicitly.&#34;)
-        return port_objects[0].device
+        else:
+            for p in port_objects:
+                try:
+                    pf = open(p.device)
+                    portalocker.lock(pf, portalocker.LOCK_EX | portalocker.LOCK_NB)
+                    portalocker.unlock(pf)
+                except portalocker.LockException:
+                    continue
+                else:
+                    return p.device
+
+            raise MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;)
 
     def connect(self, portname=None):
         &#34;&#34;&#34;
@@ -439,9 +461,8 @@ class BaseMirobot(AbstractContextManager):
 
     def disconnect(self):
         &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
-        self.serial_device.close()
-
-    # COMMANDS #
+        if hasattr(self, &#39;serial_device&#39;):
+            self.serial_device.close()
 
     def home_individual(self, wait=None):
         &#34;&#34;&#34;
@@ -1092,6 +1113,15 @@ message
 
         self.status = MirobotStatus()
         &#34;&#34;&#34; Dataclass that holds tracks Mirobot&#39;s coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details.&#34;&#34;&#34;
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+
+        self.stream_handler = logging.StreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+
+        formatter = logging.Formatter(f&#34;[{self.default_portname}] [%(levelname)s] %(message)s&#34;)
+        self.stream_handler.setFormatter(formatter)
+        self.logger.addHandler(self.stream_handler)
 
         # do this at the very end, after everything is setup
         if autoconnect:
@@ -1105,7 +1135,9 @@ message
         &#34;&#34;&#34; Magic method for contextManagers &#34;&#34;&#34;
         self.disconnect()
 
-    # COMMUNICATION #
+    def __del__(self):
+        &#34;&#34;&#34; Magic method for object deletion &#34;&#34;&#34;
+        self.disconnect()
 
     def wait_for_ok(self, reset_expected=False, disable_debug=False):
         &#34;&#34;&#34;
@@ -1145,7 +1177,7 @@ message
             msg = self.serial_device.listen_to_device()
 
             if self.debug and not disable_debug:
-                print(msg)
+                self.logger.debug(f&#34;[RECV] {msg}&#34;)
 
             if &#39;error&#39; in msg:
                 raise MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;))
@@ -1205,7 +1237,6 @@ message
 
         return wait_wrapper
 
-    # send a message
     @wait_decorator
     def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
         &#34;&#34;&#34;
@@ -1244,7 +1275,7 @@ message
             output = self.serial_device.send(msg)
 
         if self.debug and not disable_debug:
-            print(&#39;Message sent: &#39;, msg)
+            self.logger.debug(f&#34;[SENT] {msg}&#34;)
 
         if (wait is not None and not self.wait) or not wait:
             return output
@@ -1265,7 +1296,7 @@ message
 
         &#34;&#34;&#34;
         instruction = &#39;?&#39;
-        # we don&#39;t want to wait for idling when checking status-- this leads to unbroken recursion!!
+        # we don&#39;t want to wait for idle when checking status-- this leads to unbroken recursion!!
         return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)
 
     def update_status(self, disable_debug=False):
@@ -1278,7 +1309,8 @@ message
             (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
 
         &#34;&#34;&#34;
-        status_msg = self.get_status(disable_debug=disable_debug)[0]  # get only the status message and not &#39;ok&#39;
+        # get only the status message and not &#39;ok&#39;
+        status_msg = self.get_status(disable_debug=disable_debug)[0]
         self.status = self._parse_status(status_msg)
 
     @staticmethod
@@ -1375,9 +1407,18 @@ message
         if not port_objects:
             raise MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;)
 
-        if len(port_objects) &gt; 1:
-            raise MirobotAmbiguousPort(f&#34;Unable to determine which port to automatically connect to!\nFound these ports: {[p.device for p in port_objects]}.\nTo fix this, please provide port name explicitly.&#34;)
-        return port_objects[0].device
+        else:
+            for p in port_objects:
+                try:
+                    pf = open(p.device)
+                    portalocker.lock(pf, portalocker.LOCK_EX | portalocker.LOCK_NB)
+                    portalocker.unlock(pf)
+                except portalocker.LockException:
+                    continue
+                else:
+                    return p.device
+
+            raise MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;)
 
     def connect(self, portname=None):
         &#34;&#34;&#34;
@@ -1407,9 +1448,8 @@ message
 
     def disconnect(self):
         &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
-        self.serial_device.close()
-
-    # COMMANDS #
+        if hasattr(self, &#39;serial_device&#39;):
+            self.serial_device.close()
 
     def home_individual(self, wait=None):
         &#34;&#34;&#34;
@@ -2028,7 +2068,8 @@ message
 </summary>
 <pre><code class="python">def disconnect(self):
     &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
-    self.serial_device.close()</code></pre>
+    if hasattr(self, &#39;serial_device&#39;):
+        self.serial_device.close()</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.finish_calibration"><code class="name flex">
@@ -2105,7 +2146,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 
     &#34;&#34;&#34;
     instruction = &#39;?&#39;
-    # we don&#39;t want to wait for idling when checking status-- this leads to unbroken recursion!!
+    # we don&#39;t want to wait for idle when checking status-- this leads to unbroken recursion!!
     return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)</code></pre>
 </details>
 </dd>
@@ -2842,7 +2883,7 @@ def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_
         output = self.serial_device.send(msg)
 
     if self.debug and not disable_debug:
-        print(&#39;Message sent: &#39;, msg)
+        self.logger.debug(f&#34;[SENT] {msg}&#34;)
 
     if (wait is not None and not self.wait) or not wait:
         return output</code></pre>
@@ -3136,7 +3177,8 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
         (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
 
     &#34;&#34;&#34;
-    status_msg = self.get_status(disable_debug=disable_debug)[0]  # get only the status message and not &#39;ok&#39;
+    # get only the status message and not &#39;ok&#39;
+    status_msg = self.get_status(disable_debug=disable_debug)[0]
     self.status = self._parse_status(status_msg)</code></pre>
 </details>
 </dd>
@@ -3266,7 +3308,7 @@ It stops when it encounters an 'ok' or otherwise terminal condition phrase.</p>
         msg = self.serial_device.listen_to_device()
 
         if self.debug and not disable_debug:
-            print(msg)
+            self.logger.debug(f&#34;[RECV] {msg}&#34;)
 
         if &#39;error&#39; in msg:
             raise MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;))
