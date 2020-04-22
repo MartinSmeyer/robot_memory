@@ -4,6 +4,7 @@ import functools
 import logging
 import os
 from pathlib import Path
+import portalocker
 import re
 import time
 from typing import TextIO, BinaryIO
@@ -393,9 +394,18 @@ class BaseMirobot(AbstractContextManager):
         if not port_objects:
             raise MirobotAmbiguousPort("No ports found! Make sure your Mirobot is connected and recognized by your operating system.")
 
-        if len(port_objects) > 1:
-            raise MirobotAmbiguousPort(f"Unable to determine which port to automatically connect to!\nFound these ports: {[p.device for p in port_objects]}.\nTo fix this, please provide port name explicitly.")
-        return port_objects[0].device
+        else:
+            for p in port_objects:
+                try:
+                    pf = open(p.device)
+                    portalocker.lock(pf, portalocker.LOCK_EX | portalocker.LOCK_NB)
+                    portalocker.unlock(pf)
+                except portalocker.LockException:
+                    continue
+                else:
+                    return p.device
+
+            raise MirobotAmbiguousPort("No open ports found! Make sure your Mirobot is connected and is not being used by another process.")
 
     def connect(self, portname=None):
         """
@@ -425,7 +435,8 @@ class BaseMirobot(AbstractContextManager):
 
     def disconnect(self):
         """ Disconnect from the Mirobot. Close the serial device connection. """
-        self.serial_device.close()
+        if hasattr(self, 'serial_device'):
+            self.serial_device.close()
 
     def home_individual(self, wait=None):
         """
