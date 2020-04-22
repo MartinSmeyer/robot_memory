@@ -82,7 +82,7 @@ class SerialDevice:
             if self.exclusive:
                 try:
                     portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
-                except Exception:
+                except portalocker.LockException:
                     raise Exception(f"Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!")
 
     def close(self):
