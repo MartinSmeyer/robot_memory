@@ -32,7 +32,7 @@ class BaseMirobot(AbstractContextManager):
         Parameters
         ----------
         *serial_device_args : List[Any]
-             Arguments that are passed into the `SerialDevice` class.
+             Arguments that are passed into the `mirobot.serial_device.SerialDevice` class.
         debug : bool
             (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
         autoconnect : bool
@@ -50,7 +50,7 @@ class BaseMirobot(AbstractContextManager):
         wait : bool
             (Default value = `True`) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored `BaseMirobot.wait`.
         **serial_device_kwargs : Dict
-             Keywords that are passed into the `SerialDevice` class.
+             Keywords that are passed into the `mirobot.serial_device.SerialDevice` class.
 
         Returns
         -------
