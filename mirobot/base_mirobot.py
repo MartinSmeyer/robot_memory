@@ -383,8 +383,6 @@ class BaseMirobot(AbstractContextManager):
             A list of output strings upto and including the terminal string.
         """
         self.update_status(disable_debug=True)
-        if self.status.state == 'Idle':
-            return
 
         while self.status.state != 'Idle':
             time.sleep(refresh_rate)
