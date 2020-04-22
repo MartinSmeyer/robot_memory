@@ -82,7 +82,7 @@ class BaseMirobot(AbstractContextManager):
             else:
                 self.default_portname = None
 
-        self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
+        self.serial_device = SerialDevice(*serial_device_args, debug=debug, **serial_device_kwargs)
 
         self.reset_file = pkg_resources.read_text('mirobot.resources', 'reset.xml') if reset_file is None else reset_file
         """ The reset commands to use when resetting the Mirobot. See `BaseMirobot.reset_configuration` for usage and details. """
@@ -125,6 +125,27 @@ class BaseMirobot(AbstractContextManager):
     def __del__(self):
         """ Magic method for object deletion """
         self.disconnect()
+
+    @property
+    def debug(self):
+        """ Return the `debug` property of `BaseMirobot` """
+        return self.debug
+
+    @debug.setter
+    def debug(self, value):
+        """
+        Set the new `debug` property of `mirobot.base_mirobot.BaseMirobot`. Use as in `BaseMirobot.setDebug(value)`.
+        Use this setter method as it will also update the logging objects of `mirobot.base_mirobot.BaseMirobot` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.base_mirobot.BaseMirobot.debug` directly which will not update the loggers.
+
+        Parameters
+        ----------
+        value : bool
+            The new value for `mirobot.base_mirobot.BaseMirobot.debug`.
+
+        """
+        self.debug = bool(value)
+        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        self.serial_device.setDebug(value)
 
     def wait_for_ok(self, reset_expected=False, disable_debug=False):
         """

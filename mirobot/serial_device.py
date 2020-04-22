@@ -52,6 +52,25 @@ class SerialDevice:
         self.close()
 
     @property
+    def debug(self):
+        """ Return the `debug` property of `SerialDevice` """
+        return self.debug
+
+    @debug.setter
+    def debug(self, value):
+        """
+        Set the new `debug` property of `SerialDevice`. Use as in `SerialDevice.setDebug(value)`.
+
+        Parameters
+        ----------
+        value : bool
+            The new value for `SerialDevice.debug`. User this setter method as it will also update the logging method. As opposed to setting `SerialDevice.debug` directly which will not update the logger.
+
+        """
+        self.debug = bool(value)
+        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+
+    @property
     def is_open(self):
         """ Check if the serial port is open """
         self._is_open = self.serialport.is_open
