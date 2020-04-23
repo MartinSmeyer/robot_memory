@@ -236,8 +236,8 @@ class BaseMirobot(AbstractContextManager):
             if wait or (wait is None and self.wait):
                 output = self.wait_for_ok(disable_debug=disable_debug)
 
-            if wait_idle:
-                self.wait_until_idle()
+                if wait_idle:
+                    self.wait_until_idle()
 
             return output
 
