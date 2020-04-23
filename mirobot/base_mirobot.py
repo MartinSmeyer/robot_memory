@@ -188,20 +188,14 @@ class BaseMirobot(AbstractContextManager):
                 self.logger.debug(f"[RECV] {msg}")
 
             if 'error' in msg:
-                exception = MirobotError(msg.replace('error: ', ''))
-                self.logger.error(exception)
-                raise exception
+                self.logger.error(MirobotError(msg.replace('error: ', '')))
             if 'ALARM' in msg:
-                exception = MirobotAlarm(msg.split('ALARM: ')[1])
-                self.logger.error(exception)
-                raise exception
+                self.logger.error(MirobotAlarm(msg.split('ALARM: ')[1]))
 
             output.append(msg)
 
             if not reset_expected and matches_eol_strings(reset_strings, msg):
-                exception = MirobotReset('Mirobot was unexpectedly reset!')
-                self.logger.error(exception)
-                raise exception
+                self.logger.error(MirobotReset('Mirobot was unexpectedly reset!'))
 
         return output[1:]  # don't include the dummy empty string at first index
 
@@ -283,7 +277,7 @@ class BaseMirobot(AbstractContextManager):
 
             # check if this is supposed to be a variable command and fail if not
             if var_command and not re.fullmatch(r'\$\d+=[\d\.]+', msg):
-                raise MirobotVariableCommandError("Message is not a variable command: " + msg)
+                self.logger.exception(MirobotVariableCommandError("Message is not a variable command: " + msg))
 
             # actually send the message
             output = self.serial_device.send(msg)
@@ -327,8 +321,7 @@ class BaseMirobot(AbstractContextManager):
         status_msg = self.get_status(disable_debug=disable_debug)[0]
         self.status = self._parse_status(status_msg)
 
-    @staticmethod
-    def _parse_status(msg):
+    def _parse_status(self, msg):
         """
         Parse the status string of the Mirobot and store the various values as class variables.
 
@@ -365,12 +358,12 @@ class BaseMirobot(AbstractContextManager):
                                               bool(motion_mode))
 
             except Exception as exception:
-                raise Exception([MirobotStatusError(f'Could not parse status message "{msg}"'),
-                                 exception])
+                self.logger.exception(MirobotStatusError(f"Could not parse status message \"{msg}\""),
+                                      exc_info=exception)
             else:
                 return return_status
         else:
-            raise MirobotStatusError(f'Could not parse status message "{msg}"')
+            self.logger.exception(MirobotStatusError(f"Could not parse status message \"{msg}\""))
 
     def wait_until_idle(self, refresh_rate=0.1):
         """
@@ -404,8 +397,7 @@ class BaseMirobot(AbstractContextManager):
         """
         return self.serial_device.is_open
 
-    @staticmethod
-    def _find_portname():
+    def _find_portname(self):
         """
         Find the port that might potentially be connected to the Mirobot.
 
@@ -417,7 +409,7 @@ class BaseMirobot(AbstractContextManager):
         port_objects = lp.comports()
 
         if not port_objects:
-            raise MirobotAmbiguousPort("No ports found! Make sure your Mirobot is connected and recognized by your operating system.")
+            self.logger.exception(MirobotAmbiguousPort("No ports found! Make sure your Mirobot is connected and recognized by your operating system."))
 
         else:
             for p in port_objects:
@@ -430,7 +422,7 @@ class BaseMirobot(AbstractContextManager):
                 else:
                     return p.device
 
-            raise MirobotAmbiguousPort("No open ports found! Make sure your Mirobot is connected and is not being used by another process.")
+            self.logger.exception(MirobotAmbiguousPort("No open ports found! Make sure your Mirobot is connected and is not being used by another process."))
 
     def connect(self, portname=None):
         """
@@ -450,7 +442,7 @@ class BaseMirobot(AbstractContextManager):
             if self.default_portname is not None:
                 portname = self.default_portname
             else:
-                raise ValueError('Portname must be provided! like so `portname=\'COM3\'`')
+                self.logger.exception(ValueError('Portname must be provided! Example: `portname="COM3"`'))
 
         self.serial_device.portname = portname
 
@@ -868,7 +860,7 @@ message
             pwm = self.pump_pwm_values[not pwm]
 
         if str(pwm) not in self.pump_pwm_values:
-            raise ValueError(f'pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.')
+            self.logger.exception(ValueError(f'pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.'))
 
         msg = f'M3S{pwm}'
         return self.send_msg(msg, wait=wait, wait_idle=True)
@@ -895,7 +887,7 @@ message
             pwm = self.valve_pwm_values[not pwm]
 
         if str(pwm) not in self.valve_pwm_values:
-            raise ValueError(f'pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.')
+            self.logger.exception(ValueError(f'pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.'))
 
         msg = f'M4E{pwm}'
         return self.send_msg(msg, wait=wait, wait_idle=True)
@@ -970,7 +962,7 @@ message
 
         elif isinstance(reset_file, (str, Path)):
             if not os.path.exists(reset_file):
-                raise MirobotResetFileError("Reset file not found or reachable: {reset_file}")
+                self.logger.exception(MirobotResetFileError("Reset file not found or reachable: {reset_file}"))
             with open(reset_file, 'r') as f:
                 send_each_line(f.readlines())
 
@@ -981,6 +973,6 @@ message
             send_each_line(reset_file.readlines())
 
         else:
-            raise MirobotResetFileError(f"Unable to handle reset file of type: {type(reset_file)}")
+            self.logger.exception(MirobotResetFileError(f"Unable to handle reset file of type: {type(reset_file)}"))
 
         return output
