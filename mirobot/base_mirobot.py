@@ -86,7 +86,7 @@ class BaseMirobot(AbstractContextManager):
 
         self.reset_file = pkg_resources.read_text('mirobot.resources', 'reset.xml') if reset_file is None else reset_file
         """ The reset commands to use when resetting the Mirobot. See `BaseMirobot.reset_configuration` for usage and details. """
-        self.debug = debug
+        self._debug = debug
         """ Boolean that determines if every input and output is to be printed to the screen. """
 
         self.valve_pwm_values = tuple(str(n) for n in valve_pwm_values)
@@ -104,7 +104,7 @@ class BaseMirobot(AbstractContextManager):
         self.logger.setLevel(logging.DEBUG)
 
         self.stream_handler = logging.StreamHandler()
-        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
 
         formatter = logging.Formatter(f"[{self.default_portname}] [%(levelname)s] %(message)s")
         self.stream_handler.setFormatter(formatter)
@@ -129,7 +129,7 @@ class BaseMirobot(AbstractContextManager):
     @property
     def debug(self):
         """ Return the `debug` property of `BaseMirobot` """
-        return self.debug
+        return self._debug
 
     @debug.setter
     def debug(self, value):
@@ -143,8 +143,8 @@ class BaseMirobot(AbstractContextManager):
             The new value for `mirobot.base_mirobot.BaseMirobot.debug`.
 
         """
-        self.debug = bool(value)
-        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        self._debug = bool(value)
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
         self.serial_device.setDebug(value)
 
     def wait_for_ok(self, reset_expected=False, disable_debug=False):
@@ -184,19 +184,24 @@ class BaseMirobot(AbstractContextManager):
         while not matches_eol_strings(eols, output[-1]):
             msg = self.serial_device.listen_to_device()
 
-            if self.debug and not disable_debug:
+            if self._debug and not disable_debug:
                 self.logger.debug(f"[RECV] {msg}")
 
             if 'error' in msg:
-                raise MirobotError(msg.replace('error: ', ''))
+                exception = MirobotError(msg.replace('error: ', ''))
+                self.logger.error(exception)
+                raise exception
             if 'ALARM' in msg:
-                raise MirobotAlarm(msg.split('ALARM: ')[1])
+                exception = MirobotAlarm(msg.split('ALARM: ')[1])
+                self.logger.error(exception)
+                raise exception
 
             output.append(msg)
 
             if not reset_expected and matches_eol_strings(reset_strings, msg):
-                raise MirobotReset('Mirobot was unexpectedly reset!')
-                break
+                exception = MirobotReset('Mirobot was unexpectedly reset!')
+                self.logger.error(exception)
+                raise exception
 
         return output[1:]  # don't include the dummy empty string at first index
 
@@ -283,7 +288,7 @@ class BaseMirobot(AbstractContextManager):
             # actually send the message
             output = self.serial_device.send(msg)
 
-        if self.debug and not disable_debug:
+        if self._debug and not disable_debug:
             self.logger.debug(f"[SENT] {msg}")
 
         if (wait is not None and not self.wait) or not wait:

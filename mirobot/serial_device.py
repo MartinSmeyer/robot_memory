@@ -33,13 +33,13 @@ class SerialDevice:
         self.baudrate = int(baudrate)
         self.stopbits = int(stopbits)
         self.exclusive = exclusive
-        self.debug = debug
+        self._debug = debug
 
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
         self.stream_handler = logging.StreamHandler()
-        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
 
         formatter = logging.Formatter(f"[{self.portname}] [%(levelname)s] %(message)s")
         self.stream_handler.setFormatter(formatter)
@@ -55,7 +55,7 @@ class SerialDevice:
     @property
     def debug(self):
         """ Return the `debug` property of `SerialDevice` """
-        return self.debug
+        return self._debug
 
     @debug.setter
     def debug(self, value):
@@ -68,8 +68,8 @@ class SerialDevice:
             The new value for `SerialDevice.debug`. User this setter method as it will also update the logging method. As opposed to setting `SerialDevice.debug` directly which will not update the logger.
 
         """
-        self.debug = bool(value)
-        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        self._debug = bool(value)
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
 
     @property
     def is_open(self):
