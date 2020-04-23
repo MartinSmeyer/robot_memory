@@ -564,7 +564,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `True`, then return a list of strings which contains message output.
             If `wait` is `False`, then return whether sending the message succeeded.
         """
-        return self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)
+        return self.go_to_axis(0, 0, 0, 0, 0, 0, self.default_speed, wait=wait)
 
     @staticmethod
     def _generate_args_string(instruction, pairings):
