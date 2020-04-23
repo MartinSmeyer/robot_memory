@@ -285,8 +285,7 @@ class BaseMirobot(AbstractContextManager):
         if self._debug and not disable_debug:
             self.logger.debug(f"[SENT] {msg}")
 
-        if (wait is not None and not self.wait) or not wait:
-            return output
+        return output
 
     def get_status(self, disable_debug=False):
         """
