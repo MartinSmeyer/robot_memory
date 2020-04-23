@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class MirobotAngles:
     """ A dataclass to hold Mirobot's angular values. """
     a: float = 0.0
@@ -55,7 +55,7 @@ class MirobotAngles:
         return self.d
 
 
-@dataclass
+@dataclass(frozen=True)
 class MirobotCartesians:
     """ A dataclass to hold Mirobot's cartesian values and roll/pitch/yaw angles. """
     x: float = 0.0
@@ -102,7 +102,7 @@ class MirobotCartesians:
         return self.c
 
 
-@dataclass
+@dataclass(frozen=True)
 class MirobotStatus:
     """ A composite dataclass to hold all of Mirobot's trackable quantities. """
     state: str = ''
