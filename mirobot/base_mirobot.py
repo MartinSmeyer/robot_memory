@@ -205,12 +205,12 @@ class BaseMirobot(AbstractContextManager):
 
         Parameters
         ----------
-        fn : func
+        fn : Callable
             Function to wrap. Must have the `wait` and or `wait_idle` argument or keyword.
 
         Returns
         -------
-        wrapper : func
+        wrapper : Callable
             A wrapper that decorates a function.
         """
 
