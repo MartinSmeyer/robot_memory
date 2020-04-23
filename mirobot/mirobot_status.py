@@ -116,4 +116,4 @@ class MirobotStatus:
     valve_pwm: int = 0
     """ The current pwm of the value module. (eg. gripper) """
     motion_mode: bool = False
-    """ Whether Mirobot is currently in coordinate mode or joint-motion mode """
+    """ Whether Mirobot is currently in coordinate mode (`False`) or joint-motion mode (`True`) """
