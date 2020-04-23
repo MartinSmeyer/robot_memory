@@ -2,7 +2,8 @@ import logging
 import os
 import portalocker
 import serial
-import sys
+
+from .exceptions import SerialDeviceLockError, SerialDeviceOpenError, SerialDeviceReadError, SerialDeviceCloseError, SerialDeviceWriteError, SerialDeviceUnlockError
 
 
 class SerialDevice:
@@ -93,8 +94,7 @@ class SerialDevice:
                     return msg
 
             except Exception as e:
-                self.logger.error("Error reading port: ", sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceReadError(e))
 
     def open(self):
         """ Open the serial port. """
@@ -113,8 +113,7 @@ class SerialDevice:
                 self.logger.debug(f"Succeeded in opening serial port {self.portname}")
 
             except Exception as e:
-                self.logger.error("Error opening port: ", sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceOpenError(e))
 
             if self.exclusive:
                 try:
@@ -125,7 +124,7 @@ class SerialDevice:
                     self.logger.debug(f"Succeeded in locking serial port {self.portname}")
 
                 except portalocker.LockException:
-                    raise Exception(f"Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!")
+                    self.logger.exception(SerialDeviceLockError(f"Unable to acquire port {self.portname}. Make sure another process is not using it!"))
 
     def close(self):
         """ Close the serial port. """
@@ -138,8 +137,7 @@ class SerialDevice:
                 self.logger.debug(f"Succeeded in unlocking serial port {self.portname}")
 
             except Exception as e:
-                self.logger.error("Error unlocking serial port: ", sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceUnlockError(e))
 
             try:
                 self.logger.debug(f"Attempting to close serial port {self.portname}")
@@ -150,8 +148,7 @@ class SerialDevice:
                 self.logger.debug(f"Succeeded in closing serial port {self.portname}")
 
             except Exception as e:
-                self.logger.error("Error closing port: ", sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceCloseError(e))
 
     def send(self, message, terminator=os.linesep):
         """ Send a message to the serial port.
@@ -175,9 +172,10 @@ class SerialDevice:
                 if not message.endswith(terminator):
                     message += terminator
                 self.serialport.write(message.encode('utf-8'))
+
             except Exception as e:
-                self.logger.error("Error sending message: ", sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceWriteError(e))
+
             else:
                 return True
         else:

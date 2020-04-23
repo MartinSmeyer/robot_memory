@@ -31,3 +31,27 @@ class MirobotResetFileError(Exception):
 class MirobotVariableCommandError(Exception):
     """ An inplace class for when Mirobot finds a command that does not match variable setting-command syntax. """
     pass
+
+
+class SerialDeviceReadError(Exception):
+    """ An inplace class for when SerialDevice is unable to read the serial port """
+
+
+class SerialDeviceOpenError(Exception):
+    """ An inplace class for when SerialDevice is unable to open the serial port """
+
+
+class SerialDeviceLockError(Exception):
+    """ An inplace class for when SerialDevice is unable to lock the serial port """
+
+
+class SerialDeviceCloseError(Exception):
+    """ An inplace class for when SerialDevice is unable to close the serial port """
+
+
+class SerialDeviceUnlockError(Exception):
+    """ An inplace class for when SerialDevice is unable to unlock the serial port """
+
+
+class SerialDeviceWriteError(Exception):
+    """ An inplace class for when SerialDevice is unable to write to the serial port """
