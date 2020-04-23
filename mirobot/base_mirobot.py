@@ -267,7 +267,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `True`, then return a list of strings which contains message output.
             If `wait` is `False`, then return whether sending the message succeeded.
         """
-        if self.is_connected():
+        if self.is_connected:
             # convert to str from bytes
             if isinstance(msg, bytes):
                 msg = str(msg, 'utf-8')
@@ -385,6 +385,7 @@ class BaseMirobot(AbstractContextManager):
             time.sleep(refresh_rate)
             self.update_status(disable_debug=True)
 
+    @property
     def is_connected(self):
         """
         Check if Mirobot is connected.
