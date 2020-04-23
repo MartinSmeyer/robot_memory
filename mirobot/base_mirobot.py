@@ -4,7 +4,6 @@ import functools
 import logging
 import os
 from pathlib import Path
-import portalocker
 import re
 import time
 from typing import TextIO, BinaryIO
@@ -15,6 +14,7 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`.
     import importlib_resources as pkg_resources
 
+import portalocker
 import serial.tools.list_ports as lp
 
 from .serial_device import SerialDevice
