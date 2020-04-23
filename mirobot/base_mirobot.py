@@ -23,15 +23,15 @@ from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguo
 
 
 class BaseMirobot(AbstractContextManager):
-    """ A class for managing and maintaining known Mirobot operations. """
+    """ A base class for managing and maintaining known Mirobot operations. """
 
     def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs):
         """
-        Initialization of `BaseMirobot` class.
+        Initialization of the `BaseMirobot` class.
 
         Parameters
         ----------
-        *serial_device_args : List[Any]
+        *serial_device_args : Any
              Arguments that are passed into the `mirobot.serial_device.SerialDevice` class.
         debug : bool
             (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
@@ -49,7 +49,7 @@ class BaseMirobot(AbstractContextManager):
             (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See `BaseMirobot.reset_configuration` for more details.
         wait : bool
             (Default value = `True`) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored `BaseMirobot.wait`.
-        **serial_device_kwargs : Dict
+        **serial_device_kwargs : Any
              Keywords that are passed into the `mirobot.serial_device.SerialDevice` class.
 
         Returns
@@ -548,23 +548,6 @@ class BaseMirobot(AbstractContextManager):
         """
         msg = 'M50'
         return self.send_msg(msg, wait=wait)
-
-    def go_to_zero(self, wait=None):
-        """
-        Send all axes to their respective zero positions.
-
-        Parameters
-        ----------
-        wait : bool
-            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
-
-        Returns
-        -------
-        msg : List[str] or bool
-            If `wait` is `True`, then return a list of strings which contains message output.
-            If `wait` is `False`, then return whether sending the message succeeded.
-        """
-        return self.go_to_axis(0, 0, 0, 0, 0, 0, self.default_speed, wait=wait)
 
     @staticmethod
     def _generate_args_string(instruction, pairings):
