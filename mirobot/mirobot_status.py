@@ -1,16 +1,16 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict, astuple
 
 
-class general_dataclass:
+class featured_dataclass:
     def asdict(self):
-        return dataclass.asdict(self)
+        return asdict(self)
 
     def astuple(self):
-        return dataclass.astuple(self)
+        return astuple(self)
 
 
 @dataclass(frozen=True)
-class MirobotAngles(general_dataclass):
+class MirobotAngles(featured_dataclass):
     """ A dataclass to hold Mirobot's angular values. """
     a: float = 0.0
     """ Angle of axis 1 """
@@ -64,7 +64,7 @@ class MirobotAngles(general_dataclass):
 
 
 @dataclass(frozen=True)
-class MirobotCartesians(general_dataclass):
+class MirobotCartesians(featured_dataclass):
     """ A dataclass to hold Mirobot's cartesian values and roll/pitch/yaw angles. """
     x: float = 0.0
     """ Position on X-axis """
@@ -111,7 +111,7 @@ class MirobotCartesians(general_dataclass):
 
 
 @dataclass(frozen=True)
-class MirobotStatus(general_dataclass):
+class MirobotStatus(featured_dataclass):
     """ A composite dataclass to hold all of Mirobot's trackable quantities. """
     state: str = ''
     """ The brief descriptor string for Mirobot's state. """
