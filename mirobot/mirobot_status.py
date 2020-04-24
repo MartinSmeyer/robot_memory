@@ -67,17 +67,17 @@ class MirobotAngles(featured_dataclass):
 @dataclass
 class MirobotCartesians(featured_dataclass):
     """ A dataclass to hold Mirobot's cartesian values and roll/pitch/yaw angles. """
-    x: float = 0.0
+    x: float = None
     """ Position on X-axis """
-    y: float = 0.0
+    y: float = None
     """ Position of Y-axis """
-    z: float = 0.0
+    z: float = None
     """ Position of Z-axis """
-    a: float = 0.0
+    a: float = None
     """ Position of Roll angle """
-    b: float = 0.0
+    b: float = None
     """ Position of Pitch angle """
-    c: float = 0.0
+    c: float = None
     """ Position of Yaw angle """
 
     @property
@@ -120,9 +120,9 @@ class MirobotStatus(featured_dataclass):
     """ Dataclass that holds Mirobot's angular values including the rail position value. """
     cartesian: MirobotCartesians = MirobotCartesians()
     """ Dataclass that holds the cartesian values and roll/pitch/yaw angles. """
-    pump_pwm: int = 0
+    pump_pwm: int = None
     """ The current pwm of the pnuematic pump module. """
-    valve_pwm: int = 0
+    valve_pwm: int = None
     """ The current pwm of the value module. (eg. gripper) """
     motion_mode: bool = False
     """ Whether Mirobot is currently in coordinate mode (`False`) or joint-motion mode (`True`) """
