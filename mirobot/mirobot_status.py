@@ -1,4 +1,5 @@
-from dataclasses import dataclass, asdict, astuple
+from dataclasses import dataclass, asdict, astuple, fields
+import operator
 
 
 class featured_dataclass:
@@ -8,24 +9,124 @@ class featured_dataclass:
     def astuple(self):
         return astuple(self)
 
+    @classmethod
+    def _new_from_dict(cls, dictionary):
+        return cls(**dictionary)
+
+    def _binary_operation(self, other, operation):
+        if isinstance(other, type(self)):
+            new_values = {f.name: operation(getattr(self, f.name), getattr(other, f.name))
+                          for f in fields(self)}
+        elif isinstance(other, (int, float)):
+            new_values = {f.name: operation(getattr(self, f.name), other)
+                          for f in fields(self)}
+        else:
+            raise TypeError(f"Cannot handle {type(self)} and {type(other)}")
+
+        return self._new_from_dict(new_values)
+
+    def _unary_operation(self, operation):
+        new_values = {f.name: operation(getattr(self, f.name))
+                      for f in fields(self)}
+
+        return self._new_from_dict(new_values)
+
+    def _comparision_operation(self, other, operation):
+        if isinstance(other, type(self)):
+            new_values = [operation(getattr(self, f.name), getattr(other, f.name))
+                          for f in fields(self)]
+        elif isinstance(other, (int, float)):
+            new_values = [operation(getattr(self, f.name), other)
+                          for f in fields(self)]
+        else:
+            raise TypeError(f"Cannot handle {type(self)} and {type(other)}")
+
+        if all(new_values):
+            return True
+
+        elif not any(new_values):
+            return False
+
+        else:
+            return None
+
+    def __add__(self, other):
+        return self._binary_operation(other, operator.add)
+
+    def __radd__(self, other):
+        return self._binary_operation(other, operator.add)
+
+    def __sub__(self, other):
+        return self._binary_operation(other, operator.sub)
+
+    def __rsub__(self, other):
+        return self._binary_operation(other, operator.sub)
+
+    def __mul__(self, other):
+        return self._binary_operation(other, operator.mul)
+
+    def __rmul__(self, other):
+        return self._binary_operation(other, operator.mul)
+
+    def __div__(self, other):
+        return self._binary_operation(other, operator.div)
+
+    def __rdiv__(self, other):
+        return self._binary_operation(other, operator.div)
+
+    def __truediv__(self, other):
+        return self._binary_operation(other, operator.truediv)
+
+    def __mod__(self, other):
+        return self._binary_operation(other, operator.mod)
+
+    def __abs__(self):
+        return self._unary_operation(operator.abs)
+
+    def __index__(self):
+        return self._unary_operation(operator.index)
+
+    def __pos__(self):
+        return self._unary_operation(operator.pos)
+
+    def __neg__(self):
+        return self._unary_operation(operator.neg)
+
+    def __lt__(self, other):
+        return self._comparision_operation(operator.lt)
+
+    def __le__(self, other):
+        return self._comparision_operation(operator.le)
+
+    def __eq__(self, other):
+        return self._comparision_operation(operator.eq)
+
+    def __ne__(self, other):
+        return self._comparision_operation(operator.ne)
+
+    def __ge__(self, other):
+        return self._comparision_operation(operator.ge)
+
+    def __gt__(self, other):
+        return self._comparision_operation(operator.gt)
 
 
 @dataclass
 class MirobotAngles(featured_dataclass):
     """ A dataclass to hold Mirobot's angular values. """
-    a: float = 0.0
+    a: float = None
     """ Angle of axis 1 """
-    b: float = 0.0
+    b: float = None
     """ Angle of axis 2 """
-    c: float = 0.0
+    c: float = None
     """ Angle of axis 3 """
-    x: float = 0.0
+    x: float = None
     """ Angle of axis 4 """
-    y: float = 0.0
+    y: float = None
     """ Angle of axis 5 """
-    z: float = 0.0
+    z: float = None
     """ Angle of axis 6 """
-    d: float = 0.0
+    d: float = None
     """ Location of external slide rail module """
 
     @property
