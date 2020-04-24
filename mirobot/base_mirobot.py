@@ -576,7 +576,7 @@ message
 
         return ' '.join([instruction] + args)
 
-    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None):
         """
         Send all axes to a specific position in angular coordinates. (Command: `M21 G90`)
 
@@ -594,6 +594,8 @@ message
             (Default value = `None`) Angle of axis 5.
         c : float
             (Default value = `None`) Angle of axis 6.
+        d : float
+            (Default value = `None`) Location of slide rail module.
         speed : int
             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
@@ -611,12 +613,12 @@ message
         if speed:
             speed = int(speed)
 
-        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
+        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'D': d, 'F': speed}
         msg = self._generate_args_string(instruction, pairings)
 
         return self.send_msg(msg, wait=wait, wait_idle=True)
 
-    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None):
         """
         Increment all axes a specified amount in angular coordinates. (Command: `M21 G91`)
 
@@ -634,6 +636,8 @@ message
             (Default value = `None`) Angle of axis 5.
         c : float
             (Default value = `None`) Angle of axis 6.
+        d : float
+            (Default value = `None`) Location of slide rail module.
         speed : int
             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
@@ -652,7 +656,7 @@ message
         if speed:
             speed = int(speed)
 
-        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'F': speed}
+        pairings = {'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'C': c, 'D': d, 'F': speed}
         msg = self._generate_args_string(instruction, pairings)
 
         return self.send_msg(msg, wait=wait, wait_idle=True)
