@@ -1,8 +1,9 @@
 from collections import namedtuple
 
 from .base_mirobot import BaseMirobot
+from .mirobot_status import MirobotAngles, MirobotCartesians
 
-function_splitter = namedtuple('function_splitter', ['ptp', 'lin'])
+cartesian_function_splitter = namedtuple('cartesian_function_splitter', ['ptp', 'lin'])
 coordinate_splitter = namedtuple('coordinate_splitter', ['cartesian', 'angle'])
 
 
@@ -28,9 +29,9 @@ class Mirobot(BaseMirobot):
         """
         super().__init__(*base_mirobot_args, **base_mirobot_kwargs)
 
-        self.move = coordinate_splitter(function_splitter(self.go_to_cartesian_ptp, self.go_to_cartesian_ptp), self.go_to_axis)
+        self.move = coordinate_splitter(cartesian_function_splitter(self.go_to_cartesian_ptp, self.go_to_cartesian_ptp), self.go_to_axis)
 
-        self.increment = coordinate_splitter(function_splitter(self.increment_cartesian_ptp, self.increment_cartesian_lin), self.increment_axis)
+        self.increment = coordinate_splitter(cartesian_function_splitter(self.increment_cartesian_ptp, self.increment_cartesian_lin), self.increment_axis)
 
     @property
     def state(self):
@@ -75,7 +76,6 @@ class Mirobot(BaseMirobot):
         ----------
         speed : int
             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
-
         wait : bool
             (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
 
@@ -86,3 +86,238 @@ class Mirobot(BaseMirobot):
             If `wait` is `False`, then return whether sending the message succeeded.
         """
         return self.go_to_axis(0, 0, 0, 0, 0, 0, speed if speed is not None else self.default_speed, wait=wait)
+
+    def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        """
+        Linear move to a position in cartesian coordinates. (Command: `M20 G90 G1`)
+
+        Parameters
+        ----------
+        x : Union[float, MirobotCartesians]
+            (Default value = `None`) If `float`, this represents the X-axis position.
+                                     If of type `mirobot.mirobot_status.MirobotCartesisans`, then this will be used for all positional values instead.
+        y : float
+            (Default value = `None`) Y-axis position.
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        """
+        if isinstance(x, MirobotCartesians):
+            inputs = x.asdict()
+
+        else:
+            inputs = {'x': x, 'y': y, 'z': z, 'a': a, 'b': b, 'c': c}
+
+        return super().go_to_cartesian_lin(**inputs,
+                                           speed=speed, wait=wait)
+
+    def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        """
+        Point-to-point move to a position in cartesian coordinates. (Command: `M20 G90 G1`)
+
+        Parameters
+        ----------
+        x : Union[float, MirobotCartesians]
+            (Default value = `None`) If `float`, this represents the X-axis position.
+                                     If of type `mirobot.mirobot_status.MirobotCartesisans`, then this will be used for all positional values instead.
+        y : float
+            (Default value = `None`) Y-axis position.
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        """
+
+        if isinstance(x, MirobotCartesians):
+            inputs = x.asdict()
+
+        else:
+            inputs = {'x': x, 'y': y, 'z': z, 'a': a, 'b': b, 'c': c}
+
+        return super().go_to_cartesian_ptp(**inputs,
+                                           speed=speed, wait=wait)
+
+    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        """
+        Send all axes to a specific position in angular coordinates. (Command: `M21 G90`)
+
+        Parameters
+        ----------
+        x : Union[float, MirobotCartesians]
+            (Default value = `None`) If `float`, this represents the angle of axis 1.
+                                     If of type `mirobot.mirobot_status.MirobotAngles`, then this will be used for all positional values instead.
+        y : float
+            (Default value = `None`) Angle of axis 2.
+        z : float
+            (Default value = `None`) Angle of axis 3.
+        a : float
+            (Default value = `None`) Angle of axis 4.
+        b : float
+            (Default value = `None`) Angle of axis 5.
+        c : float
+            (Default value = `None`) Angle of axis 6.
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        """
+        if isinstance(x, MirobotAngles):
+            inputs = x.asdict()
+
+        else:
+            inputs = {'x': x, 'y': y, 'z': z, 'a': a, 'b': b, 'c': c}
+
+        return super().go_to_cartesian_ptp(**inputs,
+                                           speed=speed, wait=wait)
+
+    def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        """
+        Linear increment in cartesian coordinates.
+
+        Parameters
+        ----------
+x : Union[float, MirobotCartesians]
+            (Default value = `None`) If `float`, this represents the X-axis position.
+                                     If of type `mirobot.mirobot_status.MirobotCartesisans`, then this will be used for all positional values instead.
+        y : float
+            (Default value = `None`) Y-axis position
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        """
+        if isinstance(x, MirobotCartesians):
+            inputs = x.asdict()
+
+        else:
+            inputs = {'x': x, 'y': y, 'z': z, 'a': a, 'b': b, 'c': c}
+
+        return super().increment_cartesian_lin(**inputs,
+                                               speed=speed, wait=wait)
+
+    def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        """
+        Point-to-point increment in cartesian coordinates. (Command: `M20 G91 G0`)
+
+        Parameters
+        ----------
+        x : Union[float, MirobotCartesians]
+            (Default value = `None`) If `float`, this represents the X-axis position.
+                                     If of type `mirobot.mirobot_status.MirobotCartesisans`, then this will be used for all positional values instead.
+        y : float
+            (Default value = `None`) Y-axis position.
+        z : float
+            (Default value = `None`) Z-axis position.
+        a : float
+            (Default value = `None`) Orientation angle: Roll angle
+        b : float
+            (Default value = `None`) Orientation angle: Pitch angle
+        c : float
+            (Default value = `None`) Orientation angle: Yaw angle
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        """
+        if isinstance(x, MirobotCartesians):
+            inputs = x.asdict()
+
+        else:
+            inputs = {'x': x, 'y': y, 'z': z, 'a': a, 'b': b, 'c': c}
+
+        return super().increment_cartesian_ptp(**inputs,
+                                               speed=speed, wait=wait)
+
+    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+        """
+        Increment all axes a specified amount in angular coordinates. (Command: `M21 G91`)
+
+        Parameters
+        ----------
+        x : Union[float, MirobotCartesians]
+            (Default value = `None`) If `float`, this represents the angle of axis 1.
+                                     If of type `mirobot.mirobot_status.MirobotAngles`, then this will be used for all positional values instead.
+        y : float
+            (Default value = `None`) Angle of axis 2.
+        z : float
+            (Default value = `None`) Angle of axis 3.
+        a : float
+            (Default value = `None`) Angle of axis 4.
+        b : float
+            (Default value = `None`) Angle of axis 5.
+        c : float
+            (Default value = `None`) Angle of axis 6.
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        """
+        if isinstance(x, MirobotAngles):
+            inputs = x.asdict()
+
+        else:
+            inputs = {'x': x, 'y': y, 'z': z, 'a': a, 'b': b, 'c': c}
+
+        return super().go_to_cartesian_ptp(**inputs,
+                                           speed=speed, wait=wait)
