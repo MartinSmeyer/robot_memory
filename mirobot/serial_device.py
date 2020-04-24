@@ -4,7 +4,7 @@ import os
 import portalocker
 import serial
 
-from .exceptions import SerialDeviceLockError, SerialDeviceOpenError, SerialDeviceReadError, SerialDeviceCloseError, SerialDeviceWriteError, SerialDeviceUnlockError
+from .exceptions import ExitOnExceptionStreamHandler, SerialDeviceLockError, SerialDeviceOpenError, SerialDeviceReadError, SerialDeviceCloseError, SerialDeviceWriteError, SerialDeviceUnlockError
 
 
 class SerialDevice:
@@ -39,7 +39,7 @@ class SerialDevice:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        self.stream_handler = logging.StreamHandler()
+        self.stream_handler = ExitOnExceptionStreamHandler()
         self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
 
         formatter = logging.Formatter(f"[{self.portname}] [%(levelname)s] %(message)s")

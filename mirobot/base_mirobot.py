@@ -19,7 +19,7 @@ import serial.tools.list_ports as lp
 
 from .serial_device import SerialDevice
 from .mirobot_status import MirobotStatus, MirobotAngles, MirobotCartesians
-from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
+from .exceptions import ExitOnExceptionStreamHandler, MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
 
 
 class BaseMirobot(AbstractContextManager):
@@ -103,7 +103,7 @@ class BaseMirobot(AbstractContextManager):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        self.stream_handler = logging.StreamHandler()
+        self.stream_handler = ExitOnExceptionStreamHandler()
         self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
 
         formatter = logging.Formatter(f"[{self.default_portname}] [%(levelname)s] %(message)s")
@@ -189,6 +189,7 @@ class BaseMirobot(AbstractContextManager):
 
             if 'error' in msg:
                 self.logger.error(MirobotError(msg.replace('error: ', '')))
+
             if 'ALARM' in msg:
                 self.logger.error(MirobotAlarm(msg.split('ALARM: ')[1]))
 

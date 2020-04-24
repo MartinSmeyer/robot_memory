@@ -1,14 +1,25 @@
+import logging
+
+
+class ExitOnExceptionStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        super().emit(record)
+        print(type(record))
+        if record.levelno >= logging.ERROR:
+            raise SystemExit(-1)
+
+
 class MirobotError(Exception):
     """ An inplace class for throwing Mirobot errors. """
     pass
 
 
-class MirobotAlarm(Warning):
+class MirobotAlarm(Exception):
     """  An inplace class for throwing Mirobot alarms. """
     pass
 
 
-class MirobotReset(Warning):
+class MirobotReset(Exception):
     """ An inplace class for when Mirobot resets. """
     pass
 
