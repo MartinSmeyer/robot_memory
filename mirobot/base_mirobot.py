@@ -363,7 +363,7 @@ class BaseMirobot(AbstractContextManager):
             else:
                 return return_status
         else:
-            self.logger.exception(MirobotStatusError(f"Could not parse status message \"{msg}\""))
+            self.logger.error(MirobotStatusError(f"Could not parse status message \"{msg}\""))
 
     def wait_until_idle(self, refresh_rate=0.1):
         """
