@@ -1,4 +1,9 @@
+from collections import namedtuple
+
 from .base_mirobot import BaseMirobot
+
+function_splitter = namedtuple('function_splitter', ['ptp', 'lin'])
+coordinate_splitter = namedtuple('coordinate_splitter', ['cartesian', 'angle'])
 
 
 class Mirobot(BaseMirobot):
@@ -21,7 +26,11 @@ class Mirobot(BaseMirobot):
         class : `Mirobot`
 
         """
-        super(self, *base_mirobot_args, **base_mirobot_kwargs)
+        super().__init__(*base_mirobot_args, **base_mirobot_kwargs)
+
+        self.move = coordinate_splitter(function_splitter(self.go_to_cartesian_ptp, self.go_to_cartesian_ptp), self.go_to_axis)
+
+        self.increment = coordinate_splitter(function_splitter(self.increment_cartesian_ptp, self.increment_cartesian_lin), self.increment_axis)
 
     @property
     def state(self):
