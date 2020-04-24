@@ -18,14 +18,14 @@ class MirobotAngles(featured_dataclass):
     """ Angle of axis 2 """
     c: float = 0.0
     """ Angle of axis 3 """
-    d: float = 0.0
-    """ Location of external slide rail module """
     x: float = 0.0
     """ Angle of axis 4 """
     y: float = 0.0
     """ Angle of axis 5 """
     z: float = 0.0
     """ Angle of axis 6 """
+    d: float = 0.0
+    """ Location of external slide rail module """
 
     @property
     def a1(self):

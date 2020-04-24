@@ -346,7 +346,7 @@ class BaseMirobot(AbstractContextManager):
             try:
                 state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
 
-                return_angles = MirobotAngles(*map(float, angles.split(',')))
+                return_angles = MirobotAngles(**dict(zip('xyzdabc'), map(float, angles.split(','))))
 
                 return_cartesians = MirobotCartesians(*map(float, cartesians.split(',')))
 
