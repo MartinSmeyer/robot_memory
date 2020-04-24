@@ -9,7 +9,8 @@ class featured_dataclass:
         return astuple(self)
 
 
-@dataclass(frozen=True)
+
+@dataclass
 class MirobotAngles(featured_dataclass):
     """ A dataclass to hold Mirobot's angular values. """
     a: float = 0.0
@@ -63,7 +64,7 @@ class MirobotAngles(featured_dataclass):
         return self.d
 
 
-@dataclass(frozen=True)
+@dataclass
 class MirobotCartesians(featured_dataclass):
     """ A dataclass to hold Mirobot's cartesian values and roll/pitch/yaw angles. """
     x: float = 0.0
@@ -110,8 +111,8 @@ class MirobotCartesians(featured_dataclass):
         return self.c
 
 
-@dataclass(frozen=True)
 class MirobotStatus(featured_dataclass):
+@dataclass
     """ A composite dataclass to hold all of Mirobot's trackable quantities. """
     state: str = ''
     """ The brief descriptor string for Mirobot's state. """
