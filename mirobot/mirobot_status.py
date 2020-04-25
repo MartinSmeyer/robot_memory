@@ -37,11 +37,11 @@ class featured_dataclass(basic_dataclass):
 
     def _binary_operation(self, other, operation):
         if isinstance(other, type(self)):
-            new_values = {f.name: operation(getattr(self, f.name), getattr(other, f.name))
-                          for f in fields(self)}
+            new_values = self._cross_same_type(other, operation)
+
         elif isinstance(other, (int, float)):
-            new_values = {f.name: operation(getattr(self, f.name), other)
-                          for f in fields(self)}
+            new_values = self._cross_same_type(other, operation, single=True)
+
         else:
             raise TypeError(f"Cannot handle {type(self)} and {type(other)}")
 
@@ -49,17 +49,18 @@ class featured_dataclass(basic_dataclass):
 
     def _unary_operation(self, operation):
         new_values = {f.name: operation(getattr(self, f.name))
+                      if getattr(self, f.name) is not None else None
                       for f in fields(self)}
 
         return self._new_from_dict(new_values)
 
     def _comparision_operation(self, other, operation):
         if isinstance(other, type(self)):
-            new_values = [operation(getattr(self, f.name), getattr(other, f.name))
-                          for f in fields(self)]
+            new_values = self._cross_same_type(other, operation).values()
+
         elif isinstance(other, (int, float)):
-            new_values = [operation(getattr(self, f.name), other)
-                          for f in fields(self)]
+            new_values = self._cross_same_type(other, operation, single=True).values()
+
         else:
             raise TypeError(f"Cannot handle {type(self)} and {type(other)}")
 
