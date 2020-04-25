@@ -4,7 +4,7 @@ from .base_mirobot import BaseMirobot
 from .mirobot_status import MirobotAngles, MirobotCartesians
 
 cartesian_function_splitter = namedtuple('cartesian_function_splitter', ['ptp', 'lin'])
-coordinate_splitter = namedtuple('coordinate_splitter', ['cartesian', 'angle'])
+coordinate_splitter = namedtuple('coordinate_splitter', ['cartesian', 'angle', 'rail'])
 
 
 class Mirobot(BaseMirobot):
@@ -29,9 +29,9 @@ class Mirobot(BaseMirobot):
         """
         super().__init__(*base_mirobot_args, **base_mirobot_kwargs)
 
-        self.move = coordinate_splitter(cartesian_function_splitter(self.go_to_cartesian_ptp, self.go_to_cartesian_ptp), self.go_to_axis)
+        self.move = coordinate_splitter(cartesian_function_splitter(self.go_to_cartesian_ptp, self.go_to_cartesian_ptp), self.go_to_axis, self.go_to_slide_rail)
 
-        self.increment = coordinate_splitter(cartesian_function_splitter(self.increment_cartesian_ptp, self.increment_cartesian_lin), self.increment_axis)
+        self.increment = coordinate_splitter(cartesian_function_splitter(self.increment_cartesian_ptp, self.increment_cartesian_lin), self.increment_axis, self.increment_slide_rail)
 
     @property
     def state(self):
@@ -348,3 +348,26 @@ class Mirobot(BaseMirobot):
 
         return super().increment_axis(d=d,
                                       speed=speed, wait=wait)
+
+    def go_to_slide_rail(self, d, speed=None, wait=None):
+        """
+        Go to the slide rail position specified. (Command: `M21 G90`)
+
+        Parameters
+        ----------
+        d : float
+            Location of slide rail module.
+        speed : int
+            (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
+        wait : bool
+            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        """
+
+        return super().go_to_axis(d=d,
+                                  speed=speed, wait=wait)
