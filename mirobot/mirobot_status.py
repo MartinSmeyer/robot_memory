@@ -81,6 +81,26 @@ class featured_dataclass(basic_dataclass):
         else:
             return None
 
+    def __or__(self, other):
+        def operation_function(this_value, other_value):
+            if this_value is None:
+                return other_value
+            else:
+                return this_value
+
+        new_values = self._cross_same_type(other, operation_function)
+        return self._new_from_dict(new_values)
+
+    def __and__(self, other):
+        def operation_function(this_value, other_value):
+            if None not in (this_value, other_value):
+                return this_value
+            else:
+                return None
+
+        new_values = self._cross_same_type(other, operation_function)
+        return self._new_from_dict(new_values)
+
     def __add__(self, other):
         return self._binary_operation(other, operator.add)
 
