@@ -2,7 +2,7 @@ from dataclasses import dataclass, asdict, astuple, fields
 import operator
 
 
-class featured_dataclass:
+class basic_dataclass:
     def asdict(self):
         return asdict(self)
 
@@ -12,6 +12,28 @@ class featured_dataclass:
     @classmethod
     def _new_from_dict(cls, dictionary):
         return cls(**dictionary)
+
+
+class featured_dataclass(basic_dataclass):
+    def _cross_same_type(self, other, operation, single=False):
+        new_values = {}
+        for f in fields(self):
+            this_value = getattr(self, f.name)
+
+            if single:
+                other_value = other
+            else:
+                other_value = getattr(other, f.name)
+
+            result = None
+            if None in (this_value, other_value):
+                result = None
+            else:
+                result = operation(this_value, other_value)
+
+            new_values[f.name] = result
+
+        return new_values
 
     def _binary_operation(self, other, operation):
         if isinstance(other, type(self)):
