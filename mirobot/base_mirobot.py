@@ -134,13 +134,13 @@ class BaseMirobot(AbstractContextManager):
     @debug.setter
     def debug(self, value):
         """
-        Set the new `debug` property of `mirobot.base_mirobot.BaseMirobot`. Use as in `BaseMirobot.setDebug(value)`.
-        Use this setter method as it will also update the logging objects of `mirobot.base_mirobot.BaseMirobot` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.base_mirobot.BaseMirobot.debug` directly which will not update the loggers.
+        Set the new value for the `debug` property of `mirobot.base_mirobot.BaseMirobot`. Use as in `BaseMirobot.setDebug(value)`.
+        Use this setter method as it will also update the logging objects of `mirobot.base_mirobot.BaseMirobot` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.base_mirobot.BaseMirobot._debug` directly which will not update the loggers.
 
         Parameters
         ----------
         value : bool
-            The new value for `mirobot.base_mirobot.BaseMirobot.debug`.
+            The new value for `mirobot.base_mirobot.BaseMirobot._debug`.
 
         """
         self._debug = bool(value)
