@@ -116,22 +116,22 @@ class featured_dataclass(basic_dataclass):
         return self._unary_operation(operator.neg)
 
     def __lt__(self, other):
-        return self._comparision_operation(operator.lt)
+        return self._comparision_operation(other, operator.lt)
 
     def __le__(self, other):
-        return self._comparision_operation(operator.le)
+        return self._comparision_operation(other, operator.le)
 
     def __eq__(self, other):
-        return self._comparision_operation(operator.eq)
+        return self._comparision_operation(other, operator.eq)
 
     def __ne__(self, other):
-        return self._comparision_operation(operator.ne)
+        return self._comparision_operation(other, operator.ne)
 
     def __ge__(self, other):
-        return self._comparision_operation(operator.ge)
+        return self._comparision_operation(other, operator.ge)
 
     def __gt__(self, other):
-        return self._comparision_operation(operator.gt)
+        return self._comparision_operation(other, operator.gt)
 
 
 @dataclass
