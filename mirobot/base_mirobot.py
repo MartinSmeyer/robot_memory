@@ -191,7 +191,7 @@ class BaseMirobot(AbstractContextManager):
                 self.logger.error(MirobotError(msg.replace('error: ', '')))
 
             if 'ALARM' in msg:
-                self.logger.error(MirobotAlarm(msg.split('ALARM: ')[1]))
+                self.logger.error(MirobotAlarm(msg.split('ALARM: ', 1)[1]))
 
             output.append(msg)
 
