@@ -786,7 +786,7 @@ message
 
     def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         """
-        Linear increment in cartesian coordinates.
+        Linear increment in cartesian coordinates. (Command: `M20 G91 G1`)
 
         Parameters
         ----------

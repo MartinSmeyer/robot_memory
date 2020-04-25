@@ -128,7 +128,7 @@ class Mirobot(BaseMirobot):
 
     def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         """
-        Point-to-point move to a position in cartesian coordinates. (Command: `M20 G90 G1`)
+        Point-to-point move to a position in cartesian coordinates. (Command: `M20 G90 G0`)
 
         Parameters
         ----------
@@ -209,7 +209,7 @@ class Mirobot(BaseMirobot):
 
     def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         """
-        Linear increment in cartesian coordinates.
+        Linear increment in cartesian coordinates. (Command: `M20 G91 G1`)
 
         Parameters
         ----------
@@ -327,7 +327,7 @@ class Mirobot(BaseMirobot):
                                       speed=speed, wait=wait)
 
     def increment_slide_rail(self, d, speed=None, wait=None):
-        """ TODO: check that the commands in docstrings are right
+        """
         Increment slide rail position a specified amount. (Command: `M21 G91`)
 
         Parameters
