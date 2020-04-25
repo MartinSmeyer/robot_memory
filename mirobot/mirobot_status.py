@@ -15,7 +15,7 @@ class basic_dataclass:
 
 
 class featured_dataclass(basic_dataclass):
-    def _cross_same_type(self, other, operation, single=False):
+    def _cross_same_type(self, other, operation_function, single=False):
         new_values = {}
         for f in fields(self):
             this_value = getattr(self, f.name)
@@ -25,22 +25,24 @@ class featured_dataclass(basic_dataclass):
             else:
                 other_value = getattr(other, f.name)
 
-            result = None
-            if None in (this_value, other_value):
-                result = None
-            else:
-                result = operation(this_value, other_value)
+            result = operation_function(this_value, other_value)
 
             new_values[f.name] = result
 
         return new_values
 
     def _binary_operation(self, other, operation):
+        def operation_function(this_value, other_value):
+            if None in (this_value, other_value):
+                return None
+            else:
+                return operation(this_value, other_value)
+
         if isinstance(other, type(self)):
-            new_values = self._cross_same_type(other, operation)
+            new_values = self._cross_same_type(other, operation_function)
 
         elif isinstance(other, (int, float)):
-            new_values = self._cross_same_type(other, operation, single=True)
+            new_values = self._cross_same_type(other, operation_function, single=True)
 
         else:
             raise TypeError(f"Cannot handle {type(self)} and {type(other)}")
@@ -55,11 +57,17 @@ class featured_dataclass(basic_dataclass):
         return self._new_from_dict(new_values)
 
     def _comparision_operation(self, other, operation):
+        def operation_function(this_value, other_value):
+            if None in (this_value, other_value):
+                return True
+            else:
+                return operation(this_value, other_value)
+
         if isinstance(other, type(self)):
-            new_values = self._cross_same_type(other, operation).values()
+            new_values = self._cross_same_type(other, operation_function).values()
 
         elif isinstance(other, (int, float)):
-            new_values = self._cross_same_type(other, operation, single=True).values()
+            new_values = self._cross_same_type(other, operation_function, single=True).values()
 
         else:
             raise TypeError(f"Cannot handle {type(self)} and {type(other)}")
