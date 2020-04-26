@@ -79,7 +79,8 @@ class SerialDevice:
         return self._is_open
 
     def listen_to_device(self):
-        """ Listen to the serial port and return a message.
+        """
+        Listen to the serial port and return a message.
 
         Returns
         -------
@@ -152,7 +153,9 @@ class SerialDevice:
                 self.logger.exception(SerialDeviceCloseError(e))
 
     def send(self, message, terminator=os.linesep):
-        """ Send a message to the serial port.
+        """
+        Send a message to the serial port.
+
 
         Parameters
         ----------
@@ -160,7 +163,7 @@ class SerialDevice:
             The string to send to serial port.
 
         terminator : str
-             (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `'\r\n'` for windows and `'\n'` for modern operating systems.
+            (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `'\\r\\n'` for windows and `'\\n'` for modern operating systems.
 
         Returns
         -------
