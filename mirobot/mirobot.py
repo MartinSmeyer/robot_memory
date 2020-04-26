@@ -95,7 +95,7 @@ class Mirobot(BaseMirobot):
         ----------
         x : Union[float, MirobotCartesians]
             (Default value = `None`) If `float`, this represents the X-axis position.
-                                     If of type `mirobot.mirobot_status.MirobotCartesisans`, then this will be used for all positional values instead.
+                                     If of type `mirobot.mirobot_status.MirobotCartesians`, then this will be used for all positional values instead.
         y : float
             (Default value = `None`) Y-axis position.
         z : float
@@ -134,7 +134,7 @@ class Mirobot(BaseMirobot):
         ----------
         x : Union[float, MirobotCartesians]
             (Default value = `None`) If `float`, this represents the X-axis position.
-                                     If of type `mirobot.mirobot_status.MirobotCartesisans`, then this will be used for all positional values instead.
+                                     If of type `mirobot.mirobot_status.MirobotCartesians`, then this will be used for all positional values instead.
         y : float
             (Default value = `None`) Y-axis position.
         z : float
@@ -215,7 +215,7 @@ class Mirobot(BaseMirobot):
         ----------
         x : Union[float, MirobotCartesians]
             (Default value = `None`) If `float`, this represents the X-axis position.
-                                     If of type `mirobot.mirobot_status.MirobotCartesisans`, then this will be used for all positional values instead.
+                                     If of type `mirobot.mirobot_status.MirobotCartesians`, then this will be used for all positional values instead.
         y : float
             (Default value = `None`) Y-axis position
         z : float
@@ -254,7 +254,7 @@ class Mirobot(BaseMirobot):
         ----------
         x : Union[float, MirobotCartesians]
             (Default value = `None`) If `float`, this represents the X-axis position.
-                                     If of type `mirobot.mirobot_status.MirobotCartesisans`, then this will be used for all positional values instead.
+                                     If of type `mirobot.mirobot_status.MirobotCartesians`, then this will be used for all positional values instead.
         y : float
             (Default value = `None`) Y-axis position.
         z : float
