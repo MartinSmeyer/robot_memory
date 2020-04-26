@@ -24,43 +24,269 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from dataclasses import dataclass
+<pre><code class="python">from dataclasses import dataclass, asdict, astuple, fields
+import operator
+
+
+class basic_dataclass:
+    def asdict(self):
+        return asdict(self)
+
+    def astuple(self):
+        return astuple(self)
+
+    @classmethod
+    def _new_from_dict(cls, dictionary):
+        return cls(**dictionary)
+
+
+class featured_dataclass(basic_dataclass):
+    def _cross_same_type(self, other, operation_function, single=False):
+        new_values = {}
+        for f in fields(self):
+            this_value = getattr(self, f.name)
+
+            if single:
+                other_value = other
+            else:
+                other_value = getattr(other, f.name)
+
+            result = operation_function(this_value, other_value)
+
+            new_values[f.name] = result
+
+        return new_values
+
+    def _binary_operation(self, other, operation):
+        def operation_function(this_value, other_value):
+            if None in (this_value, other_value):
+                return None
+            else:
+                return operation(this_value, other_value)
+
+        if isinstance(other, type(self)):
+            new_values = self._cross_same_type(other, operation_function)
+
+        elif isinstance(other, (int, float)):
+            new_values = self._cross_same_type(other, operation_function, single=True)
+
+        else:
+            raise TypeError(f&#34;Cannot handle {type(self)} and {type(other)}&#34;)
+
+        return self._new_from_dict(new_values)
+
+    def _unary_operation(self, operation):
+        new_values = {f.name: operation(getattr(self, f.name))
+                      if getattr(self, f.name) is not None else None
+                      for f in fields(self)}
+
+        return self._new_from_dict(new_values)
+
+    def _comparision_operation(self, other, operation):
+        def operation_function(this_value, other_value):
+            if None in (this_value, other_value):
+                return True
+            else:
+                return operation(this_value, other_value)
+
+        if isinstance(other, type(self)):
+            new_values = self._cross_same_type(other, operation_function).values()
+
+        elif isinstance(other, (int, float)):
+            new_values = self._cross_same_type(other, operation_function, single=True).values()
+
+        else:
+            raise TypeError(f&#34;Cannot handle {type(self)} and {type(other)}&#34;)
+
+        if all(new_values):
+            return True
+
+        elif not any(new_values):
+            return False
+
+        else:
+            return None
+
+    def __or__(self, other):
+        def operation_function(this_value, other_value):
+            if this_value is None:
+                return other_value
+            else:
+                return this_value
+
+        new_values = self._cross_same_type(other, operation_function)
+        return self._new_from_dict(new_values)
+
+    def __and__(self, other):
+        def operation_function(this_value, other_value):
+            if None not in (this_value, other_value):
+                return this_value
+            else:
+                return None
+
+        new_values = self._cross_same_type(other, operation_function)
+        return self._new_from_dict(new_values)
+
+    def __add__(self, other):
+        return self._binary_operation(other, operator.add)
+
+    def __radd__(self, other):
+        return self._binary_operation(other, operator.add)
+
+    def __sub__(self, other):
+        return self._binary_operation(other, operator.sub)
+
+    def __rsub__(self, other):
+        return self._binary_operation(other, operator.sub)
+
+    def __mul__(self, other):
+        return self._binary_operation(other, operator.mul)
+
+    def __rmul__(self, other):
+        return self._binary_operation(other, operator.mul)
+
+    def __div__(self, other):
+        return self._binary_operation(other, operator.div)
+
+    def __rdiv__(self, other):
+        return self._binary_operation(other, operator.div)
+
+    def __truediv__(self, other):
+        return self._binary_operation(other, operator.truediv)
+
+    def __mod__(self, other):
+        return self._binary_operation(other, operator.mod)
+
+    def __abs__(self):
+        return self._unary_operation(operator.abs)
+
+    def __index__(self):
+        return self._unary_operation(operator.index)
+
+    def __pos__(self):
+        return self._unary_operation(operator.pos)
+
+    def __neg__(self):
+        return self._unary_operation(operator.neg)
+
+    def __lt__(self, other):
+        return self._comparision_operation(other, operator.lt)
+
+    def __le__(self, other):
+        return self._comparision_operation(other, operator.le)
+
+    def __eq__(self, other):
+        return self._comparision_operation(other, operator.eq)
+
+    def __ne__(self, other):
+        return self._comparision_operation(other, operator.ne)
+
+    def __ge__(self, other):
+        return self._comparision_operation(other, operator.ge)
+
+    def __gt__(self, other):
+        return self._comparision_operation(other, operator.gt)
 
 
 @dataclass
-class MirobotAngles:
+class MirobotAngles(featured_dataclass):
     &#34;&#34;&#34; A dataclass to hold Mirobot&#39;s angular values. &#34;&#34;&#34;
-    a: float = 0.0
+    a: float = None
     &#34;&#34;&#34; Angle of axis 1 &#34;&#34;&#34;
-    b: float = 0.0
+    b: float = None
     &#34;&#34;&#34; Angle of axis 2 &#34;&#34;&#34;
-    c: float = 0.0
+    c: float = None
     &#34;&#34;&#34; Angle of axis 3 &#34;&#34;&#34;
-    d: float = 0.0
-    &#34;&#34;&#34; Location of rail or stepper module &#34;&#34;&#34;
-    x: float = 0.0
+    x: float = None
     &#34;&#34;&#34; Angle of axis 4 &#34;&#34;&#34;
-    y: float = 0.0
+    y: float = None
     &#34;&#34;&#34; Angle of axis 5 &#34;&#34;&#34;
-    z: float = 0.0
+    z: float = None
     &#34;&#34;&#34; Angle of axis 6 &#34;&#34;&#34;
+    d: float = None
+    &#34;&#34;&#34; Location of external slide rail module &#34;&#34;&#34;
+
+    @property
+    def a1(self):
+        &#34;&#34;&#34; Angle of axis 1 &#34;&#34;&#34;
+        return self.a
+
+    @property
+    def a2(self):
+        &#34;&#34;&#34; Angle of axis 2 &#34;&#34;&#34;
+        return self.b
+
+    @property
+    def a3(self):
+        &#34;&#34;&#34; Angle of axis 3 &#34;&#34;&#34;
+        return self.c
+
+    @property
+    def a4(self):
+        &#34;&#34;&#34; Angle of axis 4 &#34;&#34;&#34;
+        return self.x
+
+    @property
+    def a5(self):
+        &#34;&#34;&#34; Angle of axis 5 &#34;&#34;&#34;
+        return self.y
+
+    @property
+    def a6(self):
+        &#34;&#34;&#34; Angle of axis 6 &#34;&#34;&#34;
+        return self.z
+
+    @property
+    def rail(self):
+        &#34;&#34;&#34; Location of external slide rail module &#34;&#34;&#34;
+        return self.d
 
 
 @dataclass
-class MirobotCartesians:
+class MirobotCartesians(featured_dataclass):
     &#34;&#34;&#34; A dataclass to hold Mirobot&#39;s cartesian values and roll/pitch/yaw angles. &#34;&#34;&#34;
-    x: float = 0.0
+    x: float = None
     &#34;&#34;&#34; Position on X-axis &#34;&#34;&#34;
-    y: float = 0.0
+    y: float = None
     &#34;&#34;&#34; Position of Y-axis &#34;&#34;&#34;
-    z: float = 0.0
+    z: float = None
     &#34;&#34;&#34; Position of Z-axis &#34;&#34;&#34;
-    a: float = 0.0
+    a: float = None
     &#34;&#34;&#34; Position of Roll angle &#34;&#34;&#34;
-    b: float = 0.0
+    b: float = None
     &#34;&#34;&#34; Position of Pitch angle &#34;&#34;&#34;
-    c: float = 0.0
+    c: float = None
     &#34;&#34;&#34; Position of Yaw angle &#34;&#34;&#34;
+
+    @property
+    def tx(self):
+        &#34;&#34;&#34; Position on X-axis &#34;&#34;&#34;
+        return self.x
+
+    @property
+    def ty(self):
+        &#34;&#34;&#34; Position on Y-axis &#34;&#34;&#34;
+        return self.y
+
+    @property
+    def tz(self):
+        &#34;&#34;&#34; Position on Z-axis &#34;&#34;&#34;
+        return self.z
+
+    @property
+    def rx(self):
+        &#34;&#34;&#34; Position of Roll angle &#34;&#34;&#34;
+        return self.a
+
+    @property
+    def ry(self):
+        &#34;&#34;&#34; Position of Pitch angle &#34;&#34;&#34;
+        return self.b
+
+    @property
+    def rz(self):
+        &#34;&#34;&#34; Position of Yaw angle &#34;&#34;&#34;
+        return self.c
 
 
 @dataclass
@@ -72,12 +298,12 @@ class MirobotStatus:
     &#34;&#34;&#34; Dataclass that holds Mirobot&#39;s angular values including the rail position value. &#34;&#34;&#34;
     cartesian: MirobotCartesians = MirobotCartesians()
     &#34;&#34;&#34; Dataclass that holds the cartesian values and roll/pitch/yaw angles. &#34;&#34;&#34;
-    pump_pwm: int = 0
+    pump_pwm: int = None
     &#34;&#34;&#34; The current pwm of the pnuematic pump module. &#34;&#34;&#34;
-    valve_pwm: int = 0
+    valve_pwm: int = None
     &#34;&#34;&#34; The current pwm of the value module. (eg. gripper) &#34;&#34;&#34;
     motion_mode: bool = False
-    &#34;&#34;&#34; Whether Mirobot is currently in coordinate mode or joint-motion mode &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34; Whether Mirobot is currently in coordinate mode (`False`) or joint-motion mode (`True`) &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -91,7 +317,7 @@ class MirobotStatus:
 <dl>
 <dt id="mirobot.mirobot_status.MirobotAngles"><code class="flex name class">
 <span>class <span class="ident">MirobotAngles</span></span>
-<span>(</span><span>a=0.0, b=0.0, c=0.0, d=0.0, x=0.0, y=0.0, z=0.0)</span>
+<span>(</span><span>a=None, b=None, c=None, x=None, y=None, z=None, d=None)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A dataclass to hold Mirobot's angular values.</p></section>
@@ -99,23 +325,63 @@ class MirobotStatus:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MirobotAngles:
+<pre><code class="python">class MirobotAngles(featured_dataclass):
     &#34;&#34;&#34; A dataclass to hold Mirobot&#39;s angular values. &#34;&#34;&#34;
-    a: float = 0.0
+    a: float = None
     &#34;&#34;&#34; Angle of axis 1 &#34;&#34;&#34;
-    b: float = 0.0
+    b: float = None
     &#34;&#34;&#34; Angle of axis 2 &#34;&#34;&#34;
-    c: float = 0.0
+    c: float = None
     &#34;&#34;&#34; Angle of axis 3 &#34;&#34;&#34;
-    d: float = 0.0
-    &#34;&#34;&#34; Location of rail or stepper module &#34;&#34;&#34;
-    x: float = 0.0
+    x: float = None
     &#34;&#34;&#34; Angle of axis 4 &#34;&#34;&#34;
-    y: float = 0.0
+    y: float = None
     &#34;&#34;&#34; Angle of axis 5 &#34;&#34;&#34;
-    z: float = 0.0
-    &#34;&#34;&#34; Angle of axis 6 &#34;&#34;&#34;</code></pre>
+    z: float = None
+    &#34;&#34;&#34; Angle of axis 6 &#34;&#34;&#34;
+    d: float = None
+    &#34;&#34;&#34; Location of external slide rail module &#34;&#34;&#34;
+
+    @property
+    def a1(self):
+        &#34;&#34;&#34; Angle of axis 1 &#34;&#34;&#34;
+        return self.a
+
+    @property
+    def a2(self):
+        &#34;&#34;&#34; Angle of axis 2 &#34;&#34;&#34;
+        return self.b
+
+    @property
+    def a3(self):
+        &#34;&#34;&#34; Angle of axis 3 &#34;&#34;&#34;
+        return self.c
+
+    @property
+    def a4(self):
+        &#34;&#34;&#34; Angle of axis 4 &#34;&#34;&#34;
+        return self.x
+
+    @property
+    def a5(self):
+        &#34;&#34;&#34; Angle of axis 5 &#34;&#34;&#34;
+        return self.y
+
+    @property
+    def a6(self):
+        &#34;&#34;&#34; Angle of axis 6 &#34;&#34;&#34;
+        return self.z
+
+    @property
+    def rail(self):
+        &#34;&#34;&#34; Location of external slide rail module &#34;&#34;&#34;
+        return self.d</code></pre>
 </details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="mirobot.mirobot_status.featured_dataclass" href="#mirobot.mirobot_status.featured_dataclass">featured_dataclass</a></li>
+<li><a title="mirobot.mirobot_status.basic_dataclass" href="#mirobot.mirobot_status.basic_dataclass">basic_dataclass</a></li>
+</ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="mirobot.mirobot_status.MirobotAngles.a"><code class="name">var <span class="ident">a</span></code></dt>
@@ -132,7 +398,7 @@ class MirobotStatus:
 </dd>
 <dt id="mirobot.mirobot_status.MirobotAngles.d"><code class="name">var <span class="ident">d</span></code></dt>
 <dd>
-<section class="desc"><p>Location of rail or stepper module</p></section>
+<section class="desc"><p>Location of external slide rail module</p></section>
 </dd>
 <dt id="mirobot.mirobot_status.MirobotAngles.x"><code class="name">var <span class="ident">x</span></code></dt>
 <dd>
@@ -147,10 +413,104 @@ class MirobotStatus:
 <section class="desc"><p>Angle of axis 6</p></section>
 </dd>
 </dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="mirobot.mirobot_status.MirobotAngles.a1"><code class="name">var <span class="ident">a1</span></code></dt>
+<dd>
+<section class="desc"><p>Angle of axis 1</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def a1(self):
+    &#34;&#34;&#34; Angle of axis 1 &#34;&#34;&#34;
+    return self.a</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotAngles.a2"><code class="name">var <span class="ident">a2</span></code></dt>
+<dd>
+<section class="desc"><p>Angle of axis 2</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def a2(self):
+    &#34;&#34;&#34; Angle of axis 2 &#34;&#34;&#34;
+    return self.b</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotAngles.a3"><code class="name">var <span class="ident">a3</span></code></dt>
+<dd>
+<section class="desc"><p>Angle of axis 3</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def a3(self):
+    &#34;&#34;&#34; Angle of axis 3 &#34;&#34;&#34;
+    return self.c</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotAngles.a4"><code class="name">var <span class="ident">a4</span></code></dt>
+<dd>
+<section class="desc"><p>Angle of axis 4</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def a4(self):
+    &#34;&#34;&#34; Angle of axis 4 &#34;&#34;&#34;
+    return self.x</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotAngles.a5"><code class="name">var <span class="ident">a5</span></code></dt>
+<dd>
+<section class="desc"><p>Angle of axis 5</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def a5(self):
+    &#34;&#34;&#34; Angle of axis 5 &#34;&#34;&#34;
+    return self.y</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotAngles.a6"><code class="name">var <span class="ident">a6</span></code></dt>
+<dd>
+<section class="desc"><p>Angle of axis 6</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def a6(self):
+    &#34;&#34;&#34; Angle of axis 6 &#34;&#34;&#34;
+    return self.z</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotAngles.rail"><code class="name">var <span class="ident">rail</span></code></dt>
+<dd>
+<section class="desc"><p>Location of external slide rail module</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def rail(self):
+    &#34;&#34;&#34; Location of external slide rail module &#34;&#34;&#34;
+    return self.d</code></pre>
+</details>
+</dd>
+</dl>
 </dd>
 <dt id="mirobot.mirobot_status.MirobotCartesians"><code class="flex name class">
 <span>class <span class="ident">MirobotCartesians</span></span>
-<span>(</span><span>x=0.0, y=0.0, z=0.0, a=0.0, b=0.0, c=0.0)</span>
+<span>(</span><span>x=None, y=None, z=None, a=None, b=None, c=None)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A dataclass to hold Mirobot's cartesian values and roll/pitch/yaw angles.</p></section>
@@ -158,21 +518,56 @@ class MirobotStatus:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MirobotCartesians:
+<pre><code class="python">class MirobotCartesians(featured_dataclass):
     &#34;&#34;&#34; A dataclass to hold Mirobot&#39;s cartesian values and roll/pitch/yaw angles. &#34;&#34;&#34;
-    x: float = 0.0
+    x: float = None
     &#34;&#34;&#34; Position on X-axis &#34;&#34;&#34;
-    y: float = 0.0
+    y: float = None
     &#34;&#34;&#34; Position of Y-axis &#34;&#34;&#34;
-    z: float = 0.0
+    z: float = None
     &#34;&#34;&#34; Position of Z-axis &#34;&#34;&#34;
-    a: float = 0.0
+    a: float = None
     &#34;&#34;&#34; Position of Roll angle &#34;&#34;&#34;
-    b: float = 0.0
+    b: float = None
     &#34;&#34;&#34; Position of Pitch angle &#34;&#34;&#34;
-    c: float = 0.0
-    &#34;&#34;&#34; Position of Yaw angle &#34;&#34;&#34;</code></pre>
+    c: float = None
+    &#34;&#34;&#34; Position of Yaw angle &#34;&#34;&#34;
+
+    @property
+    def tx(self):
+        &#34;&#34;&#34; Position on X-axis &#34;&#34;&#34;
+        return self.x
+
+    @property
+    def ty(self):
+        &#34;&#34;&#34; Position on Y-axis &#34;&#34;&#34;
+        return self.y
+
+    @property
+    def tz(self):
+        &#34;&#34;&#34; Position on Z-axis &#34;&#34;&#34;
+        return self.z
+
+    @property
+    def rx(self):
+        &#34;&#34;&#34; Position of Roll angle &#34;&#34;&#34;
+        return self.a
+
+    @property
+    def ry(self):
+        &#34;&#34;&#34; Position of Pitch angle &#34;&#34;&#34;
+        return self.b
+
+    @property
+    def rz(self):
+        &#34;&#34;&#34; Position of Yaw angle &#34;&#34;&#34;
+        return self.c</code></pre>
 </details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="mirobot.mirobot_status.featured_dataclass" href="#mirobot.mirobot_status.featured_dataclass">featured_dataclass</a></li>
+<li><a title="mirobot.mirobot_status.basic_dataclass" href="#mirobot.mirobot_status.basic_dataclass">basic_dataclass</a></li>
+</ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="mirobot.mirobot_status.MirobotCartesians.a"><code class="name">var <span class="ident">a</span></code></dt>
@@ -200,10 +595,91 @@ class MirobotStatus:
 <section class="desc"><p>Position of Z-axis</p></section>
 </dd>
 </dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="mirobot.mirobot_status.MirobotCartesians.rx"><code class="name">var <span class="ident">rx</span></code></dt>
+<dd>
+<section class="desc"><p>Position of Roll angle</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def rx(self):
+    &#34;&#34;&#34; Position of Roll angle &#34;&#34;&#34;
+    return self.a</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotCartesians.ry"><code class="name">var <span class="ident">ry</span></code></dt>
+<dd>
+<section class="desc"><p>Position of Pitch angle</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def ry(self):
+    &#34;&#34;&#34; Position of Pitch angle &#34;&#34;&#34;
+    return self.b</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotCartesians.rz"><code class="name">var <span class="ident">rz</span></code></dt>
+<dd>
+<section class="desc"><p>Position of Yaw angle</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def rz(self):
+    &#34;&#34;&#34; Position of Yaw angle &#34;&#34;&#34;
+    return self.c</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotCartesians.tx"><code class="name">var <span class="ident">tx</span></code></dt>
+<dd>
+<section class="desc"><p>Position on X-axis</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def tx(self):
+    &#34;&#34;&#34; Position on X-axis &#34;&#34;&#34;
+    return self.x</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotCartesians.ty"><code class="name">var <span class="ident">ty</span></code></dt>
+<dd>
+<section class="desc"><p>Position on Y-axis</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def ty(self):
+    &#34;&#34;&#34; Position on Y-axis &#34;&#34;&#34;
+    return self.y</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.MirobotCartesians.tz"><code class="name">var <span class="ident">tz</span></code></dt>
+<dd>
+<section class="desc"><p>Position on Z-axis</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def tz(self):
+    &#34;&#34;&#34; Position on Z-axis &#34;&#34;&#34;
+    return self.z</code></pre>
+</details>
+</dd>
+</dl>
 </dd>
 <dt id="mirobot.mirobot_status.MirobotStatus"><code class="flex name class">
 <span>class <span class="ident">MirobotStatus</span></span>
-<span>(</span><span>state='', angle=MirobotAngles(a=0.0, b=0.0, c=0.0, d=0.0, x=0.0, y=0.0, z=0.0), cartesian=MirobotCartesians(x=0.0, y=0.0, z=0.0, a=0.0, b=0.0, c=0.0), pump_pwm=0, valve_pwm=0, motion_mode=False)</span>
+<span>(</span><span>state='', angle=MirobotAngles(a=None, b=None, c=None, x=None, y=None, z=None, d=None), cartesian=MirobotCartesians(x=None, y=None, z=None, a=None, b=None, c=None), pump_pwm=None, valve_pwm=None, motion_mode=False)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A composite dataclass to hold all of Mirobot's trackable quantities.</p></section>
@@ -219,12 +695,12 @@ class MirobotStatus:
     &#34;&#34;&#34; Dataclass that holds Mirobot&#39;s angular values including the rail position value. &#34;&#34;&#34;
     cartesian: MirobotCartesians = MirobotCartesians()
     &#34;&#34;&#34; Dataclass that holds the cartesian values and roll/pitch/yaw angles. &#34;&#34;&#34;
-    pump_pwm: int = 0
+    pump_pwm: int = None
     &#34;&#34;&#34; The current pwm of the pnuematic pump module. &#34;&#34;&#34;
-    valve_pwm: int = 0
+    valve_pwm: int = None
     &#34;&#34;&#34; The current pwm of the value module. (eg. gripper) &#34;&#34;&#34;
     motion_mode: bool = False
-    &#34;&#34;&#34; Whether Mirobot is currently in coordinate mode or joint-motion mode &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34; Whether Mirobot is currently in coordinate mode (`False`) or joint-motion mode (`True`) &#34;&#34;&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -238,7 +714,7 @@ class MirobotStatus:
 </dd>
 <dt id="mirobot.mirobot_status.MirobotStatus.motion_mode"><code class="name">var <span class="ident">motion_mode</span></code></dt>
 <dd>
-<section class="desc"><p>Whether Mirobot is currently in coordinate mode or joint-motion mode</p></section>
+<section class="desc"><p>Whether Mirobot is currently in coordinate mode (<code>False</code>) or joint-motion mode (<code>True</code>)</p></section>
 </dd>
 <dt id="mirobot.mirobot_status.MirobotStatus.pump_pwm"><code class="name">var <span class="ident">pump_pwm</span></code></dt>
 <dd>
@@ -253,6 +729,226 @@ class MirobotStatus:
 <section class="desc"><p>The current pwm of the value module. (eg. gripper)</p></section>
 </dd>
 </dl>
+</dd>
+<dt id="mirobot.mirobot_status.basic_dataclass"><code class="flex name class">
+<span>class <span class="ident">basic_dataclass</span></span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class basic_dataclass:
+    def asdict(self):
+        return asdict(self)
+
+    def astuple(self):
+        return astuple(self)
+
+    @classmethod
+    def _new_from_dict(cls, dictionary):
+        return cls(**dictionary)</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="mirobot.mirobot_status.featured_dataclass" href="#mirobot.mirobot_status.featured_dataclass">featured_dataclass</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="mirobot.mirobot_status.basic_dataclass.asdict"><code class="name flex">
+<span>def <span class="ident">asdict</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def asdict(self):
+    return asdict(self)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.mirobot_status.basic_dataclass.astuple"><code class="name flex">
+<span>def <span class="ident">astuple</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def astuple(self):
+    return astuple(self)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="mirobot.mirobot_status.featured_dataclass"><code class="flex name class">
+<span>class <span class="ident">featured_dataclass</span></span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class featured_dataclass(basic_dataclass):
+    def _cross_same_type(self, other, operation_function, single=False):
+        new_values = {}
+        for f in fields(self):
+            this_value = getattr(self, f.name)
+
+            if single:
+                other_value = other
+            else:
+                other_value = getattr(other, f.name)
+
+            result = operation_function(this_value, other_value)
+
+            new_values[f.name] = result
+
+        return new_values
+
+    def _binary_operation(self, other, operation):
+        def operation_function(this_value, other_value):
+            if None in (this_value, other_value):
+                return None
+            else:
+                return operation(this_value, other_value)
+
+        if isinstance(other, type(self)):
+            new_values = self._cross_same_type(other, operation_function)
+
+        elif isinstance(other, (int, float)):
+            new_values = self._cross_same_type(other, operation_function, single=True)
+
+        else:
+            raise TypeError(f&#34;Cannot handle {type(self)} and {type(other)}&#34;)
+
+        return self._new_from_dict(new_values)
+
+    def _unary_operation(self, operation):
+        new_values = {f.name: operation(getattr(self, f.name))
+                      if getattr(self, f.name) is not None else None
+                      for f in fields(self)}
+
+        return self._new_from_dict(new_values)
+
+    def _comparision_operation(self, other, operation):
+        def operation_function(this_value, other_value):
+            if None in (this_value, other_value):
+                return True
+            else:
+                return operation(this_value, other_value)
+
+        if isinstance(other, type(self)):
+            new_values = self._cross_same_type(other, operation_function).values()
+
+        elif isinstance(other, (int, float)):
+            new_values = self._cross_same_type(other, operation_function, single=True).values()
+
+        else:
+            raise TypeError(f&#34;Cannot handle {type(self)} and {type(other)}&#34;)
+
+        if all(new_values):
+            return True
+
+        elif not any(new_values):
+            return False
+
+        else:
+            return None
+
+    def __or__(self, other):
+        def operation_function(this_value, other_value):
+            if this_value is None:
+                return other_value
+            else:
+                return this_value
+
+        new_values = self._cross_same_type(other, operation_function)
+        return self._new_from_dict(new_values)
+
+    def __and__(self, other):
+        def operation_function(this_value, other_value):
+            if None not in (this_value, other_value):
+                return this_value
+            else:
+                return None
+
+        new_values = self._cross_same_type(other, operation_function)
+        return self._new_from_dict(new_values)
+
+    def __add__(self, other):
+        return self._binary_operation(other, operator.add)
+
+    def __radd__(self, other):
+        return self._binary_operation(other, operator.add)
+
+    def __sub__(self, other):
+        return self._binary_operation(other, operator.sub)
+
+    def __rsub__(self, other):
+        return self._binary_operation(other, operator.sub)
+
+    def __mul__(self, other):
+        return self._binary_operation(other, operator.mul)
+
+    def __rmul__(self, other):
+        return self._binary_operation(other, operator.mul)
+
+    def __div__(self, other):
+        return self._binary_operation(other, operator.div)
+
+    def __rdiv__(self, other):
+        return self._binary_operation(other, operator.div)
+
+    def __truediv__(self, other):
+        return self._binary_operation(other, operator.truediv)
+
+    def __mod__(self, other):
+        return self._binary_operation(other, operator.mod)
+
+    def __abs__(self):
+        return self._unary_operation(operator.abs)
+
+    def __index__(self):
+        return self._unary_operation(operator.index)
+
+    def __pos__(self):
+        return self._unary_operation(operator.pos)
+
+    def __neg__(self):
+        return self._unary_operation(operator.neg)
+
+    def __lt__(self, other):
+        return self._comparision_operation(other, operator.lt)
+
+    def __le__(self, other):
+        return self._comparision_operation(other, operator.le)
+
+    def __eq__(self, other):
+        return self._comparision_operation(other, operator.eq)
+
+    def __ne__(self, other):
+        return self._comparision_operation(other, operator.ne)
+
+    def __ge__(self, other):
+        return self._comparision_operation(other, operator.ge)
+
+    def __gt__(self, other):
+        return self._comparision_operation(other, operator.gt)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="mirobot.mirobot_status.basic_dataclass" href="#mirobot.mirobot_status.basic_dataclass">basic_dataclass</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="mirobot.mirobot_status.MirobotAngles" href="#mirobot.mirobot_status.MirobotAngles">MirobotAngles</a></li>
+<li><a title="mirobot.mirobot_status.MirobotCartesians" href="#mirobot.mirobot_status.MirobotCartesians">MirobotCartesians</a></li>
+</ul>
 </dd>
 </dl>
 </section>
@@ -274,9 +970,16 @@ class MirobotStatus:
 <h4><code><a title="mirobot.mirobot_status.MirobotAngles" href="#mirobot.mirobot_status.MirobotAngles">MirobotAngles</a></code></h4>
 <ul class="two-column">
 <li><code><a title="mirobot.mirobot_status.MirobotAngles.a" href="#mirobot.mirobot_status.MirobotAngles.a">a</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotAngles.a1" href="#mirobot.mirobot_status.MirobotAngles.a1">a1</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotAngles.a2" href="#mirobot.mirobot_status.MirobotAngles.a2">a2</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotAngles.a3" href="#mirobot.mirobot_status.MirobotAngles.a3">a3</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotAngles.a4" href="#mirobot.mirobot_status.MirobotAngles.a4">a4</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotAngles.a5" href="#mirobot.mirobot_status.MirobotAngles.a5">a5</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotAngles.a6" href="#mirobot.mirobot_status.MirobotAngles.a6">a6</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotAngles.b" href="#mirobot.mirobot_status.MirobotAngles.b">b</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotAngles.c" href="#mirobot.mirobot_status.MirobotAngles.c">c</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotAngles.d" href="#mirobot.mirobot_status.MirobotAngles.d">d</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotAngles.rail" href="#mirobot.mirobot_status.MirobotAngles.rail">rail</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotAngles.x" href="#mirobot.mirobot_status.MirobotAngles.x">x</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotAngles.y" href="#mirobot.mirobot_status.MirobotAngles.y">y</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotAngles.z" href="#mirobot.mirobot_status.MirobotAngles.z">z</a></code></li>
@@ -288,6 +991,12 @@ class MirobotStatus:
 <li><code><a title="mirobot.mirobot_status.MirobotCartesians.a" href="#mirobot.mirobot_status.MirobotCartesians.a">a</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotCartesians.b" href="#mirobot.mirobot_status.MirobotCartesians.b">b</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotCartesians.c" href="#mirobot.mirobot_status.MirobotCartesians.c">c</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotCartesians.rx" href="#mirobot.mirobot_status.MirobotCartesians.rx">rx</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotCartesians.ry" href="#mirobot.mirobot_status.MirobotCartesians.ry">ry</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotCartesians.rz" href="#mirobot.mirobot_status.MirobotCartesians.rz">rz</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotCartesians.tx" href="#mirobot.mirobot_status.MirobotCartesians.tx">tx</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotCartesians.ty" href="#mirobot.mirobot_status.MirobotCartesians.ty">ty</a></code></li>
+<li><code><a title="mirobot.mirobot_status.MirobotCartesians.tz" href="#mirobot.mirobot_status.MirobotCartesians.tz">tz</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotCartesians.x" href="#mirobot.mirobot_status.MirobotCartesians.x">x</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotCartesians.y" href="#mirobot.mirobot_status.MirobotCartesians.y">y</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotCartesians.z" href="#mirobot.mirobot_status.MirobotCartesians.z">z</a></code></li>
@@ -303,6 +1012,16 @@ class MirobotStatus:
 <li><code><a title="mirobot.mirobot_status.MirobotStatus.state" href="#mirobot.mirobot_status.MirobotStatus.state">state</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotStatus.valve_pwm" href="#mirobot.mirobot_status.MirobotStatus.valve_pwm">valve_pwm</a></code></li>
 </ul>
+</li>
+<li>
+<h4><code><a title="mirobot.mirobot_status.basic_dataclass" href="#mirobot.mirobot_status.basic_dataclass">basic_dataclass</a></code></h4>
+<ul class="">
+<li><code><a title="mirobot.mirobot_status.basic_dataclass.asdict" href="#mirobot.mirobot_status.basic_dataclass.asdict">asdict</a></code></li>
+<li><code><a title="mirobot.mirobot_status.basic_dataclass.astuple" href="#mirobot.mirobot_status.basic_dataclass.astuple">astuple</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="mirobot.mirobot_status.featured_dataclass" href="#mirobot.mirobot_status.featured_dataclass">featured_dataclass</a></code></h4>
 </li>
 </ul>
 </li>

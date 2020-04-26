@@ -24,17 +24,28 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MirobotError(Exception):
+<pre><code class="python">import logging
+
+
+class ExitOnExceptionStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        super().emit(record)
+        print(type(record))
+        if record.levelno &gt;= logging.ERROR:
+            raise SystemExit(-1)
+
+
+class MirobotError(Exception):
     &#34;&#34;&#34; An inplace class for throwing Mirobot errors. &#34;&#34;&#34;
     pass
 
 
-class MirobotAlarm(Warning):
+class MirobotAlarm(Exception):
     &#34;&#34;&#34;  An inplace class for throwing Mirobot alarms. &#34;&#34;&#34;
     pass
 
 
-class MirobotReset(Warning):
+class MirobotReset(Exception):
     &#34;&#34;&#34; An inplace class for when Mirobot resets. &#34;&#34;&#34;
     pass
 
@@ -56,7 +67,31 @@ class MirobotResetFileError(Exception):
 
 class MirobotVariableCommandError(Exception):
     &#34;&#34;&#34; An inplace class for when Mirobot finds a command that does not match variable setting-command syntax. &#34;&#34;&#34;
-    pass</code></pre>
+    pass
+
+
+class SerialDeviceReadError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to read the serial port &#34;&#34;&#34;
+
+
+class SerialDeviceOpenError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to open the serial port &#34;&#34;&#34;
+
+
+class SerialDeviceLockError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to lock the serial port &#34;&#34;&#34;
+
+
+class SerialDeviceCloseError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to close the serial port &#34;&#34;&#34;
+
+
+class SerialDeviceUnlockError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to unlock the serial port &#34;&#34;&#34;
+
+
+class SerialDeviceWriteError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to write to the serial port &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -68,6 +103,61 @@ class MirobotVariableCommandError(Exception):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="mirobot.exceptions.ExitOnExceptionStreamHandler"><code class="flex name class">
+<span>class <span class="ident">ExitOnExceptionStreamHandler</span></span>
+<span>(</span><span>stream=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>A handler class which writes logging records, appropriately formatted,
+to a stream. Note that this class does not close the stream, as
+sys.stdout or sys.stderr may be used.</p>
+<p>Initialize the handler.</p>
+<p>If stream is not specified, sys.stderr is used.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ExitOnExceptionStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        super().emit(record)
+        print(type(record))
+        if record.levelno &gt;= logging.ERROR:
+            raise SystemExit(-1)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>logging.StreamHandler</li>
+<li>logging.Handler</li>
+<li>logging.Filterer</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="mirobot.exceptions.ExitOnExceptionStreamHandler.emit"><code class="name flex">
+<span>def <span class="ident">emit</span></span>(<span>self, record)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Emit a record.</p>
+<p>If a formatter is specified, it is used to format the record.
+The record is then written to the stream with a trailing newline.
+If
+exception information is present, it is formatted using
+traceback.print_exception and appended to the stream.
+If the stream
+has an 'encoding' attribute, it is used to determine how to do the
+output to the stream.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def emit(self, record):
+    super().emit(record)
+    print(type(record))
+    if record.levelno &gt;= logging.ERROR:
+        raise SystemExit(-1)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="mirobot.exceptions.MirobotAlarm"><code class="flex name class">
 <span>class <span class="ident">MirobotAlarm</span></span>
 <span>(</span><span>...)</span>
@@ -78,13 +168,12 @@ class MirobotVariableCommandError(Exception):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MirobotAlarm(Warning):
+<pre><code class="python">class MirobotAlarm(Exception):
     &#34;&#34;&#34;  An inplace class for throwing Mirobot alarms. &#34;&#34;&#34;
     pass</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li>builtins.Warning</li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 </ul>
@@ -139,13 +228,12 @@ class MirobotVariableCommandError(Exception):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MirobotReset(Warning):
+<pre><code class="python">class MirobotReset(Exception):
     &#34;&#34;&#34; An inplace class for when Mirobot resets. &#34;&#34;&#34;
     pass</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li>builtins.Warning</li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 </ul>
@@ -210,6 +298,120 @@ class MirobotVariableCommandError(Exception):
 <li>builtins.BaseException</li>
 </ul>
 </dd>
+<dt id="mirobot.exceptions.SerialDeviceCloseError"><code class="flex name class">
+<span>class <span class="ident">SerialDeviceCloseError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>An inplace class for when SerialDevice is unable to close the serial port</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SerialDeviceCloseError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to close the serial port &#34;&#34;&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="mirobot.exceptions.SerialDeviceLockError"><code class="flex name class">
+<span>class <span class="ident">SerialDeviceLockError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>An inplace class for when SerialDevice is unable to lock the serial port</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SerialDeviceLockError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to lock the serial port &#34;&#34;&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="mirobot.exceptions.SerialDeviceOpenError"><code class="flex name class">
+<span>class <span class="ident">SerialDeviceOpenError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>An inplace class for when SerialDevice is unable to open the serial port</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SerialDeviceOpenError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to open the serial port &#34;&#34;&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="mirobot.exceptions.SerialDeviceReadError"><code class="flex name class">
+<span>class <span class="ident">SerialDeviceReadError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>An inplace class for when SerialDevice is unable to read the serial port</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SerialDeviceReadError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to read the serial port &#34;&#34;&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="mirobot.exceptions.SerialDeviceUnlockError"><code class="flex name class">
+<span>class <span class="ident">SerialDeviceUnlockError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>An inplace class for when SerialDevice is unable to unlock the serial port</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SerialDeviceUnlockError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to unlock the serial port &#34;&#34;&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="mirobot.exceptions.SerialDeviceWriteError"><code class="flex name class">
+<span>class <span class="ident">SerialDeviceWriteError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>An inplace class for when SerialDevice is unable to write to the serial port</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SerialDeviceWriteError(Exception):
+    &#34;&#34;&#34; An inplace class for when SerialDevice is unable to write to the serial port &#34;&#34;&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
 </dl>
 </section>
 </article>
@@ -226,6 +428,12 @@ class MirobotVariableCommandError(Exception):
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
+<li>
+<h4><code><a title="mirobot.exceptions.ExitOnExceptionStreamHandler" href="#mirobot.exceptions.ExitOnExceptionStreamHandler">ExitOnExceptionStreamHandler</a></code></h4>
+<ul class="">
+<li><code><a title="mirobot.exceptions.ExitOnExceptionStreamHandler.emit" href="#mirobot.exceptions.ExitOnExceptionStreamHandler.emit">emit</a></code></li>
+</ul>
+</li>
 <li>
 <h4><code><a title="mirobot.exceptions.MirobotAlarm" href="#mirobot.exceptions.MirobotAlarm">MirobotAlarm</a></code></h4>
 </li>
@@ -246,6 +454,24 @@ class MirobotVariableCommandError(Exception):
 </li>
 <li>
 <h4><code><a title="mirobot.exceptions.MirobotVariableCommandError" href="#mirobot.exceptions.MirobotVariableCommandError">MirobotVariableCommandError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="mirobot.exceptions.SerialDeviceCloseError" href="#mirobot.exceptions.SerialDeviceCloseError">SerialDeviceCloseError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="mirobot.exceptions.SerialDeviceLockError" href="#mirobot.exceptions.SerialDeviceLockError">SerialDeviceLockError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="mirobot.exceptions.SerialDeviceOpenError" href="#mirobot.exceptions.SerialDeviceOpenError">SerialDeviceOpenError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="mirobot.exceptions.SerialDeviceReadError" href="#mirobot.exceptions.SerialDeviceReadError">SerialDeviceReadError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="mirobot.exceptions.SerialDeviceUnlockError" href="#mirobot.exceptions.SerialDeviceUnlockError">SerialDeviceUnlockError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="mirobot.exceptions.SerialDeviceWriteError" href="#mirobot.exceptions.SerialDeviceWriteError">SerialDeviceWriteError</a></code></h4>
 </li>
 </ul>
 </li>

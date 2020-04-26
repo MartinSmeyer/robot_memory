@@ -24,15 +24,18 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import portalocker
-import serial
-import sys
+<pre><code class="python">import logging
 import os
+
+import portalocker
+import serial
+
+from .exceptions import ExitOnExceptionStreamHandler, SerialDeviceLockError, SerialDeviceOpenError, SerialDeviceReadError, SerialDeviceCloseError, SerialDeviceWriteError, SerialDeviceUnlockError
 
 
 class SerialDevice:
     &#34;&#34;&#34; A class for establishing a connection to a serial device. &#34;&#34;&#34;
-    def __init__(self, portname=&#39;&#39;, baudrate=0, stopbits=1, exclusive=True):
+    def __init__(self, portname=&#39;&#39;, baudrate=0, stopbits=1, exclusive=True, debug=False):
         &#34;&#34;&#34; Initialization of `SerialDevice` class
 
         Parameters
@@ -45,6 +48,8 @@ class SerialDevice:
              (Default value = `1`) Stopbits of the connection.
         exclusive : bool
              (Default value = `True`) Whether to (try) forcing exclusivity of serial ports. If another `mirobot.serial_device.SerialDevice` is connected to this port, then don&#39;t connect at all. On the other hand, if no other `mirobot.serial_device.SerialDevice` is connected, then create a lock-file signaling that this serial port is in use.
+        debug : bool
+             (Default value = `False`) Whether to print DEBUG-level information from the runtime of this class. Show more detailed information on screen output.
 
         Returns
         -------
@@ -55,6 +60,17 @@ class SerialDevice:
         self.baudrate = int(baudrate)
         self.stopbits = int(stopbits)
         self.exclusive = exclusive
+        self._debug = debug
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+
+        self.stream_handler = ExitOnExceptionStreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
+
+        formatter = logging.Formatter(f&#34;[{self.portname}] [%(levelname)s] %(message)s&#34;)
+        self.stream_handler.setFormatter(formatter)
+        self.logger.addHandler(self.stream_handler)
 
         self.serialport = serial.Serial()
         self._is_open = False
@@ -64,13 +80,33 @@ class SerialDevice:
         self.close()
 
     @property
+    def debug(self):
+        &#34;&#34;&#34; Return the `debug` property of `SerialDevice` &#34;&#34;&#34;
+        return self._debug
+
+    @debug.setter
+    def debug(self, value):
+        &#34;&#34;&#34;
+        Set the new `debug` property of `SerialDevice`. Use as in `SerialDevice.setDebug(value)`.
+
+        Parameters
+        ----------
+        value : bool
+            The new value for `SerialDevice.debug`. User this setter method as it will also update the logging method. As opposed to setting `SerialDevice.debug` directly which will not update the logger.
+
+        &#34;&#34;&#34;
+        self._debug = bool(value)
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
+
+    @property
     def is_open(self):
         &#34;&#34;&#34; Check if the serial port is open &#34;&#34;&#34;
         self._is_open = self.serialport.is_open
         return self._is_open
 
     def listen_to_device(self):
-        &#34;&#34;&#34; Listen to the serial port and return a message.
+        &#34;&#34;&#34;
+        Listen to the serial port and return a message.
 
         Returns
         -------
@@ -83,12 +119,10 @@ class SerialDevice:
                 msg = self.serialport.readline()
                 if msg != b&#39;&#39;:
                     msg = str(msg.strip(), &#39;utf-8&#39;)
-
                     return msg
 
             except Exception as e:
-                print(&#34;Error reading port: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceReadError(e))
 
     def open(self):
         &#34;&#34;&#34; Open the serial port. &#34;&#34;&#34;
@@ -99,36 +133,55 @@ class SerialDevice:
             self.serialport.stopbits = self.stopbits
 
             try:
+                self.logger.debug(f&#34;Attempting to open serial port {self.portname}&#34;)
+
                 self.serialport.open()
                 self._is_open = True
+
+                self.logger.debug(f&#34;Succeeded in opening serial port {self.portname}&#34;)
+
             except Exception as e:
-                print(&#34;Error opening port: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceOpenError(e))
 
             if self.exclusive:
                 try:
+                    self.logger.debug(f&#34;Attempting to lock serial port {self.portname}&#34;)
+
                     portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
-                except Exception:
-                    raise Exception(f&#34;Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;)
+
+                    self.logger.debug(f&#34;Succeeded in locking serial port {self.portname}&#34;)
+
+                except portalocker.LockException:
+                    self.logger.exception(SerialDeviceLockError(f&#34;Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;))
 
     def close(self):
         &#34;&#34;&#34; Close the serial port. &#34;&#34;&#34;
         if self._is_open:
             try:
+                self.logger.debug(f&#34;Attempting to unlock serial port {self.portname}&#34;)
+
                 portalocker.unlock(self.serialport)
+
+                self.logger.debug(f&#34;Succeeded in unlocking serial port {self.portname}&#34;)
+
             except Exception as e:
-                print(&#34;Error unlocking serial port: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceUnlockError(e))
 
             try:
+                self.logger.debug(f&#34;Attempting to close serial port {self.portname}&#34;)
+
                 self._is_open = False
                 self.serialport.close()
+
+                self.logger.debug(f&#34;Succeeded in closing serial port {self.portname}&#34;)
+
             except Exception as e:
-                print(&#34;Error closing port: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceCloseError(e))
 
     def send(self, message, terminator=os.linesep):
-        &#34;&#34;&#34; Send a message to the serial port.
+        &#34;&#34;&#34;
+        Send a message to the serial port.
+
 
         Parameters
         ----------
@@ -136,7 +189,7 @@ class SerialDevice:
             The string to send to serial port.
 
         terminator : str
-             (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `&#39;\r\n&#39;` for windows and `&#39;\n&#39;` for modern operating systems.
+            (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `&#39;\\r\\n&#39;` for windows and `&#39;\\n&#39;` for modern operating systems.
 
         Returns
         -------
@@ -149,9 +202,10 @@ class SerialDevice:
                 if not message.endswith(terminator):
                     message += terminator
                 self.serialport.write(message.encode(&#39;utf-8&#39;))
+
             except Exception as e:
-                print(&#34;Error sending message: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceWriteError(e))
+
             else:
                 return True
         else:
@@ -169,7 +223,7 @@ class SerialDevice:
 <dl>
 <dt id="mirobot.serial_device.SerialDevice"><code class="flex name class">
 <span>class <span class="ident">SerialDevice</span></span>
-<span>(</span><span>portname='', baudrate=0, stopbits=1, exclusive=True)</span>
+<span>(</span><span>portname='', baudrate=0, stopbits=1, exclusive=True, debug=False)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A class for establishing a connection to a serial device. </p>
@@ -184,6 +238,8 @@ class SerialDevice:
 <dd>(Default value = <code>1</code>) Stopbits of the connection.</dd>
 <dt><strong><code>exclusive</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>True</code>) Whether to (try) forcing exclusivity of serial ports. If another <a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> is connected to this port, then don't connect at all. On the other hand, if no other <a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> is connected, then create a lock-file signaling that this serial port is in use.</dd>
+<dt><strong><code>debug</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether to print DEBUG-level information from the runtime of this class. Show more detailed information on screen output.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -196,7 +252,7 @@ class SerialDevice:
 </summary>
 <pre><code class="python">class SerialDevice:
     &#34;&#34;&#34; A class for establishing a connection to a serial device. &#34;&#34;&#34;
-    def __init__(self, portname=&#39;&#39;, baudrate=0, stopbits=1, exclusive=True):
+    def __init__(self, portname=&#39;&#39;, baudrate=0, stopbits=1, exclusive=True, debug=False):
         &#34;&#34;&#34; Initialization of `SerialDevice` class
 
         Parameters
@@ -209,6 +265,8 @@ class SerialDevice:
              (Default value = `1`) Stopbits of the connection.
         exclusive : bool
              (Default value = `True`) Whether to (try) forcing exclusivity of serial ports. If another `mirobot.serial_device.SerialDevice` is connected to this port, then don&#39;t connect at all. On the other hand, if no other `mirobot.serial_device.SerialDevice` is connected, then create a lock-file signaling that this serial port is in use.
+        debug : bool
+             (Default value = `False`) Whether to print DEBUG-level information from the runtime of this class. Show more detailed information on screen output.
 
         Returns
         -------
@@ -219,6 +277,17 @@ class SerialDevice:
         self.baudrate = int(baudrate)
         self.stopbits = int(stopbits)
         self.exclusive = exclusive
+        self._debug = debug
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+
+        self.stream_handler = ExitOnExceptionStreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
+
+        formatter = logging.Formatter(f&#34;[{self.portname}] [%(levelname)s] %(message)s&#34;)
+        self.stream_handler.setFormatter(formatter)
+        self.logger.addHandler(self.stream_handler)
 
         self.serialport = serial.Serial()
         self._is_open = False
@@ -228,13 +297,33 @@ class SerialDevice:
         self.close()
 
     @property
+    def debug(self):
+        &#34;&#34;&#34; Return the `debug` property of `SerialDevice` &#34;&#34;&#34;
+        return self._debug
+
+    @debug.setter
+    def debug(self, value):
+        &#34;&#34;&#34;
+        Set the new `debug` property of `SerialDevice`. Use as in `SerialDevice.setDebug(value)`.
+
+        Parameters
+        ----------
+        value : bool
+            The new value for `SerialDevice.debug`. User this setter method as it will also update the logging method. As opposed to setting `SerialDevice.debug` directly which will not update the logger.
+
+        &#34;&#34;&#34;
+        self._debug = bool(value)
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
+
+    @property
     def is_open(self):
         &#34;&#34;&#34; Check if the serial port is open &#34;&#34;&#34;
         self._is_open = self.serialport.is_open
         return self._is_open
 
     def listen_to_device(self):
-        &#34;&#34;&#34; Listen to the serial port and return a message.
+        &#34;&#34;&#34;
+        Listen to the serial port and return a message.
 
         Returns
         -------
@@ -247,12 +336,10 @@ class SerialDevice:
                 msg = self.serialport.readline()
                 if msg != b&#39;&#39;:
                     msg = str(msg.strip(), &#39;utf-8&#39;)
-
                     return msg
 
             except Exception as e:
-                print(&#34;Error reading port: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceReadError(e))
 
     def open(self):
         &#34;&#34;&#34; Open the serial port. &#34;&#34;&#34;
@@ -263,36 +350,55 @@ class SerialDevice:
             self.serialport.stopbits = self.stopbits
 
             try:
+                self.logger.debug(f&#34;Attempting to open serial port {self.portname}&#34;)
+
                 self.serialport.open()
                 self._is_open = True
+
+                self.logger.debug(f&#34;Succeeded in opening serial port {self.portname}&#34;)
+
             except Exception as e:
-                print(&#34;Error opening port: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceOpenError(e))
 
             if self.exclusive:
                 try:
+                    self.logger.debug(f&#34;Attempting to lock serial port {self.portname}&#34;)
+
                     portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
-                except Exception:
-                    raise Exception(f&#34;Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;)
+
+                    self.logger.debug(f&#34;Succeeded in locking serial port {self.portname}&#34;)
+
+                except portalocker.LockException:
+                    self.logger.exception(SerialDeviceLockError(f&#34;Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;))
 
     def close(self):
         &#34;&#34;&#34; Close the serial port. &#34;&#34;&#34;
         if self._is_open:
             try:
+                self.logger.debug(f&#34;Attempting to unlock serial port {self.portname}&#34;)
+
                 portalocker.unlock(self.serialport)
+
+                self.logger.debug(f&#34;Succeeded in unlocking serial port {self.portname}&#34;)
+
             except Exception as e:
-                print(&#34;Error unlocking serial port: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceUnlockError(e))
 
             try:
+                self.logger.debug(f&#34;Attempting to close serial port {self.portname}&#34;)
+
                 self._is_open = False
                 self.serialport.close()
+
+                self.logger.debug(f&#34;Succeeded in closing serial port {self.portname}&#34;)
+
             except Exception as e:
-                print(&#34;Error closing port: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceCloseError(e))
 
     def send(self, message, terminator=os.linesep):
-        &#34;&#34;&#34; Send a message to the serial port.
+        &#34;&#34;&#34;
+        Send a message to the serial port.
+
 
         Parameters
         ----------
@@ -300,7 +406,7 @@ class SerialDevice:
             The string to send to serial port.
 
         terminator : str
-             (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `&#39;\r\n&#39;` for windows and `&#39;\n&#39;` for modern operating systems.
+            (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `&#39;\\r\\n&#39;` for windows and `&#39;\\n&#39;` for modern operating systems.
 
         Returns
         -------
@@ -313,9 +419,10 @@ class SerialDevice:
                 if not message.endswith(terminator):
                     message += terminator
                 self.serialport.write(message.encode(&#39;utf-8&#39;))
+
             except Exception as e:
-                print(&#34;Error sending message: &#34;, sys.exc_info()[0])
-                raise e
+                self.logger.exception(SerialDeviceWriteError(e))
+
             else:
                 return True
         else:
@@ -323,6 +430,19 @@ class SerialDevice:
 </details>
 <h3>Instance variables</h3>
 <dl>
+<dt id="mirobot.serial_device.SerialDevice.debug"><code class="name">var <span class="ident">debug</span></code></dt>
+<dd>
+<section class="desc"><p>Return the <code>debug</code> property of <a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a></p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def debug(self):
+    &#34;&#34;&#34; Return the `debug` property of `SerialDevice` &#34;&#34;&#34;
+    return self._debug</code></pre>
+</details>
+</dd>
 <dt id="mirobot.serial_device.SerialDevice.is_open"><code class="name">var <span class="ident">is_open</span></code></dt>
 <dd>
 <section class="desc"><p>Check if the serial port is open</p></section>
@@ -353,17 +473,25 @@ def is_open(self):
     &#34;&#34;&#34; Close the serial port. &#34;&#34;&#34;
     if self._is_open:
         try:
+            self.logger.debug(f&#34;Attempting to unlock serial port {self.portname}&#34;)
+
             portalocker.unlock(self.serialport)
+
+            self.logger.debug(f&#34;Succeeded in unlocking serial port {self.portname}&#34;)
+
         except Exception as e:
-            print(&#34;Error unlocking serial port: &#34;, sys.exc_info()[0])
-            raise e
+            self.logger.exception(SerialDeviceUnlockError(e))
 
         try:
+            self.logger.debug(f&#34;Attempting to close serial port {self.portname}&#34;)
+
             self._is_open = False
             self.serialport.close()
+
+            self.logger.debug(f&#34;Succeeded in closing serial port {self.portname}&#34;)
+
         except Exception as e:
-            print(&#34;Error closing port: &#34;, sys.exc_info()[0])
-            raise e</code></pre>
+            self.logger.exception(SerialDeviceCloseError(e))</code></pre>
 </details>
 </dd>
 <dt id="mirobot.serial_device.SerialDevice.listen_to_device"><code class="name flex">
@@ -381,7 +509,8 @@ def is_open(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def listen_to_device(self):
-    &#34;&#34;&#34; Listen to the serial port and return a message.
+    &#34;&#34;&#34;
+    Listen to the serial port and return a message.
 
     Returns
     -------
@@ -394,12 +523,10 @@ def is_open(self):
             msg = self.serialport.readline()
             if msg != b&#39;&#39;:
                 msg = str(msg.strip(), &#39;utf-8&#39;)
-
                 return msg
 
         except Exception as e:
-            print(&#34;Error reading port: &#34;, sys.exc_info()[0])
-            raise e</code></pre>
+            self.logger.exception(SerialDeviceReadError(e))</code></pre>
 </details>
 </dd>
 <dt id="mirobot.serial_device.SerialDevice.open"><code class="name flex">
@@ -420,17 +547,26 @@ def is_open(self):
         self.serialport.stopbits = self.stopbits
 
         try:
+            self.logger.debug(f&#34;Attempting to open serial port {self.portname}&#34;)
+
             self.serialport.open()
             self._is_open = True
+
+            self.logger.debug(f&#34;Succeeded in opening serial port {self.portname}&#34;)
+
         except Exception as e:
-            print(&#34;Error opening port: &#34;, sys.exc_info()[0])
-            raise e
+            self.logger.exception(SerialDeviceOpenError(e))
 
         if self.exclusive:
             try:
+                self.logger.debug(f&#34;Attempting to lock serial port {self.portname}&#34;)
+
                 portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
-            except Exception:
-                raise Exception(f&#34;Error locking serial port: Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;)</code></pre>
+
+                self.logger.debug(f&#34;Succeeded in locking serial port {self.portname}&#34;)
+
+            except portalocker.LockException:
+                self.logger.exception(SerialDeviceLockError(f&#34;Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;))</code></pre>
 </details>
 </dd>
 <dt id="mirobot.serial_device.SerialDevice.send"><code class="name flex">
@@ -438,27 +574,26 @@ def is_open(self):
 </code></dt>
 <dd>
 <section class="desc"><p>Send a message to the serial port.</p>
-<pre><code>    Parameters
-    ----------
-    message : str
-        The string to send to serial port.
-
-    terminator : str
-         (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `'
-</code></pre>
-<p>'<code>for windows and</code>'
-'` for modern operating systems.</p>
-<pre><code>    Returns
-    -------
-    result : bool
-        Whether the sending of `message` succeeded.
-</code></pre></section>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>message</code></strong> :&ensp;<code>str</code></dt>
+<dd>The string to send to serial port.</dd>
+<dt><strong><code>terminator</code></strong> :&ensp;<code>str</code></dt>
+<dd>(Default value = <code>os.linesep</code>) The line separator to use when signaling a new line. Usually <code>'\r\n'</code> for windows and <code>'\n'</code> for modern operating systems.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>result</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether the sending of <code>message</code> succeeded.</dd>
+</dl></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def send(self, message, terminator=os.linesep):
-    &#34;&#34;&#34; Send a message to the serial port.
+    &#34;&#34;&#34;
+    Send a message to the serial port.
+
 
     Parameters
     ----------
@@ -466,7 +601,7 @@ def is_open(self):
         The string to send to serial port.
 
     terminator : str
-         (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `&#39;\r\n&#39;` for windows and `&#39;\n&#39;` for modern operating systems.
+        (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `&#39;\\r\\n&#39;` for windows and `&#39;\\n&#39;` for modern operating systems.
 
     Returns
     -------
@@ -479,9 +614,10 @@ def is_open(self):
             if not message.endswith(terminator):
                 message += terminator
             self.serialport.write(message.encode(&#39;utf-8&#39;))
+
         except Exception as e:
-            print(&#34;Error sending message: &#34;, sys.exc_info()[0])
-            raise e
+            self.logger.exception(SerialDeviceWriteError(e))
+
         else:
             return True
     else:
@@ -508,8 +644,9 @@ def is_open(self):
 <ul>
 <li>
 <h4><code><a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice">SerialDevice</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="mirobot.serial_device.SerialDevice.close" href="#mirobot.serial_device.SerialDevice.close">close</a></code></li>
+<li><code><a title="mirobot.serial_device.SerialDevice.debug" href="#mirobot.serial_device.SerialDevice.debug">debug</a></code></li>
 <li><code><a title="mirobot.serial_device.SerialDevice.is_open" href="#mirobot.serial_device.SerialDevice.is_open">is_open</a></code></li>
 <li><code><a title="mirobot.serial_device.SerialDevice.listen_to_device" href="#mirobot.serial_device.SerialDevice.listen_to_device">listen_to_device</a></code></li>
 <li><code><a title="mirobot.serial_device.SerialDevice.open" href="#mirobot.serial_device.SerialDevice.open">open</a></code></li>

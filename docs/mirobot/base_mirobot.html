@@ -30,7 +30,6 @@ import functools
 import logging
 import os
 from pathlib import Path
-import portalocker
 import re
 import time
 from typing import TextIO, BinaryIO
@@ -41,24 +40,25 @@ except ImportError:
     # Try backported to PY&lt;37 `importlib_resources`.
     import importlib_resources as pkg_resources
 
+import portalocker
 import serial.tools.list_ports as lp
 
 from .serial_device import SerialDevice
 from .mirobot_status import MirobotStatus, MirobotAngles, MirobotCartesians
-from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
+from .exceptions import ExitOnExceptionStreamHandler, MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
 
 
 class BaseMirobot(AbstractContextManager):
-    &#34;&#34;&#34; A class for managing and maintaining known Mirobot operations. &#34;&#34;&#34;
+    &#34;&#34;&#34; A base class for managing and maintaining known Mirobot operations. &#34;&#34;&#34;
 
     def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=(&#39;65&#39;, &#39;40&#39;), pump_pwm_values=(&#39;0&#39;, &#39;1000&#39;), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs):
         &#34;&#34;&#34;
-        Initialization of `BaseMirobot` class.
+        Initialization of the `BaseMirobot` class.
 
         Parameters
         ----------
-        *serial_device_args : List[Any]
-             Arguments that are passed into the `SerialDevice` class.
+        *serial_device_args : Any
+             Arguments that are passed into the `mirobot.serial_device.SerialDevice` class.
         debug : bool
             (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
         autoconnect : bool
@@ -75,8 +75,8 @@ class BaseMirobot(AbstractContextManager):
             (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in &#34;reset.xml&#34; provided by WLkata to reset the Mirobot. See `BaseMirobot.reset_configuration` for more details.
         wait : bool
             (Default value = `True`) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored `BaseMirobot.wait`.
-        **serial_device_kwargs : Dict
-             Keywords that are passed into the `SerialDevice` class.
+        **serial_device_kwargs : Any
+             Keywords that are passed into the `mirobot.serial_device.SerialDevice` class.
 
         Returns
         -------
@@ -108,11 +108,11 @@ class BaseMirobot(AbstractContextManager):
             else:
                 self.default_portname = None
 
-        self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
+        self.serial_device = SerialDevice(*serial_device_args, debug=debug, **serial_device_kwargs)
 
         self.reset_file = pkg_resources.read_text(&#39;mirobot.resources&#39;, &#39;reset.xml&#39;) if reset_file is None else reset_file
         &#34;&#34;&#34; The reset commands to use when resetting the Mirobot. See `BaseMirobot.reset_configuration` for usage and details. &#34;&#34;&#34;
-        self.debug = debug
+        self._debug = debug
         &#34;&#34;&#34; Boolean that determines if every input and output is to be printed to the screen. &#34;&#34;&#34;
 
         self.valve_pwm_values = tuple(str(n) for n in valve_pwm_values)
@@ -129,8 +129,8 @@ class BaseMirobot(AbstractContextManager):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        self.stream_handler = logging.StreamHandler()
-        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        self.stream_handler = ExitOnExceptionStreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
 
         formatter = logging.Formatter(f&#34;[{self.default_portname}] [%(levelname)s] %(message)s&#34;)
         self.stream_handler.setFormatter(formatter)
@@ -151,6 +151,27 @@ class BaseMirobot(AbstractContextManager):
     def __del__(self):
         &#34;&#34;&#34; Magic method for object deletion &#34;&#34;&#34;
         self.disconnect()
+
+    @property
+    def debug(self):
+        &#34;&#34;&#34; Return the `debug` property of `BaseMirobot` &#34;&#34;&#34;
+        return self._debug
+
+    @debug.setter
+    def debug(self, value):
+        &#34;&#34;&#34;
+        Set the new value for the `debug` property of `mirobot.base_mirobot.BaseMirobot`. Use as in `BaseMirobot.setDebug(value)`.
+        Use this setter method as it will also update the logging objects of `mirobot.base_mirobot.BaseMirobot` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.base_mirobot.BaseMirobot._debug` directly which will not update the loggers.
+
+        Parameters
+        ----------
+        value : bool
+            The new value for `mirobot.base_mirobot.BaseMirobot._debug`.
+
+        &#34;&#34;&#34;
+        self._debug = bool(value)
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
+        self.serial_device.setDebug(value)
 
     def wait_for_ok(self, reset_expected=False, disable_debug=False):
         &#34;&#34;&#34;
@@ -189,35 +210,34 @@ class BaseMirobot(AbstractContextManager):
         while not matches_eol_strings(eols, output[-1]):
             msg = self.serial_device.listen_to_device()
 
-            if self.debug and not disable_debug:
+            if self._debug and not disable_debug:
                 self.logger.debug(f&#34;[RECV] {msg}&#34;)
 
             if &#39;error&#39; in msg:
-                raise MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;))
+                self.logger.error(MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;)))
+
             if &#39;ALARM&#39; in msg:
-                raise MirobotAlarm(msg.split(&#39;ALARM: &#39;)[1])
+                self.logger.error(MirobotAlarm(msg.split(&#39;ALARM: &#39;, 1)[1]))
 
             output.append(msg)
 
             if not reset_expected and matches_eol_strings(reset_strings, msg):
-                raise MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;)
-                break
+                self.logger.error(MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;))
 
         return output[1:]  # don&#39;t include the dummy empty string at first index
 
     def wait_decorator(fn):
         &#34;&#34;&#34;
-        A decorator that will use the `wait` argument/keyword for a method to
-        automatically use the `BaseMirobot.wait_for_ok` and conditionally, the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
+        A decorator that will use the `wait` argument for a method to automatically use the `BaseMirobot.wait_for_ok` and respectively, the `wait_idle` argument, for the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
 
         Parameters
         ----------
-        fn : func
-            Function to wrap. Must have the `wait` argument or keyword.
+        fn : Callable
+            Function to wrap. Must have the `wait` and or `wait_idle` argument or keyword.
 
         Returns
         -------
-        wrapper : func
+        wrapper : Callable
             A wrapper that decorates a function.
         &#34;&#34;&#34;
 
@@ -234,24 +254,24 @@ class BaseMirobot(AbstractContextManager):
                 else:
                     return default
 
-            wait = get_arg(&#39;wait&#39;, True)
-            disable_debug = get_arg(&#39;disable_debug&#39;, False)
-            wait_idle = get_arg(&#39;wait_idle&#39;, True)
+            wait = get_arg(&#39;wait&#39;)
+            disable_debug = get_arg(&#39;disable_debug&#39;)
+            wait_idle = get_arg(&#39;wait_idle&#39;)
 
             output = fn(self, *args, **kwargs)
 
             if wait or (wait is None and self.wait):
                 output = self.wait_for_ok(disable_debug=disable_debug)
 
-            if wait_idle:
-                self.wait_until_idle()
+                if wait_idle:
+                    self.wait_until_idle()
 
             return output
 
         return wait_wrapper
 
     @wait_decorator
-    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
+    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False):
         &#34;&#34;&#34;
         Send a message to the Mirobot.
 
@@ -265,6 +285,8 @@ class BaseMirobot(AbstractContextManager):
             (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
         wait : bool
             (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
+        wait_idle : bool
+            (Default value = `False`) Whether to wait for Mirobot to be idle before returning.
 
         Returns
         -------
@@ -272,7 +294,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `True`, then return a list of strings which contains message output.
             If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
-        if self.is_connected():
+        if self.is_connected:
             # convert to str from bytes
             if isinstance(msg, bytes):
                 msg = str(msg, &#39;utf-8&#39;)
@@ -282,16 +304,15 @@ class BaseMirobot(AbstractContextManager):
 
             # check if this is supposed to be a variable command and fail if not
             if var_command and not re.fullmatch(r&#39;\$\d+=[\d\.]+&#39;, msg):
-                raise MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg)
+                self.logger.exception(MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg))
 
             # actually send the message
             output = self.serial_device.send(msg)
 
-        if self.debug and not disable_debug:
+        if self._debug and not disable_debug:
             self.logger.debug(f&#34;[SENT] {msg}&#34;)
 
-        if (wait is not None and not self.wait) or not wait:
-            return output
+        return output
 
     def get_status(self, disable_debug=False):
         &#34;&#34;&#34;
@@ -326,8 +347,7 @@ class BaseMirobot(AbstractContextManager):
         status_msg = self.get_status(disable_debug=disable_debug)[0]
         self.status = self._parse_status(status_msg)
 
-    @staticmethod
-    def _parse_status(msg):
+    def _parse_status(self, msg):
         &#34;&#34;&#34;
         Parse the status string of the Mirobot and store the various values as class variables.
 
@@ -352,7 +372,7 @@ class BaseMirobot(AbstractContextManager):
             try:
                 state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
 
-                return_angles = MirobotAngles(*map(float, angles.split(&#39;,&#39;)))
+                return_angles = MirobotAngles(**dict(zip(&#39;xyzdabc&#39;, map(float, angles.split(&#39;,&#39;)))))
 
                 return_cartesians = MirobotCartesians(*map(float, cartesians.split(&#39;,&#39;)))
 
@@ -364,12 +384,12 @@ class BaseMirobot(AbstractContextManager):
                                               bool(motion_mode))
 
             except Exception as exception:
-                raise Exception([MirobotStatusError(f&#39;Could not parse status message &#34;{msg}&#34;&#39;),
-                                 exception])
+                self.logger.exception(MirobotStatusError(f&#34;Could not parse status message \&#34;{msg}\&#34;&#34;),
+                                      exc_info=exception)
             else:
                 return return_status
         else:
-            raise MirobotStatusError(f&#39;Could not parse status message &#34;{msg}&#34;&#39;)
+            self.logger.error(MirobotStatusError(f&#34;Could not parse status message \&#34;{msg}\&#34;&#34;))
 
     def wait_until_idle(self, refresh_rate=0.1):
         &#34;&#34;&#34;
@@ -387,13 +407,12 @@ class BaseMirobot(AbstractContextManager):
             A list of output strings upto and including the terminal string.
         &#34;&#34;&#34;
         self.update_status(disable_debug=True)
-        if self.status.state == &#39;Idle&#39;:
-            return
 
         while self.status.state != &#39;Idle&#39;:
             time.sleep(refresh_rate)
             self.update_status(disable_debug=True)
 
+    @property
     def is_connected(self):
         &#34;&#34;&#34;
         Check if Mirobot is connected.
@@ -405,8 +424,7 @@ class BaseMirobot(AbstractContextManager):
         &#34;&#34;&#34;
         return self.serial_device.is_open
 
-    @staticmethod
-    def _find_portname():
+    def _find_portname(self):
         &#34;&#34;&#34;
         Find the port that might potentially be connected to the Mirobot.
 
@@ -418,7 +436,7 @@ class BaseMirobot(AbstractContextManager):
         port_objects = lp.comports()
 
         if not port_objects:
-            raise MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;)
+            self.logger.exception(MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;))
 
         else:
             for p in port_objects:
@@ -431,7 +449,7 @@ class BaseMirobot(AbstractContextManager):
                 else:
                     return p.device
 
-            raise MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;)
+            self.logger.exception(MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;))
 
     def connect(self, portname=None):
         &#34;&#34;&#34;
@@ -451,7 +469,7 @@ class BaseMirobot(AbstractContextManager):
             if self.default_portname is not None:
                 portname = self.default_portname
             else:
-                raise ValueError(&#39;Portname must be provided! like so `portname=\&#39;COM3\&#39;`&#39;)
+                self.logger.exception(ValueError(&#39;Portname must be provided! Example: `portname=&#34;COM3&#34;`&#39;))
 
         self.serial_device.portname = portname
 
@@ -480,7 +498,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
         msg = &#39;$HH&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def home_simultaneous(self, wait=None):
         &#34;&#34;&#34;
@@ -498,7 +516,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
         msg = &#39;$H&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def set_hard_limit(self, state, wait=None):
         &#34;&#34;&#34;
@@ -518,7 +536,7 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
         msg = f&#39;$21={int(state)}&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, var_command=True, wait=wait)
 
     # set the soft limit state
     def set_soft_limit(self, state, wait=None):
@@ -539,7 +557,7 @@ class BaseMirobot(AbstractContextManager):
              If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
         msg = f&#39;$20={int(state)}&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, var_command=True, wait=wait)
 
     def unlock_shaft(self, wait=None):
         &#34;&#34;&#34;
@@ -558,23 +576,6 @@ class BaseMirobot(AbstractContextManager):
         &#34;&#34;&#34;
         msg = &#39;M50&#39;
         return self.send_msg(msg, wait=wait)
-
-    def go_to_zero(self, wait=None):
-        &#34;&#34;&#34;
-        Send all axes to their respective zero positions.
-
-        Parameters
-        ----------
-        wait : bool
-            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
-
-        Returns
-        -------
-        msg : List[str] or bool
-            If `wait` is `True`, then return a list of strings which contains message output.
-            If `wait` is `False`, then return whether sending the message succeeded.
-        &#34;&#34;&#34;
-        return self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)
 
     @staticmethod
     def _generate_args_string(instruction, pairings):
@@ -595,13 +596,13 @@ class BaseMirobot(AbstractContextManager):
             If `wait` is `True`, then return a list of strings which contains message output.
             If `wait` is `False`, then return whether sending the message succeeded.
 message
-             A string containing the base command followed by the correctly formatted arguments.
+            A string containing the base command followed by the correctly formatted arguments.
         &#34;&#34;&#34;
         args = [f&#39;{arg_key}{value}&#39; for arg_key, value in pairings.items() if value is not None]
 
         return &#39; &#39;.join([instruction] + args)
 
-    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None):
         &#34;&#34;&#34;
         Send all axes to a specific position in angular coordinates. (Command: `M21 G90`)
 
@@ -619,6 +620,8 @@ message
             (Default value = `None`) Angle of axis 5.
         c : float
             (Default value = `None`) Angle of axis 6.
+        d : float
+            (Default value = `None`) Location of slide rail module.
         speed : int
             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
@@ -636,12 +639,12 @@ message
         if speed:
             speed = int(speed)
 
-        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;D&#39;: d, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
-    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None):
         &#34;&#34;&#34;
         Increment all axes a specified amount in angular coordinates. (Command: `M21 G91`)
 
@@ -659,6 +662,8 @@ message
             (Default value = `None`) Angle of axis 5.
         c : float
             (Default value = `None`) Angle of axis 6.
+        d : float
+            (Default value = `None`) Location of slide rail module.
         speed : int
             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
@@ -677,10 +682,10 @@ message
         if speed:
             speed = int(speed)
 
-        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;D&#39;: d, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         &#34;&#34;&#34;
@@ -721,7 +726,7 @@ message
         pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         &#34;&#34;&#34;
@@ -762,7 +767,7 @@ message
         pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         &#34;&#34;&#34;
@@ -803,11 +808,11 @@ message
         pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         &#34;&#34;&#34;
-        Linear increment in cartesian coordinates.
+        Linear increment in cartesian coordinates. (Command: `M20 G91 G1`)
 
         Parameters
         ----------
@@ -844,7 +849,7 @@ message
         pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     # set the pwm of the air pump
     def set_air_pump(self, pwm, wait=None):
@@ -869,10 +874,10 @@ message
             pwm = self.pump_pwm_values[not pwm]
 
         if str(pwm) not in self.pump_pwm_values:
-            raise ValueError(f&#39;pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.&#39;)
+            self.logger.exception(ValueError(f&#39;pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.&#39;))
 
         msg = f&#39;M3S{pwm}&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def set_valve(self, pwm, wait=None):
         &#34;&#34;&#34;
@@ -896,10 +901,10 @@ message
             pwm = self.valve_pwm_values[not pwm]
 
         if str(pwm) not in self.valve_pwm_values:
-            raise ValueError(f&#39;pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.&#39;)
+            self.logger.exception(ValueError(f&#39;pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.&#39;))
 
         msg = f&#39;M4E{pwm}&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def start_calibration(self, wait=None):
         &#34;&#34;&#34;
@@ -971,7 +976,7 @@ message
 
         elif isinstance(reset_file, (str, Path)):
             if not os.path.exists(reset_file):
-                raise MirobotResetFileError(&#34;Reset file not found or reachable: {reset_file}&#34;)
+                self.logger.exception(MirobotResetFileError(&#34;Reset file not found or reachable: {reset_file}&#34;))
             with open(reset_file, &#39;r&#39;) as f:
                 send_each_line(f.readlines())
 
@@ -982,7 +987,7 @@ message
             send_each_line(reset_file.readlines())
 
         else:
-            raise MirobotResetFileError(f&#34;Unable to handle reset file of type: {type(reset_file)}&#34;)
+            self.logger.exception(MirobotResetFileError(f&#34;Unable to handle reset file of type: {type(reset_file)}&#34;))
 
         return output</code></pre>
 </details>
@@ -1001,12 +1006,12 @@ message
 <span>(</span><span>*serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A class for managing and maintaining known Mirobot operations. </p>
-<p>Initialization of <a title="mirobot.base_mirobot.BaseMirobot" href="#mirobot.base_mirobot.BaseMirobot"><code>BaseMirobot</code></a> class.</p>
+<section class="desc"><p>A base class for managing and maintaining known Mirobot operations. </p>
+<p>Initialization of the <a title="mirobot.base_mirobot.BaseMirobot" href="#mirobot.base_mirobot.BaseMirobot"><code>BaseMirobot</code></a> class.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>*serial_device_args</code></strong> :&ensp;<code>List</code>[<code>Any</code>]</dt>
-<dd>Arguments that are passed into the <code>SerialDevice</code> class.</dd>
+<dt><strong><code>*serial_device_args</code></strong> :&ensp;<code>Any</code></dt>
+<dd>Arguments that are passed into the <a title="mirobot.serial_device.SerialDevice" href="serial_device.html#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> class.</dd>
 <dt><strong><code>debug</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>False</code>) Whether to print gcode input and output to STDOUT. Stored in <a title="mirobot.base_mirobot.BaseMirobot.debug" href="#mirobot.base_mirobot.BaseMirobot.debug"><code>BaseMirobot.debug</code></a>.</dd>
 <dt><strong><code>autoconnect</code></strong> :&ensp;<code>bool</code></dt>
@@ -1023,8 +1028,8 @@ message
 <dd>(Default value = <code>None</code>) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See <a title="mirobot.base_mirobot.BaseMirobot.reset_configuration" href="#mirobot.base_mirobot.BaseMirobot.reset_configuration"><code>BaseMirobot.reset_configuration()</code></a> for more details.</dd>
 <dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>True</code>) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a>.</dd>
-<dt><strong><code>**serial_device_kwargs</code></strong> :&ensp;<code>Dict</code></dt>
-<dd>Keywords that are passed into the <code>SerialDevice</code> class.</dd>
+<dt><strong><code>**serial_device_kwargs</code></strong> :&ensp;<code>Any</code></dt>
+<dd>Keywords that are passed into the <a title="mirobot.serial_device.SerialDevice" href="serial_device.html#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> class.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1036,16 +1041,16 @@ message
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class BaseMirobot(AbstractContextManager):
-    &#34;&#34;&#34; A class for managing and maintaining known Mirobot operations. &#34;&#34;&#34;
+    &#34;&#34;&#34; A base class for managing and maintaining known Mirobot operations. &#34;&#34;&#34;
 
     def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=(&#39;65&#39;, &#39;40&#39;), pump_pwm_values=(&#39;0&#39;, &#39;1000&#39;), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs):
         &#34;&#34;&#34;
-        Initialization of `BaseMirobot` class.
+        Initialization of the `BaseMirobot` class.
 
         Parameters
         ----------
-        *serial_device_args : List[Any]
-             Arguments that are passed into the `SerialDevice` class.
+        *serial_device_args : Any
+             Arguments that are passed into the `mirobot.serial_device.SerialDevice` class.
         debug : bool
             (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
         autoconnect : bool
@@ -1062,8 +1067,8 @@ message
             (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in &#34;reset.xml&#34; provided by WLkata to reset the Mirobot. See `BaseMirobot.reset_configuration` for more details.
         wait : bool
             (Default value = `True`) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored `BaseMirobot.wait`.
-        **serial_device_kwargs : Dict
-             Keywords that are passed into the `SerialDevice` class.
+        **serial_device_kwargs : Any
+             Keywords that are passed into the `mirobot.serial_device.SerialDevice` class.
 
         Returns
         -------
@@ -1095,11 +1100,11 @@ message
             else:
                 self.default_portname = None
 
-        self.serial_device = SerialDevice(*serial_device_args, **serial_device_kwargs)
+        self.serial_device = SerialDevice(*serial_device_args, debug=debug, **serial_device_kwargs)
 
         self.reset_file = pkg_resources.read_text(&#39;mirobot.resources&#39;, &#39;reset.xml&#39;) if reset_file is None else reset_file
         &#34;&#34;&#34; The reset commands to use when resetting the Mirobot. See `BaseMirobot.reset_configuration` for usage and details. &#34;&#34;&#34;
-        self.debug = debug
+        self._debug = debug
         &#34;&#34;&#34; Boolean that determines if every input and output is to be printed to the screen. &#34;&#34;&#34;
 
         self.valve_pwm_values = tuple(str(n) for n in valve_pwm_values)
@@ -1116,8 +1121,8 @@ message
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        self.stream_handler = logging.StreamHandler()
-        self.stream_handler.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        self.stream_handler = ExitOnExceptionStreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
 
         formatter = logging.Formatter(f&#34;[{self.default_portname}] [%(levelname)s] %(message)s&#34;)
         self.stream_handler.setFormatter(formatter)
@@ -1138,6 +1143,27 @@ message
     def __del__(self):
         &#34;&#34;&#34; Magic method for object deletion &#34;&#34;&#34;
         self.disconnect()
+
+    @property
+    def debug(self):
+        &#34;&#34;&#34; Return the `debug` property of `BaseMirobot` &#34;&#34;&#34;
+        return self._debug
+
+    @debug.setter
+    def debug(self, value):
+        &#34;&#34;&#34;
+        Set the new value for the `debug` property of `mirobot.base_mirobot.BaseMirobot`. Use as in `BaseMirobot.setDebug(value)`.
+        Use this setter method as it will also update the logging objects of `mirobot.base_mirobot.BaseMirobot` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.base_mirobot.BaseMirobot._debug` directly which will not update the loggers.
+
+        Parameters
+        ----------
+        value : bool
+            The new value for `mirobot.base_mirobot.BaseMirobot._debug`.
+
+        &#34;&#34;&#34;
+        self._debug = bool(value)
+        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
+        self.serial_device.setDebug(value)
 
     def wait_for_ok(self, reset_expected=False, disable_debug=False):
         &#34;&#34;&#34;
@@ -1176,35 +1202,34 @@ message
         while not matches_eol_strings(eols, output[-1]):
             msg = self.serial_device.listen_to_device()
 
-            if self.debug and not disable_debug:
+            if self._debug and not disable_debug:
                 self.logger.debug(f&#34;[RECV] {msg}&#34;)
 
             if &#39;error&#39; in msg:
-                raise MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;))
+                self.logger.error(MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;)))
+
             if &#39;ALARM&#39; in msg:
-                raise MirobotAlarm(msg.split(&#39;ALARM: &#39;)[1])
+                self.logger.error(MirobotAlarm(msg.split(&#39;ALARM: &#39;, 1)[1]))
 
             output.append(msg)
 
             if not reset_expected and matches_eol_strings(reset_strings, msg):
-                raise MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;)
-                break
+                self.logger.error(MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;))
 
         return output[1:]  # don&#39;t include the dummy empty string at first index
 
     def wait_decorator(fn):
         &#34;&#34;&#34;
-        A decorator that will use the `wait` argument/keyword for a method to
-        automatically use the `BaseMirobot.wait_for_ok` and conditionally, the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
+        A decorator that will use the `wait` argument for a method to automatically use the `BaseMirobot.wait_for_ok` and respectively, the `wait_idle` argument, for the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
 
         Parameters
         ----------
-        fn : func
-            Function to wrap. Must have the `wait` argument or keyword.
+        fn : Callable
+            Function to wrap. Must have the `wait` and or `wait_idle` argument or keyword.
 
         Returns
         -------
-        wrapper : func
+        wrapper : Callable
             A wrapper that decorates a function.
         &#34;&#34;&#34;
 
@@ -1221,24 +1246,24 @@ message
                 else:
                     return default
 
-            wait = get_arg(&#39;wait&#39;, True)
-            disable_debug = get_arg(&#39;disable_debug&#39;, False)
-            wait_idle = get_arg(&#39;wait_idle&#39;, True)
+            wait = get_arg(&#39;wait&#39;)
+            disable_debug = get_arg(&#39;disable_debug&#39;)
+            wait_idle = get_arg(&#39;wait_idle&#39;)
 
             output = fn(self, *args, **kwargs)
 
             if wait or (wait is None and self.wait):
                 output = self.wait_for_ok(disable_debug=disable_debug)
 
-            if wait_idle:
-                self.wait_until_idle()
+                if wait_idle:
+                    self.wait_until_idle()
 
             return output
 
         return wait_wrapper
 
     @wait_decorator
-    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
+    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False):
         &#34;&#34;&#34;
         Send a message to the Mirobot.
 
@@ -1252,6 +1277,8 @@ message
             (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
         wait : bool
             (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
+        wait_idle : bool
+            (Default value = `False`) Whether to wait for Mirobot to be idle before returning.
 
         Returns
         -------
@@ -1259,7 +1286,7 @@ message
             If `wait` is `True`, then return a list of strings which contains message output.
             If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
-        if self.is_connected():
+        if self.is_connected:
             # convert to str from bytes
             if isinstance(msg, bytes):
                 msg = str(msg, &#39;utf-8&#39;)
@@ -1269,16 +1296,15 @@ message
 
             # check if this is supposed to be a variable command and fail if not
             if var_command and not re.fullmatch(r&#39;\$\d+=[\d\.]+&#39;, msg):
-                raise MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg)
+                self.logger.exception(MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg))
 
             # actually send the message
             output = self.serial_device.send(msg)
 
-        if self.debug and not disable_debug:
+        if self._debug and not disable_debug:
             self.logger.debug(f&#34;[SENT] {msg}&#34;)
 
-        if (wait is not None and not self.wait) or not wait:
-            return output
+        return output
 
     def get_status(self, disable_debug=False):
         &#34;&#34;&#34;
@@ -1313,8 +1339,7 @@ message
         status_msg = self.get_status(disable_debug=disable_debug)[0]
         self.status = self._parse_status(status_msg)
 
-    @staticmethod
-    def _parse_status(msg):
+    def _parse_status(self, msg):
         &#34;&#34;&#34;
         Parse the status string of the Mirobot and store the various values as class variables.
 
@@ -1339,7 +1364,7 @@ message
             try:
                 state, angles, cartesians, pump_pwm, valve_pwm, motion_mode = regex_match.groups()
 
-                return_angles = MirobotAngles(*map(float, angles.split(&#39;,&#39;)))
+                return_angles = MirobotAngles(**dict(zip(&#39;xyzdabc&#39;, map(float, angles.split(&#39;,&#39;)))))
 
                 return_cartesians = MirobotCartesians(*map(float, cartesians.split(&#39;,&#39;)))
 
@@ -1351,12 +1376,12 @@ message
                                               bool(motion_mode))
 
             except Exception as exception:
-                raise Exception([MirobotStatusError(f&#39;Could not parse status message &#34;{msg}&#34;&#39;),
-                                 exception])
+                self.logger.exception(MirobotStatusError(f&#34;Could not parse status message \&#34;{msg}\&#34;&#34;),
+                                      exc_info=exception)
             else:
                 return return_status
         else:
-            raise MirobotStatusError(f&#39;Could not parse status message &#34;{msg}&#34;&#39;)
+            self.logger.error(MirobotStatusError(f&#34;Could not parse status message \&#34;{msg}\&#34;&#34;))
 
     def wait_until_idle(self, refresh_rate=0.1):
         &#34;&#34;&#34;
@@ -1374,13 +1399,12 @@ message
             A list of output strings upto and including the terminal string.
         &#34;&#34;&#34;
         self.update_status(disable_debug=True)
-        if self.status.state == &#39;Idle&#39;:
-            return
 
         while self.status.state != &#39;Idle&#39;:
             time.sleep(refresh_rate)
             self.update_status(disable_debug=True)
 
+    @property
     def is_connected(self):
         &#34;&#34;&#34;
         Check if Mirobot is connected.
@@ -1392,8 +1416,7 @@ message
         &#34;&#34;&#34;
         return self.serial_device.is_open
 
-    @staticmethod
-    def _find_portname():
+    def _find_portname(self):
         &#34;&#34;&#34;
         Find the port that might potentially be connected to the Mirobot.
 
@@ -1405,7 +1428,7 @@ message
         port_objects = lp.comports()
 
         if not port_objects:
-            raise MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;)
+            self.logger.exception(MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;))
 
         else:
             for p in port_objects:
@@ -1418,7 +1441,7 @@ message
                 else:
                     return p.device
 
-            raise MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;)
+            self.logger.exception(MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;))
 
     def connect(self, portname=None):
         &#34;&#34;&#34;
@@ -1438,7 +1461,7 @@ message
             if self.default_portname is not None:
                 portname = self.default_portname
             else:
-                raise ValueError(&#39;Portname must be provided! like so `portname=\&#39;COM3\&#39;`&#39;)
+                self.logger.exception(ValueError(&#39;Portname must be provided! Example: `portname=&#34;COM3&#34;`&#39;))
 
         self.serial_device.portname = portname
 
@@ -1467,7 +1490,7 @@ message
             If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
         msg = &#39;$HH&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def home_simultaneous(self, wait=None):
         &#34;&#34;&#34;
@@ -1485,7 +1508,7 @@ message
             If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
         msg = &#39;$H&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def set_hard_limit(self, state, wait=None):
         &#34;&#34;&#34;
@@ -1505,7 +1528,7 @@ message
             If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
         msg = f&#39;$21={int(state)}&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, var_command=True, wait=wait)
 
     # set the soft limit state
     def set_soft_limit(self, state, wait=None):
@@ -1526,7 +1549,7 @@ message
              If `wait` is `False`, then return whether sending the message succeeded.
         &#34;&#34;&#34;
         msg = f&#39;$20={int(state)}&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, var_command=True, wait=wait)
 
     def unlock_shaft(self, wait=None):
         &#34;&#34;&#34;
@@ -1545,23 +1568,6 @@ message
         &#34;&#34;&#34;
         msg = &#39;M50&#39;
         return self.send_msg(msg, wait=wait)
-
-    def go_to_zero(self, wait=None):
-        &#34;&#34;&#34;
-        Send all axes to their respective zero positions.
-
-        Parameters
-        ----------
-        wait : bool
-            (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
-
-        Returns
-        -------
-        msg : List[str] or bool
-            If `wait` is `True`, then return a list of strings which contains message output.
-            If `wait` is `False`, then return whether sending the message succeeded.
-        &#34;&#34;&#34;
-        return self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)
 
     @staticmethod
     def _generate_args_string(instruction, pairings):
@@ -1582,13 +1588,13 @@ message
             If `wait` is `True`, then return a list of strings which contains message output.
             If `wait` is `False`, then return whether sending the message succeeded.
 message
-             A string containing the base command followed by the correctly formatted arguments.
+            A string containing the base command followed by the correctly formatted arguments.
         &#34;&#34;&#34;
         args = [f&#39;{arg_key}{value}&#39; for arg_key, value in pairings.items() if value is not None]
 
         return &#39; &#39;.join([instruction] + args)
 
-    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None):
         &#34;&#34;&#34;
         Send all axes to a specific position in angular coordinates. (Command: `M21 G90`)
 
@@ -1606,6 +1612,8 @@ message
             (Default value = `None`) Angle of axis 5.
         c : float
             (Default value = `None`) Angle of axis 6.
+        d : float
+            (Default value = `None`) Location of slide rail module.
         speed : int
             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
@@ -1623,12 +1631,12 @@ message
         if speed:
             speed = int(speed)
 
-        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;D&#39;: d, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
-    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+    def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None):
         &#34;&#34;&#34;
         Increment all axes a specified amount in angular coordinates. (Command: `M21 G91`)
 
@@ -1646,6 +1654,8 @@ message
             (Default value = `None`) Angle of axis 5.
         c : float
             (Default value = `None`) Angle of axis 6.
+        d : float
+            (Default value = `None`) Location of slide rail module.
         speed : int
             (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
         wait : bool
@@ -1664,10 +1674,10 @@ message
         if speed:
             speed = int(speed)
 
-        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+        pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;D&#39;: d, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def go_to_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         &#34;&#34;&#34;
@@ -1708,7 +1718,7 @@ message
         pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def go_to_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         &#34;&#34;&#34;
@@ -1749,7 +1759,7 @@ message
         pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def increment_cartesian_ptp(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         &#34;&#34;&#34;
@@ -1790,11 +1800,11 @@ message
         pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
         &#34;&#34;&#34;
-        Linear increment in cartesian coordinates.
+        Linear increment in cartesian coordinates. (Command: `M20 G91 G1`)
 
         Parameters
         ----------
@@ -1831,7 +1841,7 @@ message
         pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
         msg = self._generate_args_string(instruction, pairings)
 
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     # set the pwm of the air pump
     def set_air_pump(self, pwm, wait=None):
@@ -1856,10 +1866,10 @@ message
             pwm = self.pump_pwm_values[not pwm]
 
         if str(pwm) not in self.pump_pwm_values:
-            raise ValueError(f&#39;pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.&#39;)
+            self.logger.exception(ValueError(f&#39;pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.&#39;))
 
         msg = f&#39;M3S{pwm}&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def set_valve(self, pwm, wait=None):
         &#34;&#34;&#34;
@@ -1883,10 +1893,10 @@ message
             pwm = self.valve_pwm_values[not pwm]
 
         if str(pwm) not in self.valve_pwm_values:
-            raise ValueError(f&#39;pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.&#39;)
+            self.logger.exception(ValueError(f&#39;pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.&#39;))
 
         msg = f&#39;M4E{pwm}&#39;
-        return self.send_msg(msg, wait=wait)
+        return self.send_msg(msg, wait=wait, wait_idle=True)
 
     def start_calibration(self, wait=None):
         &#34;&#34;&#34;
@@ -1958,7 +1968,7 @@ message
 
         elif isinstance(reset_file, (str, Path)):
             if not os.path.exists(reset_file):
-                raise MirobotResetFileError(&#34;Reset file not found or reachable: {reset_file}&#34;)
+                self.logger.exception(MirobotResetFileError(&#34;Reset file not found or reachable: {reset_file}&#34;))
             with open(reset_file, &#39;r&#39;) as f:
                 send_each_line(f.readlines())
 
@@ -1969,7 +1979,7 @@ message
             send_each_line(reset_file.readlines())
 
         else:
-            raise MirobotResetFileError(f&#34;Unable to handle reset file of type: {type(reset_file)}&#34;)
+            self.logger.exception(MirobotResetFileError(f&#34;Unable to handle reset file of type: {type(reset_file)}&#34;))
 
         return output</code></pre>
 </details>
@@ -1978,15 +1988,53 @@ message
 <li>contextlib.AbstractContextManager</li>
 <li>abc.ABC</li>
 </ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="mirobot.mirobot.Mirobot" href="mirobot.html#mirobot.mirobot.Mirobot">Mirobot</a></li>
+</ul>
 <h3>Instance variables</h3>
 <dl>
 <dt id="mirobot.base_mirobot.BaseMirobot.debug"><code class="name">var <span class="ident">debug</span></code></dt>
 <dd>
-<section class="desc"><p>Boolean that determines if every input and output is to be printed to the screen.</p></section>
+<section class="desc"><p>Return the <code>debug</code> property of <a title="mirobot.base_mirobot.BaseMirobot" href="#mirobot.base_mirobot.BaseMirobot"><code>BaseMirobot</code></a></p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def debug(self):
+    &#34;&#34;&#34; Return the `debug` property of `BaseMirobot` &#34;&#34;&#34;
+    return self._debug</code></pre>
+</details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.default_speed"><code class="name">var <span class="ident">default_speed</span></code></dt>
 <dd>
 <section class="desc"><p>The default speed to use when issuing commands that involve the speed parameter.</p></section>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.is_connected"><code class="name">var <span class="ident">is_connected</span></code></dt>
+<dd>
+<section class="desc"><p>Check if Mirobot is connected.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>connected</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether the Mirobot is connected.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_connected(self):
+    &#34;&#34;&#34;
+    Check if Mirobot is connected.
+
+    Returns
+    -------
+    connected : bool
+        Whether the Mirobot is connected.
+    &#34;&#34;&#34;
+    return self.serial_device.is_open</code></pre>
+</details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.pump_pwm_values"><code class="name">var <span class="ident">pump_pwm_values</span></code></dt>
 <dd>
@@ -2048,7 +2096,7 @@ message
         if self.default_portname is not None:
             portname = self.default_portname
         else:
-            raise ValueError(&#39;Portname must be provided! like so `portname=\&#39;COM3\&#39;`&#39;)
+            self.logger.exception(ValueError(&#39;Portname must be provided! Example: `portname=&#34;COM3&#34;`&#39;))
 
     self.serial_device.portname = portname
 
@@ -2151,7 +2199,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.go_to_axis"><code class="name flex">
-<span>def <span class="ident">go_to_axis</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None)</span>
+<span>def <span class="ident">go_to_axis</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Send all axes to a specific position in angular coordinates. (Command: <code>M21 G90</code>)</p>
@@ -2169,6 +2217,8 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <dd>(Default value = <code>None</code>) Angle of axis 5.</dd>
 <dt><strong><code>c</code></strong> :&ensp;<code>float</code></dt>
 <dd>(Default value = <code>None</code>) Angle of axis 6.</dd>
+<dt><strong><code>d</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Location of slide rail module.</dd>
 <dt><strong><code>speed</code></strong> :&ensp;<code>int</code></dt>
 <dd>(Default value = <code>None</code>) The speed in which the Mirobot moves during this operation. (mm/s)</dd>
 <dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
@@ -2184,7 +2234,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+<pre><code class="python">def go_to_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None):
     &#34;&#34;&#34;
     Send all axes to a specific position in angular coordinates. (Command: `M21 G90`)
 
@@ -2202,6 +2252,8 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
         (Default value = `None`) Angle of axis 5.
     c : float
         (Default value = `None`) Angle of axis 6.
+    d : float
+        (Default value = `None`) Location of slide rail module.
     speed : int
         (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
     wait : bool
@@ -2219,10 +2271,10 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
     if speed:
         speed = int(speed)
 
-    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;D&#39;: d, &#39;F&#39;: speed}
     msg = self._generate_args_string(instruction, pairings)
 
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.go_to_cartesian_lin"><code class="name flex">
@@ -2298,7 +2350,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
     pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
     msg = self._generate_args_string(instruction, pairings)
 
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.go_to_cartesian_ptp"><code class="name flex">
@@ -2374,45 +2426,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
     pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
     msg = self._generate_args_string(instruction, pairings)
 
-    return self.send_msg(msg, wait=wait)</code></pre>
-</details>
-</dd>
-<dt id="mirobot.base_mirobot.BaseMirobot.go_to_zero"><code class="name flex">
-<span>def <span class="ident">go_to_zero</span></span>(<span>self, wait=None)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Send all axes to their respective zero positions.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
-<dd>(Default value = <code>None</code>) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>msg</code></strong> :&ensp;<code>List</code>[<code>str</code>] or <code>bool</code></dt>
-<dd>If <code>wait</code> is <code>True</code>, then return a list of strings which contains message output.
-If <code>wait</code> is <code>False</code>, then return whether sending the message succeeded.</dd>
-</dl></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def go_to_zero(self, wait=None):
-    &#34;&#34;&#34;
-    Send all axes to their respective zero positions.
-
-    Parameters
-    ----------
-    wait : bool
-        (Default value = `None`) Whether to wait for output to return from the Mirobot before returning from the function. This value determines if the function will block until the operation recieves feedback. If `None`, use class default `BaseMirobot.wait` instead.
-
-    Returns
-    -------
-    msg : List[str] or bool
-        If `wait` is `True`, then return a list of strings which contains message output.
-        If `wait` is `False`, then return whether sending the message succeeded.
-    &#34;&#34;&#34;
-    return self.go_to_axis(0, 0, 0, 0, 0, 0, 2000, wait=wait)</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.home_individual"><code class="name flex">
@@ -2451,7 +2465,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
         If `wait` is `False`, then return whether sending the message succeeded.
     &#34;&#34;&#34;
     msg = &#39;$HH&#39;
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.home_simultaneous"><code class="name flex">
@@ -2490,11 +2504,11 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
         If `wait` is `False`, then return whether sending the message succeeded.
     &#34;&#34;&#34;
     msg = &#39;$H&#39;
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.increment_axis"><code class="name flex">
-<span>def <span class="ident">increment_axis</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None)</span>
+<span>def <span class="ident">increment_axis</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Increment all axes a specified amount in angular coordinates. (Command: <code>M21 G91</code>)</p>
@@ -2512,6 +2526,8 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <dd>(Default value = <code>None</code>) Angle of axis 5.</dd>
 <dt><strong><code>c</code></strong> :&ensp;<code>float</code></dt>
 <dd>(Default value = <code>None</code>) Angle of axis 6.</dd>
+<dt><strong><code>d</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>None</code>) Location of slide rail module.</dd>
 <dt><strong><code>speed</code></strong> :&ensp;<code>int</code></dt>
 <dd>(Default value = <code>None</code>) The speed in which the Mirobot moves during this operation. (mm/s)</dd>
 <dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
@@ -2527,7 +2543,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
+<pre><code class="python">def increment_axis(self, x=None, y=None, z=None, a=None, b=None, c=None, d=None, speed=None, wait=None):
     &#34;&#34;&#34;
     Increment all axes a specified amount in angular coordinates. (Command: `M21 G91`)
 
@@ -2545,6 +2561,8 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
         (Default value = `None`) Angle of axis 5.
     c : float
         (Default value = `None`) Angle of axis 6.
+    d : float
+        (Default value = `None`) Location of slide rail module.
     speed : int
         (Default value = `None`) The speed in which the Mirobot moves during this operation. (mm/s)
     wait : bool
@@ -2563,17 +2581,17 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
     if speed:
         speed = int(speed)
 
-    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
+    pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;D&#39;: d, &#39;F&#39;: speed}
     msg = self._generate_args_string(instruction, pairings)
 
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.increment_cartesian_lin"><code class="name flex">
 <span>def <span class="ident">increment_cartesian_lin</span></span>(<span>self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Linear increment in cartesian coordinates.</p>
+<section class="desc"><p>Linear increment in cartesian coordinates. (Command: <code>M20 G91 G1</code>)</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code></dt>
@@ -2605,7 +2623,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 </summary>
 <pre><code class="python">def increment_cartesian_lin(self, x=None, y=None, z=None, a=None, b=None, c=None, speed=None, wait=None):
     &#34;&#34;&#34;
-    Linear increment in cartesian coordinates.
+    Linear increment in cartesian coordinates. (Command: `M20 G91 G1`)
 
     Parameters
     ----------
@@ -2642,7 +2660,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
     pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
     msg = self._generate_args_string(instruction, pairings)
 
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.increment_cartesian_ptp"><code class="name flex">
@@ -2718,33 +2736,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
     pairings = {&#39;X&#39;: x, &#39;Y&#39;: y, &#39;Z&#39;: z, &#39;A&#39;: a, &#39;B&#39;: b, &#39;C&#39;: c, &#39;F&#39;: speed}
     msg = self._generate_args_string(instruction, pairings)
 
-    return self.send_msg(msg, wait=wait)</code></pre>
-</details>
-</dd>
-<dt id="mirobot.base_mirobot.BaseMirobot.is_connected"><code class="name flex">
-<span>def <span class="ident">is_connected</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Check if Mirobot is connected.</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>connected</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether the Mirobot is connected.</dd>
-</dl></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def is_connected(self):
-    &#34;&#34;&#34;
-    Check if Mirobot is connected.
-
-    Returns
-    -------
-    connected : bool
-        Whether the Mirobot is connected.
-    &#34;&#34;&#34;
-    return self.serial_device.is_open</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.reset_configuration"><code class="name flex">
@@ -2803,7 +2795,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 
     elif isinstance(reset_file, (str, Path)):
         if not os.path.exists(reset_file):
-            raise MirobotResetFileError(&#34;Reset file not found or reachable: {reset_file}&#34;)
+            self.logger.exception(MirobotResetFileError(&#34;Reset file not found or reachable: {reset_file}&#34;))
         with open(reset_file, &#39;r&#39;) as f:
             send_each_line(f.readlines())
 
@@ -2814,13 +2806,13 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
         send_each_line(reset_file.readlines())
 
     else:
-        raise MirobotResetFileError(f&#34;Unable to handle reset file of type: {type(reset_file)}&#34;)
+        self.logger.exception(MirobotResetFileError(f&#34;Unable to handle reset file of type: {type(reset_file)}&#34;))
 
     return output</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.send_msg"><code class="name flex">
-<span>def <span class="ident">send_msg</span></span>(<span>self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True)</span>
+<span>def <span class="ident">send_msg</span></span>(<span>self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Send a message to the Mirobot.</p>
@@ -2834,6 +2826,8 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a>.</dd>
 <dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>None</code>) Whether to wait for output to end and to return that output. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
+<dt><strong><code>wait_idle</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether to wait for Mirobot to be idle before returning.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -2846,7 +2840,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@wait_decorator
-def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=True):
+def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False):
     &#34;&#34;&#34;
     Send a message to the Mirobot.
 
@@ -2860,6 +2854,8 @@ def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_
         (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
     wait : bool
         (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
+    wait_idle : bool
+        (Default value = `False`) Whether to wait for Mirobot to be idle before returning.
 
     Returns
     -------
@@ -2867,7 +2863,7 @@ def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_
         If `wait` is `True`, then return a list of strings which contains message output.
         If `wait` is `False`, then return whether sending the message succeeded.
     &#34;&#34;&#34;
-    if self.is_connected():
+    if self.is_connected:
         # convert to str from bytes
         if isinstance(msg, bytes):
             msg = str(msg, &#39;utf-8&#39;)
@@ -2877,16 +2873,15 @@ def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_
 
         # check if this is supposed to be a variable command and fail if not
         if var_command and not re.fullmatch(r&#39;\$\d+=[\d\.]+&#39;, msg):
-            raise MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg)
+            self.logger.exception(MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg))
 
         # actually send the message
         output = self.serial_device.send(msg)
 
-    if self.debug and not disable_debug:
+    if self._debug and not disable_debug:
         self.logger.debug(f&#34;[SENT] {msg}&#34;)
 
-    if (wait is not None and not self.wait) or not wait:
-        return output</code></pre>
+    return output</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.set_air_pump"><code class="name flex">
@@ -2933,10 +2928,10 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
         pwm = self.pump_pwm_values[not pwm]
 
     if str(pwm) not in self.pump_pwm_values:
-        raise ValueError(f&#39;pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.&#39;)
+        self.logger.exception(ValueError(f&#39;pwm must be one of these values: {self.pump_pwm_values}. Was given {pwm}.&#39;))
 
     msg = f&#39;M3S{pwm}&#39;
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.set_hard_limit"><code class="name flex">
@@ -2979,7 +2974,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
         If `wait` is `False`, then return whether sending the message succeeded.
     &#34;&#34;&#34;
     msg = f&#39;$21={int(state)}&#39;
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, var_command=True, wait=wait)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.set_soft_limit"><code class="name flex">
@@ -3022,7 +3017,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
          If `wait` is `False`, then return whether sending the message succeeded.
     &#34;&#34;&#34;
     msg = f&#39;$20={int(state)}&#39;
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, var_command=True, wait=wait)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.set_valve"><code class="name flex">
@@ -3069,10 +3064,10 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
         pwm = self.valve_pwm_values[not pwm]
 
     if str(pwm) not in self.valve_pwm_values:
-        raise ValueError(f&#39;pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.&#39;)
+        self.logger.exception(ValueError(f&#39;pwm must be one of these values: {self.valve_pwm_values}. Was given {pwm}.&#39;))
 
     msg = f&#39;M4E{pwm}&#39;
-    return self.send_msg(msg, wait=wait)</code></pre>
+    return self.send_msg(msg, wait=wait, wait_idle=True)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.start_calibration"><code class="name flex">
@@ -3186,16 +3181,15 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <span>def <span class="ident">wait_decorator</span></span>(<span>fn)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A decorator that will use the <code>wait</code> argument/keyword for a method to
-automatically use the <a title="mirobot.base_mirobot.BaseMirobot.wait_for_ok" href="#mirobot.base_mirobot.BaseMirobot.wait_for_ok"><code>BaseMirobot.wait_for_ok()</code></a> and conditionally, the <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a> function calls at the end of the wrapped function.</p>
+<section class="desc"><p>A decorator that will use the <code>wait</code> argument for a method to automatically use the <a title="mirobot.base_mirobot.BaseMirobot.wait_for_ok" href="#mirobot.base_mirobot.BaseMirobot.wait_for_ok"><code>BaseMirobot.wait_for_ok()</code></a> and respectively, the <code>wait_idle</code> argument, for the <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a> function calls at the end of the wrapped function.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>fn</code></strong> :&ensp;<code>func</code></dt>
-<dd>Function to wrap. Must have the <code>wait</code> argument or keyword.</dd>
+<dt><strong><code>fn</code></strong> :&ensp;<code>Callable</code></dt>
+<dd>Function to wrap. Must have the <code>wait</code> and or <code>wait_idle</code> argument or keyword.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><strong><code>wrapper</code></strong> :&ensp;<code>func</code></dt>
+<dt><strong><code>wrapper</code></strong> :&ensp;<code>Callable</code></dt>
 <dd>A wrapper that decorates a function.</dd>
 </dl></section>
 <details class="source">
@@ -3204,17 +3198,16 @@ automatically use the <a title="mirobot.base_mirobot.BaseMirobot.wait_for_ok" hr
 </summary>
 <pre><code class="python">def wait_decorator(fn):
     &#34;&#34;&#34;
-    A decorator that will use the `wait` argument/keyword for a method to
-    automatically use the `BaseMirobot.wait_for_ok` and conditionally, the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
+    A decorator that will use the `wait` argument for a method to automatically use the `BaseMirobot.wait_for_ok` and respectively, the `wait_idle` argument, for the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
 
     Parameters
     ----------
-    fn : func
-        Function to wrap. Must have the `wait` argument or keyword.
+    fn : Callable
+        Function to wrap. Must have the `wait` and or `wait_idle` argument or keyword.
 
     Returns
     -------
-    wrapper : func
+    wrapper : Callable
         A wrapper that decorates a function.
     &#34;&#34;&#34;
 
@@ -3231,17 +3224,17 @@ automatically use the <a title="mirobot.base_mirobot.BaseMirobot.wait_for_ok" hr
             else:
                 return default
 
-        wait = get_arg(&#39;wait&#39;, True)
-        disable_debug = get_arg(&#39;disable_debug&#39;, False)
-        wait_idle = get_arg(&#39;wait_idle&#39;, True)
+        wait = get_arg(&#39;wait&#39;)
+        disable_debug = get_arg(&#39;disable_debug&#39;)
+        wait_idle = get_arg(&#39;wait_idle&#39;)
 
         output = fn(self, *args, **kwargs)
 
         if wait or (wait is None and self.wait):
             output = self.wait_for_ok(disable_debug=disable_debug)
 
-        if wait_idle:
-            self.wait_until_idle()
+            if wait_idle:
+                self.wait_until_idle()
 
         return output
 
@@ -3307,19 +3300,19 @@ It stops when it encounters an 'ok' or otherwise terminal condition phrase.</p>
     while not matches_eol_strings(eols, output[-1]):
         msg = self.serial_device.listen_to_device()
 
-        if self.debug and not disable_debug:
+        if self._debug and not disable_debug:
             self.logger.debug(f&#34;[RECV] {msg}&#34;)
 
         if &#39;error&#39; in msg:
-            raise MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;))
+            self.logger.error(MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;)))
+
         if &#39;ALARM&#39; in msg:
-            raise MirobotAlarm(msg.split(&#39;ALARM: &#39;)[1])
+            self.logger.error(MirobotAlarm(msg.split(&#39;ALARM: &#39;, 1)[1]))
 
         output.append(msg)
 
         if not reset_expected and matches_eol_strings(reset_strings, msg):
-            raise MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;)
-            break
+            self.logger.error(MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;))
 
     return output[1:]  # don&#39;t include the dummy empty string at first index</code></pre>
 </details>
@@ -3360,8 +3353,6 @@ It stops when it encounters an 'Idle' state string.</p>
         A list of output strings upto and including the terminal string.
     &#34;&#34;&#34;
     self.update_status(disable_debug=True)
-    if self.status.state == &#39;Idle&#39;:
-        return
 
     while self.status.state != &#39;Idle&#39;:
         time.sleep(refresh_rate)
@@ -3398,7 +3389,6 @@ It stops when it encounters an 'Idle' state string.</p>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.go_to_axis" href="#mirobot.base_mirobot.BaseMirobot.go_to_axis">go_to_axis</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.go_to_cartesian_lin" href="#mirobot.base_mirobot.BaseMirobot.go_to_cartesian_lin">go_to_cartesian_lin</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.go_to_cartesian_ptp" href="#mirobot.base_mirobot.BaseMirobot.go_to_cartesian_ptp">go_to_cartesian_ptp</a></code></li>
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.go_to_zero" href="#mirobot.base_mirobot.BaseMirobot.go_to_zero">go_to_zero</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.home_individual" href="#mirobot.base_mirobot.BaseMirobot.home_individual">home_individual</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.home_simultaneous" href="#mirobot.base_mirobot.BaseMirobot.home_simultaneous">home_simultaneous</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.increment_axis" href="#mirobot.base_mirobot.BaseMirobot.increment_axis">increment_axis</a></code></li>
