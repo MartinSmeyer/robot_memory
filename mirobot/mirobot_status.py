@@ -1,4 +1,5 @@
 from dataclasses import dataclass, asdict, astuple, fields
+import numbers
 import operator
 
 
@@ -44,7 +45,7 @@ class featured_dataclass(basic_dataclass):
         if isinstance(other, type(self)):
             new_values = self._cross_same_type(other, operation_function)
 
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, numbers.Real):
             new_values = self._cross_same_type(other, operation_function, single=True)
 
         else:
