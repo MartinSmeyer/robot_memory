@@ -113,6 +113,26 @@ class featured_dataclass(basic_dataclass):
         new_values = self._cross_same_type(other, operation_function)
         return self._new_from_dict(new_values)
 
+    def int(self):
+        def operation_function(field):
+            value = getattr(self, field.name)
+            if field.type in (float,) and value is not None:
+                return int(value)
+            else:
+                return value
+
+        return self._unary_operation(operation_function)
+
+    def round(self):
+        def operation_function(field):
+            value = getattr(self, field.name)
+            if field.type in (float,) and value is not None:
+                return round(value)
+            else:
+                return value
+
+        return self._unary_operation(operation_function)
+
     def __add__(self, other):
         return self._binary_operation(other, operator.add)
 
@@ -145,16 +165,6 @@ class featured_dataclass(basic_dataclass):
 
     def __abs__(self):
         return self._basic_unary_operation(operator.abs)
-
-    def __int__(self):
-        def operation_function(field):
-            value = getattr(self, field.name)
-            if field.type in (float,) and value is not None:
-                return int(value)
-            else:
-                return value
-
-        return self._unary_operation(operation_function)
 
     def __pos__(self):
         return self._basic_unary_operation(operator.pos)
