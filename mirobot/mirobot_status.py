@@ -9,6 +9,9 @@ class basic_dataclass:
     def astuple(self):
         return astuple(self)
 
+    def fields(self):
+        return fields(self)
+
     @classmethod
     def _new_from_dict(cls, dictionary):
         return cls(**dictionary)
@@ -17,7 +20,7 @@ class basic_dataclass:
 class featured_dataclass(basic_dataclass):
     def _cross_same_type(self, other, operation_function, single=False):
         new_values = {}
-        for f in fields(self):
+        for f in self.fields():
             this_value = getattr(self, f.name)
 
             if single:
