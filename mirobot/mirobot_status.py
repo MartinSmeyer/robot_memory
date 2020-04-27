@@ -52,12 +52,21 @@ class featured_dataclass(basic_dataclass):
 
         return self._new_from_dict(new_values)
 
-    def _unary_operation(self, operation):
-        new_values = {f.name: operation(getattr(self, f.name))
-                      if getattr(self, f.name) is not None else None
-                      for f in fields(self)}
+    def _unary_operation(self, operation_function):
+        new_values = {f.name: operation_function(f)
+                      for f in self.fields()}
 
         return self._new_from_dict(new_values)
+
+    def _basic_unary_operation(self, operation):
+        def operation_function(field):
+            value = getattr(self, field.name)
+            if value is not None:
+                return operation(value)
+            else:
+                return None
+
+        return self._unary_operation(operation_function)
 
     def _comparision_operation(self, other, operation):
         def operation_function(this_value, other_value):
@@ -135,16 +144,23 @@ class featured_dataclass(basic_dataclass):
         return self._binary_operation(other, operator.mod)
 
     def __abs__(self):
-        return self._unary_operation(operator.abs)
+        return self._basic_unary_operation(operator.abs)
 
-    def __index__(self):
-        return self._unary_operation(operator.index)
+    def __int__(self):
+        def operation_function(field):
+            value = getattr(self, field.name)
+            if field.type in (float,) and value is not None:
+                return int(value)
+            else:
+                return value
+
+        return self._unary_operation(operation_function)
 
     def __pos__(self):
-        return self._unary_operation(operator.pos)
+        return self._basic_unary_operation(operator.pos)
 
     def __neg__(self):
-        return self._unary_operation(operator.neg)
+        return self._basic_unary_operation(operator.neg)
 
     def __lt__(self, other):
         return self._comparision_operation(other, operator.lt)
