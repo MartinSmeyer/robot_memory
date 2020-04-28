@@ -1,10 +1,16 @@
 from collections import namedtuple
 
 from .base_mirobot import BaseMirobot
+from .base_rover import BaseRover
 from .mirobot_status import MirobotAngles, MirobotCartesians
 
 cartesian_function_splitter = namedtuple('cartesian_function_splitter', ['ptp', 'lin'])
 coordinate_splitter = namedtuple('coordinate_splitter', ['cartesian', 'angle', 'rail'])
+
+rover_splitter = namedtuple('rover_splitter', ['wheel', 'turn', 'move'])
+
+up_down_splitter = namedtuple('up_down_splitter', ['upper', 'bottom'])
+left_right_splitter = namedtuple('left_right_splitter', ['left', 'right'])
 
 
 class Mirobot(BaseMirobot):
@@ -29,9 +35,18 @@ class Mirobot(BaseMirobot):
         """
         super().__init__(*base_mirobot_args, **base_mirobot_kwargs)
 
+        self._rover = BaseRover(self)
+
         self.move = coordinate_splitter(cartesian_function_splitter(self.go_to_cartesian_ptp, self.go_to_cartesian_ptp), self.go_to_axis, self.go_to_slide_rail)
 
         self.increment = coordinate_splitter(cartesian_function_splitter(self.increment_cartesian_ptp, self.increment_cartesian_lin), self.increment_axis, self.increment_slide_rail)
+
+        wheel_aliases = up_down_splitter(left_right_splitter(self._rover.move_upper_left, self._rover.move_upper_right),
+                                         left_right_splitter(self._rover.move_bottom_left, self._rover.move_bottom_right))
+
+        self.rover = rover_splitter(wheel_aliases,
+                                    left_right_splitter(self._rover.rotate_left, self._rover.rotate_right),
+                                    up_down_splitter(self._rover.move_forward, self._rover.move_backward))
 
     @property
     def state(self):
