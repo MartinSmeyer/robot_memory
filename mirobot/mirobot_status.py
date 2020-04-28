@@ -144,7 +144,10 @@ class featured_dataclass(basic_dataclass):
         return self._binary_operation(other, operator.sub)
 
     def __rsub__(self, other):
-        return self._binary_operation(other, operator.sub)
+        def rsub(dataclass_value, number):
+            return operator.sub(number, dataclass_value)
+
+        return self._binary_operation(other, rsub)
 
     def __mul__(self, other):
         return self._binary_operation(other, operator.mul)
@@ -156,9 +159,18 @@ class featured_dataclass(basic_dataclass):
         return self._binary_operation(other, operator.div)
 
     def __rdiv__(self, other):
-        return self._binary_operation(other, operator.div)
+        def rdiv(dataclass_value, number):
+            return operator.div(number, dataclass_value)
+
+        return self._binary_operation(other, rdiv)
 
     def __truediv__(self, other):
+        return self._binary_operation(other, operator.truediv)
+
+    def __rtruediv__(self, other):
+        def rtruediv(dataclass_value, number):
+            return operator.truediv(number, dataclass_value)
+
         return self._binary_operation(other, operator.truediv)
 
     def __mod__(self, other):
