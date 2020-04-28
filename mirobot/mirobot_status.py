@@ -105,7 +105,7 @@ class MirobotCartesians(featured_dataclass):
 
 
 @dataclass
-class MirobotStatus:
+class MirobotStatus(basic_dataclass):
     """ A composite dataclass to hold all of Mirobot's trackable quantities. """
     state: str = ''
     """ The brief descriptor string for Mirobot's state. """
