@@ -49,7 +49,7 @@ class featured_dataclass(basic_dataclass):
             new_values = self._cross_same_type(other, operation_function, single=True)
 
         else:
-            raise TypeError(f"Cannot handle {type(self)} and {type(other)}")
+            raise NotImplementedError(f"Cannot handle {type(self)} and {type(other)}")
 
         return self._new_from_dict(new_values)
 
@@ -83,7 +83,7 @@ class featured_dataclass(basic_dataclass):
             new_values = self._cross_same_type(other, operation_function, single=True).values()
 
         else:
-            raise TypeError(f"Cannot handle {type(self)} and {type(other)}")
+            raise NotImplementedError(f"Cannot handle {type(self)} and {type(other)}")
 
         if all(new_values):
             return True
