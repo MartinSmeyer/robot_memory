@@ -1,6 +1,6 @@
-from dataclass import dataclass
+from dataclasses import dataclass
 
-from .extended_dataclass import basic_dataclass, featured_dataclass
+from .extended_dataclasses import basic_dataclass, featured_dataclass
 
 
 @dataclass
