@@ -56,6 +56,15 @@ class BaseMirobot(AbstractContextManager):
         -------
         class : `BaseMirobot`
         """
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+
+        self.stream_handler = ExitOnExceptionStreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+
+        formatter = logging.Formatter(f"[Mirobot Init] [%(levelname)s] %(message)s")
+        self.stream_handler.setFormatter(formatter)
+        self.logger.addHandler(self.stream_handler)
 
         # Parse inputs into SerialDevice
         serial_device_init_fn = SerialDevice.__init__
@@ -82,6 +91,10 @@ class BaseMirobot(AbstractContextManager):
             else:
                 self.default_portname = None
 
+        formatter = logging.Formatter(f"[{self.default_portname}] [%(levelname)s] %(message)s")
+        self.stream_handler.setFormatter(formatter)
+        # self.logger.addHandler(self.stream_handler)
+
         self.serial_device = SerialDevice(*serial_device_args, debug=debug, **serial_device_kwargs)
 
         self.reset_file = pkg_resources.read_text('mirobot.resources', 'reset.xml') if reset_file is None else reset_file
@@ -100,15 +113,6 @@ class BaseMirobot(AbstractContextManager):
 
         self.status = MirobotStatus()
         """ Dataclass that holds tracks Mirobot's coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details."""
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
-
-        self.stream_handler = ExitOnExceptionStreamHandler()
-        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
-
-        formatter = logging.Formatter(f"[{self.default_portname}] [%(levelname)s] %(message)s")
-        self.stream_handler.setFormatter(formatter)
-        self.logger.addHandler(self.stream_handler)
 
         # do this at the very end, after everything is setup
         if autoconnect:
