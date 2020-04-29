@@ -4,7 +4,6 @@ import logging
 class ExitOnExceptionStreamHandler(logging.StreamHandler):
     def emit(self, record):
         super().emit(record)
-        print(type(record))
         if record.levelno >= logging.ERROR:
             raise SystemExit(-1)
 
