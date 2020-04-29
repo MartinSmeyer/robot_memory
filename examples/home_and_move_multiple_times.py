@@ -2,7 +2,7 @@
 from mirobot import Mirobot
 
 # Default for `wait=` is `True`, but explicitly state it here to showcase this.
-with Mirobot(wait=True) as m:
+with Mirobot(wait=True, debug=True) as m:
 
     # Mirobot will by default wait for any command because we specified `wait=True` for the class above.
     m.home_simultaneous()
