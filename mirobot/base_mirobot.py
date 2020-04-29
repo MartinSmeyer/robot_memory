@@ -187,7 +187,13 @@ class BaseMirobot(AbstractContextManager):
         else:
             eols = ok_eols
 
-        while not matches_eol_strings(eols, output[-1]):
+        if os_is_nt and not reset_expected:
+            eol_threshold = 2
+        else:
+            eol_threshold = 1
+
+        eol_counter = 0
+        while eol_counter < eol_threshold:
             msg = self.serial_device.listen_to_device()
 
             if self._debug and not disable_debug:
@@ -203,6 +209,9 @@ class BaseMirobot(AbstractContextManager):
 
             if not reset_expected and matches_eol_strings(reset_strings, msg):
                 self.logger.error(MirobotReset('Mirobot was unexpectedly reset!'))
+
+            if matches_eol_strings(eols, output[-1]):
+                eol_counter += 1
 
         return output[1:]  # don't include the dummy empty string at first index
 
