@@ -117,7 +117,7 @@ class SerialDevice:
             except Exception as e:
                 self.logger.exception(SerialDeviceOpenError(e))
 
-            if self.exclusive:
+            if self.exclusive and os.name != 'nt':
                 try:
                     self.logger.debug(f"Attempting to lock serial port {self.portname}")
 
@@ -131,15 +131,16 @@ class SerialDevice:
     def close(self):
         """ Close the serial port. """
         if self._is_open:
-            try:
-                self.logger.debug(f"Attempting to unlock serial port {self.portname}")
+            if self.exclusive and os.name != 'nt':
+                try:
+                    self.logger.debug(f"Attempting to unlock serial port {self.portname}")
 
-                portalocker.unlock(self.serialport)
+                    portalocker.unlock(self.serialport)
 
-                self.logger.debug(f"Succeeded in unlocking serial port {self.portname}")
+                    self.logger.debug(f"Succeeded in unlocking serial port {self.portname}")
 
-            except Exception as e:
-                self.logger.exception(SerialDeviceUnlockError(e))
+                except Exception as e:
+                    self.logger.exception(SerialDeviceUnlockError(e))
 
             try:
                 self.logger.debug(f"Attempting to close serial port {self.portname}")

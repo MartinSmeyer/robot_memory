@@ -21,6 +21,8 @@ from .serial_device import SerialDevice
 from .mirobot_status import MirobotStatus, MirobotAngles, MirobotCartesians
 from .exceptions import ExitOnExceptionStreamHandler, MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
 
+os_is_nt = os.name == 'nt'
+
 
 class BaseMirobot(AbstractContextManager):
     """ A base class for managing and maintaining known Mirobot operations. """
@@ -418,12 +420,15 @@ class BaseMirobot(AbstractContextManager):
 
         else:
             for p in port_objects:
-                try:
-                    pf = open(p.device)
-                    portalocker.lock(pf, portalocker.LOCK_EX | portalocker.LOCK_NB)
-                    portalocker.unlock(pf)
-                except portalocker.LockException:
-                    continue
+                if not os_is_nt:
+                    try:
+                        pf = open(p.device)
+                        portalocker.lock(pf, portalocker.LOCK_EX | portalocker.LOCK_NB)
+                        portalocker.unlock(pf)
+                    except portalocker.LockException:
+                        continue
+                    else:
+                        return p.device
                 else:
                     return p.device
 
