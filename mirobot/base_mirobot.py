@@ -321,7 +321,7 @@ class BaseMirobot(AbstractContextManager):
         """
         instruction = '?'
         # we don't want to wait for idle when checking status-- this leads to unbroken recursion!!
-        return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)
+        return self.send_msg(instruction, disable_debug=disable_debug, wait=True, wait_idle=False)
 
     def update_status(self, disable_debug=False):
         """
