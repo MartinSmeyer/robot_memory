@@ -84,6 +84,7 @@ class BaseMirobot(AbstractContextManager):
         if autofindport and not ('portname' in args_dict or 'portname' in serial_device_kwargs):
             self.default_portname = self._find_portname()
             """ The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `BaseMirobot.connect`. """
+            serial_device_kwargs['portname'] = self.default_portname
 
         else:
             if 'portname' in args_dict:
