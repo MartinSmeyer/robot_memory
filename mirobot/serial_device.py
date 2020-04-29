@@ -1,10 +1,14 @@
 import logging
 import os
 
-import portalocker
 import serial
 
 from .exceptions import ExitOnExceptionStreamHandler, SerialDeviceLockError, SerialDeviceOpenError, SerialDeviceReadError, SerialDeviceCloseError, SerialDeviceWriteError, SerialDeviceUnlockError
+
+os_is_posix = os.name == 'posix'
+
+if os_is_posix:
+    import portalocker
 
 
 class SerialDevice:
@@ -117,7 +121,7 @@ class SerialDevice:
             except Exception as e:
                 self.logger.exception(SerialDeviceOpenError(e))
 
-            if self.exclusive and os.name != 'nt':
+            if self.exclusive and os_is_posix:
                 try:
                     self.logger.debug(f"Attempting to lock serial port {self.portname}")
 
@@ -131,7 +135,7 @@ class SerialDevice:
     def close(self):
         """ Close the serial port. """
         if self._is_open:
-            if self.exclusive and os.name != 'nt':
+            if self.exclusive and os_is_posix:
                 try:
                     self.logger.debug(f"Attempting to unlock serial port {self.portname}")
 

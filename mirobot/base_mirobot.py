@@ -14,7 +14,6 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`.
     import importlib_resources as pkg_resources
 
-import portalocker
 import serial.tools.list_ports as lp
 
 from .serial_device import SerialDevice
@@ -22,6 +21,10 @@ from .mirobot_status import MirobotStatus, MirobotAngles, MirobotCartesians
 from .exceptions import ExitOnExceptionStreamHandler, MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
 
 os_is_nt = os.name == 'nt'
+os_is_posix = os.name == 'posix'
+
+if os_is_posix:
+    import portalocker
 
 
 class BaseMirobot(AbstractContextManager):
@@ -430,7 +433,7 @@ class BaseMirobot(AbstractContextManager):
 
         else:
             for p in port_objects:
-                if not os_is_nt:
+                if os_is_posix:
                     try:
                         pf = open(p.device)
                         portalocker.lock(pf, portalocker.LOCK_EX | portalocker.LOCK_NB)
