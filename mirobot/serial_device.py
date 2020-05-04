@@ -96,7 +96,7 @@ class SerialDevice:
             try:
                 msg = self.serialport.readline()
                 if msg != b'':
-                    msg = str(msg.strip(), 'utf-8')
+                    msg = msg.decode().strip()
                     return msg
 
             except Exception as e:
