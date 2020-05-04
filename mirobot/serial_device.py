@@ -3,12 +3,7 @@ import os
 
 import serial
 
-from .exceptions import ExitOnExceptionStreamHandler, SerialDeviceLockError, SerialDeviceOpenError, SerialDeviceReadError, SerialDeviceCloseError, SerialDeviceWriteError, SerialDeviceUnlockError
-
-os_is_posix = os.name == 'posix'
-
-if os_is_posix:
-    import portalocker
+from .exceptions import ExitOnExceptionStreamHandler, SerialDeviceOpenError, SerialDeviceReadError, SerialDeviceCloseError, SerialDeviceWriteError
 
 
 class SerialDevice:
@@ -50,7 +45,7 @@ class SerialDevice:
         self.stream_handler.setFormatter(formatter)
         self.logger.addHandler(self.stream_handler)
 
-        self.serialport = serial.Serial()
+        self.serialport = serial.Serial(exclusive=exclusive)
         self._is_open = False
 
     def __del__(self):
@@ -121,31 +116,9 @@ class SerialDevice:
             except Exception as e:
                 self.logger.exception(SerialDeviceOpenError(e))
 
-            if self.exclusive and os_is_posix:
-                try:
-                    self.logger.debug(f"Attempting to lock serial port {self.portname}")
-
-                    portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
-
-                    self.logger.debug(f"Succeeded in locking serial port {self.portname}")
-
-                except portalocker.LockException:
-                    self.logger.exception(SerialDeviceLockError(f"Unable to acquire port {self.portname}. Make sure another process is not using it!"))
-
     def close(self):
         """ Close the serial port. """
         if self._is_open:
-            if self.exclusive and os_is_posix:
-                try:
-                    self.logger.debug(f"Attempting to unlock serial port {self.portname}")
-
-                    portalocker.unlock(self.serialport)
-
-                    self.logger.debug(f"Succeeded in unlocking serial port {self.portname}")
-
-                except Exception as e:
-                    self.logger.exception(SerialDeviceUnlockError(e))
-
             try:
                 self.logger.debug(f"Attempting to close serial port {self.portname}")
 

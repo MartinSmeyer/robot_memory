@@ -23,9 +23,6 @@ from .exceptions import ExitOnExceptionStreamHandler, MirobotError, MirobotAlarm
 os_is_nt = os.name == 'nt'
 os_is_posix = os.name == 'posix'
 
-if os_is_posix:
-    import portalocker
-
 
 class BaseMirobot(AbstractContextManager):
     """ A base class for managing and maintaining known Mirobot operations. """
@@ -435,10 +432,8 @@ class BaseMirobot(AbstractContextManager):
             for p in port_objects:
                 if os_is_posix:
                     try:
-                        pf = open(p.device)
-                        portalocker.lock(pf, portalocker.LOCK_EX | portalocker.LOCK_NB)
-                        portalocker.unlock(pf)
-                    except portalocker.LockException:
+                        open(p.device)
+                    except Exception:
                         continue
                     else:
                         return p.device

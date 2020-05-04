@@ -1,2 +1,1 @@
 pyserial
-portalocker ; os_name=="posix"
