@@ -1,4 +1,4 @@
-from typing import SimpleNamespace
+from types import SimpleNamespace
 
 from .base_mirobot import BaseMirobot
 from .base_rover import BaseRover
