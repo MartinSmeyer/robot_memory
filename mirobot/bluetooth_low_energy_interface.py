@@ -4,6 +4,8 @@ import time
 
 from bleak import discover, BleakClient
 
+from .exceptions import MirobotError, MirobotAlarm, MirobotReset
+
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
@@ -121,11 +123,20 @@ class BluetoothLowEnergyInterface:
 
                     self.feedback.append(line)
 
+                    last_line = self.feedback[-2]
+                    if 'error' in last_line:
+                        self.logger.error(MirobotError(last_line.replace('error: ', '')))
+
+                    if 'ALARM' in last_line:
+                        self.logger.error(MirobotAlarm(last_line.split('ALARM: ', 1)[1]))
+
+                    if matches_eol_strings(reset_strings, last_line):
+                        self.logger.error(MirobotReset('Mirobot was unexpectedly reset!'))
+
                 if self.feedback[-1] == 'ok\r\n':
                     self.ok_counter += 1
 
         async def async_send(msg):
-
             async def write(msg):
                 for c in self.characteristics:
                     await self.client.write_gatt_char(c, msg)
