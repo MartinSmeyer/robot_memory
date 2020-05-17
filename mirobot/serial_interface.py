@@ -11,7 +11,33 @@ os_is_posix = os.name == 'posix'
 
 
 class SerialInterface:
+    """ A class for bridging the interface between `mirobot.mirobot.BaseMirobot` and `mirobot.serial_device.SerialDevice`"""
     def __init__(self, mirobot, portname=None, baudrate=None, stopbits=None, exclusive=True, debug=False, logger=None, autofindport=True):
+        """ Initialization of `SerialInterface` class
+
+        Parameters
+        ----------
+        mirobot : `mirobot.base_mirobot.BaseMirobot`
+            Mirobot object that this instance is attached to.
+        portname : str
+             (Default value = None) The portname to attach to. If `None`, and the `autofindport` parameter is `True`, then this class will automatically try to find an open port. It will attach to the first one that is available.
+        baudrate : int
+             (Default value = None) Baud rate of the connection.
+        stopbits : int
+             (Default value = None) Stopbits of the connection.
+        exclusive : bool
+             (Default value = True) Whether to exclusively block the port for this instance. Is only a true toggle on Linux and OSx; Windows always exclusively blocks serial ports. Setting this variable to `False` on Windows will throw an error.
+        debug : bool
+             (Default value = False) Whether to show debug statements in logger.
+        logger : logger.Logger
+             (Default value = None) Logger instance to use for this class. Usually `mirobot.logger`.
+        autofindport : bool
+             (Default value = True) Whether to automatically search for an available port if `address` parameter is `None`.
+
+        Returns
+        -------
+
+        """
 
         self.mirobot = mirobot
 
@@ -41,19 +67,19 @@ class SerialInterface:
 
     @property
     def debug(self):
-        """ Return the `debug` property of `BaseMirobot` """
+        """ Return the `debug` property of `SerialInterface` """
         return self._debug
 
     @debug.setter
     def debug(self, value):
         """
-        Set the new value for the `debug` property of `mirobot.base_mirobot.BaseMirobot`. Use as in `BaseMirobot.setDebug(value)`.
-        Use this setter method as it will also update the logging objects of `mirobot.base_mirobot.BaseMirobot` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.base_mirobot.BaseMirobot._debug` directly which will not update the loggers.
+        Set the new value for the `debug` property of `mirobot.serial_interface.SerialInterface`. Use as in `BaseMirobot.setDebug(value)`.
+        Use this setter method as it will also update the logging objects of `mirobot.serial_interface.SerialInterface` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.serial_interface.SerialInterface._debug` directly which will not update the loggers.
 
         Parameters
         ----------
         value : bool
-            The new value for `mirobot.base_mirobot.BaseMirobot._debug`.
+            The new value for `mirobot.serial_interface.SerialInterface._debug`.
 
         """
         self._debug = bool(value)

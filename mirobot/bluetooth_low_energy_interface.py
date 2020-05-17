@@ -8,13 +8,49 @@ from .exceptions import MirobotError, MirobotAlarm, MirobotReset
 
 
 def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
+    """Yield successive n-sized chunks from lst.
+
+    Parameters
+    ----------
+    lst : Collection
+        An iterable of items.
+    n : int
+        The size of the chunks to split the list into.
+
+    Returns
+    -------
+    result : Generator[List]
+        A generator that yields each chunk of the list.
+    """
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
 
 class BluetoothLowEnergyInterface:
+    """
+    An interface for talking to the low-energy Bluetooth extender module for the Mirobot.
+    NOTE: This mode is inherently instable at the moment (@rirze, Thu 14 May 2020). Sometimes commands may not be parsed correctly, causing execution to fail on a misparsing error. While this happens rarely, users should be made aware of the potential exceptions that may arise. Use when serial communication is unavailable.
+    """
     def __init__(self, mirobot, address=None, debug=False, logger=None, autofindaddress=True):
+        """
+
+        Parameters
+        ----------
+        mirobot : `mirobot.base_mirobot.BaseMirobot`
+            Mirobot object that this instance is attached to.
+        address : str
+            (Default value = None) Bluetooth address of the Mirobot's bluetooth extender module to connect to. If unknown, leave as `None` and this class will automatically scan and try to find the box on its own. If provided, it should be of the form `50:33:8B:L4:95:6X` (except on Apple products which use a format like `123JKDSF-F0E3-F96A-F0A3-64A68508A53C`)
+        debug : bool
+            (Default value = False) Whether to show debug statements in logger.
+        logger : Logger
+            (Default value = None) Logger instance to use for this class. Usually `mirobot.logger`.
+        autofindaddress : bool
+            (Default value = True) Whether to automatically search for Mirobot's bluetooth module if `address` parameter is `None`.
+
+        Returns
+        -------
+        class : `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface`
+        """
         self.mirobot = mirobot
 
         if logger is not None:
@@ -43,19 +79,17 @@ class BluetoothLowEnergyInterface:
 
     @property
     def debug(self):
-        """ Return the `debug` property of `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` """
+        """ Whether to show debug statements in the logger. """
         return self._debug
 
     @debug.setter
     def debug(self, value):
-        """
-        Set the new value for the `debug` property of `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface`. Use as in `BluetoothLowEnergyInterface.setDebug(value)`.
-        Use this setter method as it will also update the logging objects of `mirobot.base_mirobot.BaseMirobot` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.base_mirobot.BaseMirobot._debug` directly which will not update the loggers.
+        """Set the new value for the `debug` property of `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface`. Use as in `BluetoothLowEnergyInterface.setDebug(value)`.
 
         Parameters
         ----------
         value : bool
-            The new value for `mirobot.base_mirobot.BaseMirobot._debug`.
+            New value for `debug`
 
         """
         self._debug = bool(value)
@@ -69,6 +103,7 @@ class BluetoothLowEnergyInterface:
         return mirobot_bt.address
 
     def connect(self):
+        """ Connect to the Bluetooth Extender Box """
         async def start_connection():
             connection = await self.client.connect()
 
@@ -100,15 +135,44 @@ class BluetoothLowEnergyInterface:
 
     @property
     def is_connected(self):
+        """ Whether this class is connected to the Bluetooth Extender Box """
         return self.connection
 
     def send(self, msg, disable_debug=False, wait=True, wait_idle=True):
+        """
+
+        Send a message to the Bluetooth Extender Box. Shouldn't be used by the end user.
+        Parameters
+        ----------
+        msg : str
+            The message/instruction to send. A `\\r\\n` will be appended to this message.
+        disable_debug : bool
+             (Default value = False) Whether to disable debug statements on `idle`-state polling.
+        wait : bool
+             (Default value = True) Whether to wait for the command to return a `ok` response.
+        wait_idle :
+             (Default value = True) Whether to wait for the Mirobot to be in an `Idle` state before returning.
+
+        Returns
+        -------
+        msg : List[str] or bool
+             If `wait` is `True`, then return a list of strings which contains message output.
+             If `wait` is `False`, then return whether sending the message succeeded.
+
+        """
         self.feedback = []
         self.ok_counter = 0
         self.disable_debug = disable_debug
 
+        reset_strings = ['Using reset pos!']
+
+        def matches_eol_strings(terms, s):
+            for eol in terms:
+                if s.endswith(eol):
+                    return True
+            return False
+
         def notification_handler(sender, data):
-            """Simple notification handler which prints the data received."""
             data = data.decode()
 
             data_lines = re.findall(r".*[\r\n]{0,1}", data)
