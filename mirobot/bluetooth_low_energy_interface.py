@@ -186,7 +186,8 @@ class BluetoothLowEnergyInterface:
 
         self._run_and_get(async_send(msg))
 
-        self.feedback[-1] = self.feedback[-1].strip('\r\n')
+        if self.feedback:
+            self.feedback[-1] = self.feedback[-1].strip('\r\n')
 
         # the following bugs me so much, but I can't figure out why this is happening and needed:
         # Instant subsequent calls to `send_msg` hang, for some reason.
