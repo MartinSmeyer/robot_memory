@@ -38,7 +38,7 @@ class BluetoothLowEnergyInterface:
 
         self.client = BleakClient(self.address, loop=self.loop)
 
-    def run_and_get(self, coro):
+    def _run_and_get(self, coro):
         return self.loop.run_until_complete(coro)
 
     @property
@@ -96,7 +96,7 @@ class BluetoothLowEnergyInterface:
                 # but if it complains that client._bus is None, then we're good, right...?
                 pass
 
-        self.run_and_get(async_disconnect())
+        self._run_and_get(async_disconnect())
 
     @property
     def is_connected(self):
