@@ -25,7 +25,7 @@ class BluetoothLowEnergyInterface:
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
-        self.run_and_get(self._ainit())
+        self._run_and_get(self._ainit())
 
     async def _ainit(self, address=None, autofindaddress=True):
         # if address was not passed in and autofindaddress is set to true,
@@ -79,9 +79,10 @@ class BluetoothLowEnergyInterface:
 
             return connection
 
-        self.connection = self.run_and_get(start_connection())
+        self.connection = self._run_and_get(start_connection())
 
     def disconnect(self):
+        """ Disconnect from the Bluetooth Extender Box """
         async def async_disconnect():
             try:
                 await self.client.disconnect()
@@ -183,7 +184,7 @@ class BluetoothLowEnergyInterface:
                 for c in self.characteristics:
                     await self.client.stop_notify(c)
 
-        self.run_and_get(async_send(msg))
+        self._run_and_get(async_send(msg))
 
         self.feedback[-1] = self.feedback[-1].strip('\r\n')
 
