@@ -141,7 +141,7 @@ class BaseMirobot(AbstractContextManager):
         self.device.connect()
 
     def disconnect(self):
-        if hasattr(self, 'device') and self.device is not None:
+        if getattr(self, 'device', None) is not None:
             self.device.disconnect()
 
     @property

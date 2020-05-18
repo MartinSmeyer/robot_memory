@@ -251,5 +251,5 @@ class SerialInterface:
 
     def disconnect(self):
         """ Disconnect from the Mirobot. Close the serial device connection. """
-        if hasattr(self, 'serial_device') and self.serial_device is not None:
+        if getattr(self, 'serial_device', None) is not None:
             self.serial_device.close()
