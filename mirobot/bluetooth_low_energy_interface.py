@@ -1,10 +1,14 @@
 import asyncio
+import os
 import re
 import time
 
 from bleak import discover, BleakClient
 
 from .exceptions import MirobotError, MirobotAlarm, MirobotReset
+
+
+os_is_posix = os.name == 'posix'
 
 
 def chunks(lst, n):
@@ -258,6 +262,7 @@ class BluetoothLowEnergyInterface:
         # Instant subsequent calls to `send_msg` hang, for some reason.
         # Like the second invocation doesn't start, it's gets stuck as `selector._poll` in asyncio
         # Putting a small delay fixes this but why...???
-        time.sleep(0.1)
+        if os_is_posix:
+            time.sleep(0.1)
 
         return self.feedback
