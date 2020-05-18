@@ -31,10 +31,12 @@ class BaseMirobot(AbstractContextManager):
 
         Parameters
         ----------
-        *serial_device_args : Any
-             Arguments that are passed into the `mirobot.serial_device.SerialDevice` class.
+        *device_args : Any
+             Arguments that are passed into the `mirobot.serial_device.SerialDevice` or `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` class.
         debug : bool
             (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
+        connection_type : str
+            (Default value = `'serial'`) Which type of connection to make to the Mirobot. By default, it will look for a serial port connection (eg. a physical wire connection). For bluetooth, provide `'bluetooth'` or `'bt'` for this parameter. To explicitly specify a serial port connection, use`'serial'` or `'ser'`.
         autoconnect : bool
             (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `BaseMirobot.connect` is unnecessary.
         autofindport : bool
@@ -49,8 +51,8 @@ class BaseMirobot(AbstractContextManager):
             (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See `BaseMirobot.reset_configuration` for more details.
         wait : bool
             (Default value = `True`) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored `BaseMirobot.wait`.
-        **serial_device_kwargs : Any
-             Keywords that are passed into the `mirobot.serial_device.SerialDevice` class.
+        **device_kwargs : Any
+             Keywords that are passed into the `mirobot.serial_device.SerialDevice` or `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` class.
 
         Returns
         -------
@@ -66,6 +68,8 @@ class BaseMirobot(AbstractContextManager):
         self.stream_handler.setFormatter(formatter)
         self.logger.addHandler(self.stream_handler)
 
+        self.device = None
+        """ Object that controls the connection to the Mirobot. Can either be a `mirobot.serial_interface.SerialInterface` or `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` class."""
         # Parse inputs into SerialDevice
         if connection_type.lower() in ('serial', 'ser'):
             serial_device_init_fn = SerialInterface.__init__
