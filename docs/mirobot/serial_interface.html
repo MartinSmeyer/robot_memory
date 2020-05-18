@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.7.5" />
+<title>mirobot.serial_interface API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>mirobot.serial_interface</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import os
+import time
+
+import serial.tools.list_ports as lp
+
+from .serial_device import SerialDevice
+from .exceptions import MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort
+
+os_is_nt = os.name == &#39;nt&#39;
+os_is_posix = os.name == &#39;posix&#39;
+
+
+class SerialInterface:
+    &#34;&#34;&#34; A class for bridging the interface between `mirobot.base_mirobot.BaseMirobot` and `mirobot.serial_device.SerialDevice`&#34;&#34;&#34;
+    def __init__(self, mirobot, portname=None, baudrate=None, stopbits=None, exclusive=True, debug=False, logger=None, autofindport=True):
+        &#34;&#34;&#34; Initialization of `SerialInterface` class
+
+        Parameters
+        ----------
+        mirobot : `mirobot.base_mirobot.BaseMirobot`
+            Mirobot object that this instance is attached to.
+        portname : str
+             (Default value = None) The portname to attach to. If `None`, and the `autofindport` parameter is `True`, then this class will automatically try to find an open port. It will attach to the first one that is available.
+        baudrate : int
+             (Default value = None) Baud rate of the connection.
+        stopbits : int
+             (Default value = None) Stopbits of the connection.
+        exclusive : bool
+             (Default value = True) Whether to exclusively block the port for this instance. Is only a true toggle on Linux and OSx; Windows always exclusively blocks serial ports. Setting this variable to `False` on Windows will throw an error.
+        debug : bool
+             (Default value = False) Whether to show debug statements in logger.
+        logger : logger.Logger
+             (Default value = None) Logger instance to use for this class. Usually `mirobot.base_mirobot.BaseMirobot.logger`.
+        autofindport : bool
+             (Default value = True) Whether to automatically search for an available port if `address` parameter is `None`.
+
+        Returns
+        -------
+
+        &#34;&#34;&#34;
+
+        self.mirobot = mirobot
+
+        if logger is not None:
+            self.logger = logger
+
+        self._debug = debug
+        serial_device_kwargs = {&#39;debug&#39;: debug, &#39;exclusive&#39;: exclusive}
+
+        # check if baudrate was passed in args or kwargs, if not use the default value instead
+        if baudrate is None:
+            serial_device_kwargs[&#39;baudrate&#39;] = 115200
+        # check if stopbits was passed in args or kwargs, if not use the default value instead
+        if stopbits is None:
+            serial_device_kwargs[&#39;stopbits&#39;] = 1
+
+        # if portname was not passed in and autofindport is set to true, autosearch for a serial port
+        if autofindport and portname is None:
+            self.default_portname = self._find_portname()
+            &#34;&#34;&#34; The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `BaseMirobot.connect`. &#34;&#34;&#34;
+            serial_device_kwargs[&#39;portname&#39;] = self.default_portname
+
+        else:
+            self.default_portname = portname
+
+        self.serial_device = SerialDevice(**serial_device_kwargs)
+
+    @property
+    def debug(self):
+        &#34;&#34;&#34; Return the `debug` property of `SerialInterface` &#34;&#34;&#34;
+        return self._debug
+
+    @debug.setter
+    def debug(self, value):
+        &#34;&#34;&#34;
+        Set the new value for the `debug` property of `mirobot.serial_interface.SerialInterface`. Use as in `BaseMirobot.setDebug(value)`.
+        Use this setter method as it will also update the logging objects of `mirobot.serial_interface.SerialInterface` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.serial_interface.SerialInterface._debug` directly which will not update the loggers.
+
+        Parameters
+        ----------
+        value : bool
+            The new value for `mirobot.serial_interface.SerialInterface._debug`.
+
+        &#34;&#34;&#34;
+        self._debug = bool(value)
+        self.serial_device.setDebug(value)
+
+    def send(self, msg, disable_debug=False, wait=True, wait_idle=True):
+
+        output = self.serial_device.send(msg)
+
+        if self._debug and not disable_debug:
+            self.logger.debug(f&#34;[SENT] {msg}&#34;)
+
+        if wait:
+            output = self.wait_for_ok(disable_debug=disable_debug)
+
+            if wait_idle:
+                self.wait_until_idle()
+
+        return output
+
+    @property
+    def is_connected(self):
+        &#34;&#34;&#34;
+        Check if Mirobot is connected.
+
+        Returns
+        -------
+        connected : bool
+            Whether the Mirobot is connected.
+        &#34;&#34;&#34;
+        return self.serial_device.is_open
+
+    def _find_portname(self):
+        &#34;&#34;&#34;
+        Find the port that might potentially be connected to the Mirobot.
+
+        Returns
+        -------
+        device_name : str
+            The name of the device that is (most-likely) connected to the Mirobot.
+        &#34;&#34;&#34;
+        port_objects = lp.comports()
+
+        if not port_objects:
+            self.logger.exception(MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;))
+
+        else:
+            for p in port_objects:
+                if os_is_posix:
+                    try:
+                        open(p.device)
+                    except Exception:
+                        continue
+                    else:
+                        return p.device
+                else:
+                    return p.device
+
+            self.logger.exception(MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;))
+
+    def wait_for_ok(self, reset_expected=False, disable_debug=False):
+        &#34;&#34;&#34;
+        Continuously loops over and collects message output from the serial device.
+        It stops when it encounters an &#39;ok&#39; or otherwise terminal condition phrase.
+
+        Parameters
+        ----------
+        reset_expected : bool
+            (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `&#39;Using reset pos!&#39;` rather than the traditional `&#39;Ok&#39;`)
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
+
+        Returns
+        -------
+        output : List[str]
+            A list of output strings upto and including the terminal string.
+        &#34;&#34;&#34;
+        output = [&#39;&#39;]
+
+        ok_eols = [&#39;ok&#39;]
+
+        reset_strings = [&#39;Using reset pos!&#39;]
+
+        def matches_eol_strings(terms, s):
+            for eol in terms:
+                if s.endswith(eol):
+                    return True
+            return False
+
+        if reset_expected:
+            eols = ok_eols + reset_strings
+        else:
+            eols = ok_eols
+
+        if os_is_nt and not reset_expected:
+            eol_threshold = 2
+        else:
+            eol_threshold = 1
+
+        eol_counter = 0
+        while eol_counter &lt; eol_threshold:
+            msg = self.serial_device.listen_to_device()
+
+            if self._debug and not disable_debug:
+                self.logger.debug(f&#34;[RECV] {msg}&#34;)
+
+            if &#39;error&#39; in msg:
+                self.logger.error(MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;)))
+
+            if &#39;ALARM&#39; in msg:
+                self.logger.error(MirobotAlarm(msg.split(&#39;ALARM: &#39;, 1)[1]))
+
+            output.append(msg)
+
+            if not reset_expected and matches_eol_strings(reset_strings, msg):
+                self.logger.error(MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;))
+
+            if matches_eol_strings(eols, output[-1]):
+                eol_counter += 1
+
+        return output[1:]  # don&#39;t include the dummy empty string at first index
+
+    def wait_until_idle(self, refresh_rate=0.1):
+        &#34;&#34;&#34;
+        Continuously loops over and refreshes state of the Mirobot.
+        It stops when it encounters an &#39;Idle&#39; state string.
+
+        Parameters
+        ----------
+        refresh_rate : float
+            (Default value = `0.1`) The rate in seconds to check for the &#39;Idle&#39; state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
+
+        Returns
+        -------
+        output : List[str]
+            A list of output strings upto and including the terminal string.
+        &#34;&#34;&#34;
+        self.mirobot.update_status(disable_debug=True)
+
+        while self.mirobot.status.state != &#39;Idle&#39;:
+            time.sleep(refresh_rate)
+            self.mirobot.update_status(disable_debug=True)
+
+    def connect(self, portname=None):
+        &#34;&#34;&#34;
+        Connect to the Mirobot.
+
+        Parameters
+        ----------
+        portname : str
+            (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
+
+        Returns
+        -------
+        ok_msg : List[str]
+            The output from an initial Mirobot connection.
+        &#34;&#34;&#34;
+        if portname is None:
+            if self.default_portname is not None:
+                portname = self.default_portname
+            else:
+                self.logger.exception(ValueError(&#39;Portname must be provided! Example: `portname=&#34;COM3&#34;`&#39;))
+
+        self.serial_device.portname = portname
+
+        self.serial_device.open()
+
+        return self.wait_for_ok(reset_expected=True)
+
+    def disconnect(self):
+        &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
+        if getattr(self, &#39;serial_device&#39;, None) is not None:
+            self.serial_device.close()</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="mirobot.serial_interface.SerialInterface"><code class="flex name class">
+<span>class <span class="ident">SerialInterface</span></span>
+<span>(</span><span>mirobot, portname=None, baudrate=None, stopbits=None, exclusive=True, debug=False, logger=None, autofindport=True)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>A class for bridging the interface between <a title="mirobot.base_mirobot.BaseMirobot" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot"><code>BaseMirobot</code></a> and <a title="mirobot.serial_device.SerialDevice" href="serial_device.html#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a></p>
+<p>Initialization of <a title="mirobot.serial_interface.SerialInterface" href="#mirobot.serial_interface.SerialInterface"><code>SerialInterface</code></a> class</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><a title="mirobot" href="index.html"><code>mirobot</code></a></strong> :&ensp;<code>mirobot.base_mirobot.BaseMirobot</code></dt>
+<dd>Mirobot object that this instance is attached to.</dd>
+<dt><strong><code>portname</code></strong> :&ensp;<code>str</code></dt>
+<dd>(Default value = None) The portname to attach to. If <code>None</code>, and the <code>autofindport</code> parameter is <code>True</code>, then this class will automatically try to find an open port. It will attach to the first one that is available.</dd>
+<dt><strong><code>baudrate</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = None) Baud rate of the connection.</dd>
+<dt><strong><code>stopbits</code></strong> :&ensp;<code>int</code></dt>
+<dd>(Default value = None) Stopbits of the connection.</dd>
+<dt><strong><code>exclusive</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = True) Whether to exclusively block the port for this instance. Is only a true toggle on Linux and OSx; Windows always exclusively blocks serial ports. Setting this variable to <code>False</code> on Windows will throw an error.</dd>
+<dt><strong><code>debug</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = False) Whether to show debug statements in logger.</dd>
+<dt><strong><code>logger</code></strong> :&ensp;<code>logger.Logger</code></dt>
+<dd>(Default value = None) Logger instance to use for this class. Usually <a title="mirobot.base_mirobot.BaseMirobot.logger" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.logger"><code>BaseMirobot.logger</code></a>.</dd>
+<dt><strong><code>autofindport</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = True) Whether to automatically search for an available port if <code>address</code> parameter is <code>None</code>.</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SerialInterface:
+    &#34;&#34;&#34; A class for bridging the interface between `mirobot.base_mirobot.BaseMirobot` and `mirobot.serial_device.SerialDevice`&#34;&#34;&#34;
+    def __init__(self, mirobot, portname=None, baudrate=None, stopbits=None, exclusive=True, debug=False, logger=None, autofindport=True):
+        &#34;&#34;&#34; Initialization of `SerialInterface` class
+
+        Parameters
+        ----------
+        mirobot : `mirobot.base_mirobot.BaseMirobot`
+            Mirobot object that this instance is attached to.
+        portname : str
+             (Default value = None) The portname to attach to. If `None`, and the `autofindport` parameter is `True`, then this class will automatically try to find an open port. It will attach to the first one that is available.
+        baudrate : int
+             (Default value = None) Baud rate of the connection.
+        stopbits : int
+             (Default value = None) Stopbits of the connection.
+        exclusive : bool
+             (Default value = True) Whether to exclusively block the port for this instance. Is only a true toggle on Linux and OSx; Windows always exclusively blocks serial ports. Setting this variable to `False` on Windows will throw an error.
+        debug : bool
+             (Default value = False) Whether to show debug statements in logger.
+        logger : logger.Logger
+             (Default value = None) Logger instance to use for this class. Usually `mirobot.base_mirobot.BaseMirobot.logger`.
+        autofindport : bool
+             (Default value = True) Whether to automatically search for an available port if `address` parameter is `None`.
+
+        Returns
+        -------
+
+        &#34;&#34;&#34;
+
+        self.mirobot = mirobot
+
+        if logger is not None:
+            self.logger = logger
+
+        self._debug = debug
+        serial_device_kwargs = {&#39;debug&#39;: debug, &#39;exclusive&#39;: exclusive}
+
+        # check if baudrate was passed in args or kwargs, if not use the default value instead
+        if baudrate is None:
+            serial_device_kwargs[&#39;baudrate&#39;] = 115200
+        # check if stopbits was passed in args or kwargs, if not use the default value instead
+        if stopbits is None:
+            serial_device_kwargs[&#39;stopbits&#39;] = 1
+
+        # if portname was not passed in and autofindport is set to true, autosearch for a serial port
+        if autofindport and portname is None:
+            self.default_portname = self._find_portname()
+            &#34;&#34;&#34; The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `BaseMirobot.connect`. &#34;&#34;&#34;
+            serial_device_kwargs[&#39;portname&#39;] = self.default_portname
+
+        else:
+            self.default_portname = portname
+
+        self.serial_device = SerialDevice(**serial_device_kwargs)
+
+    @property
+    def debug(self):
+        &#34;&#34;&#34; Return the `debug` property of `SerialInterface` &#34;&#34;&#34;
+        return self._debug
+
+    @debug.setter
+    def debug(self, value):
+        &#34;&#34;&#34;
+        Set the new value for the `debug` property of `mirobot.serial_interface.SerialInterface`. Use as in `BaseMirobot.setDebug(value)`.
+        Use this setter method as it will also update the logging objects of `mirobot.serial_interface.SerialInterface` and its `mirobot.serial_device.SerialDevice`. As opposed to setting `mirobot.serial_interface.SerialInterface._debug` directly which will not update the loggers.
+
+        Parameters
+        ----------
+        value : bool
+            The new value for `mirobot.serial_interface.SerialInterface._debug`.
+
+        &#34;&#34;&#34;
+        self._debug = bool(value)
+        self.serial_device.setDebug(value)
+
+    def send(self, msg, disable_debug=False, wait=True, wait_idle=True):
+
+        output = self.serial_device.send(msg)
+
+        if self._debug and not disable_debug:
+            self.logger.debug(f&#34;[SENT] {msg}&#34;)
+
+        if wait:
+            output = self.wait_for_ok(disable_debug=disable_debug)
+
+            if wait_idle:
+                self.wait_until_idle()
+
+        return output
+
+    @property
+    def is_connected(self):
+        &#34;&#34;&#34;
+        Check if Mirobot is connected.
+
+        Returns
+        -------
+        connected : bool
+            Whether the Mirobot is connected.
+        &#34;&#34;&#34;
+        return self.serial_device.is_open
+
+    def _find_portname(self):
+        &#34;&#34;&#34;
+        Find the port that might potentially be connected to the Mirobot.
+
+        Returns
+        -------
+        device_name : str
+            The name of the device that is (most-likely) connected to the Mirobot.
+        &#34;&#34;&#34;
+        port_objects = lp.comports()
+
+        if not port_objects:
+            self.logger.exception(MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;))
+
+        else:
+            for p in port_objects:
+                if os_is_posix:
+                    try:
+                        open(p.device)
+                    except Exception:
+                        continue
+                    else:
+                        return p.device
+                else:
+                    return p.device
+
+            self.logger.exception(MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;))
+
+    def wait_for_ok(self, reset_expected=False, disable_debug=False):
+        &#34;&#34;&#34;
+        Continuously loops over and collects message output from the serial device.
+        It stops when it encounters an &#39;ok&#39; or otherwise terminal condition phrase.
+
+        Parameters
+        ----------
+        reset_expected : bool
+            (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `&#39;Using reset pos!&#39;` rather than the traditional `&#39;Ok&#39;`)
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
+
+        Returns
+        -------
+        output : List[str]
+            A list of output strings upto and including the terminal string.
+        &#34;&#34;&#34;
+        output = [&#39;&#39;]
+
+        ok_eols = [&#39;ok&#39;]
+
+        reset_strings = [&#39;Using reset pos!&#39;]
+
+        def matches_eol_strings(terms, s):
+            for eol in terms:
+                if s.endswith(eol):
+                    return True
+            return False
+
+        if reset_expected:
+            eols = ok_eols + reset_strings
+        else:
+            eols = ok_eols
+
+        if os_is_nt and not reset_expected:
+            eol_threshold = 2
+        else:
+            eol_threshold = 1
+
+        eol_counter = 0
+        while eol_counter &lt; eol_threshold:
+            msg = self.serial_device.listen_to_device()
+
+            if self._debug and not disable_debug:
+                self.logger.debug(f&#34;[RECV] {msg}&#34;)
+
+            if &#39;error&#39; in msg:
+                self.logger.error(MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;)))
+
+            if &#39;ALARM&#39; in msg:
+                self.logger.error(MirobotAlarm(msg.split(&#39;ALARM: &#39;, 1)[1]))
+
+            output.append(msg)
+
+            if not reset_expected and matches_eol_strings(reset_strings, msg):
+                self.logger.error(MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;))
+
+            if matches_eol_strings(eols, output[-1]):
+                eol_counter += 1
+
+        return output[1:]  # don&#39;t include the dummy empty string at first index
+
+    def wait_until_idle(self, refresh_rate=0.1):
+        &#34;&#34;&#34;
+        Continuously loops over and refreshes state of the Mirobot.
+        It stops when it encounters an &#39;Idle&#39; state string.
+
+        Parameters
+        ----------
+        refresh_rate : float
+            (Default value = `0.1`) The rate in seconds to check for the &#39;Idle&#39; state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
+
+        Returns
+        -------
+        output : List[str]
+            A list of output strings upto and including the terminal string.
+        &#34;&#34;&#34;
+        self.mirobot.update_status(disable_debug=True)
+
+        while self.mirobot.status.state != &#39;Idle&#39;:
+            time.sleep(refresh_rate)
+            self.mirobot.update_status(disable_debug=True)
+
+    def connect(self, portname=None):
+        &#34;&#34;&#34;
+        Connect to the Mirobot.
+
+        Parameters
+        ----------
+        portname : str
+            (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
+
+        Returns
+        -------
+        ok_msg : List[str]
+            The output from an initial Mirobot connection.
+        &#34;&#34;&#34;
+        if portname is None:
+            if self.default_portname is not None:
+                portname = self.default_portname
+            else:
+                self.logger.exception(ValueError(&#39;Portname must be provided! Example: `portname=&#34;COM3&#34;`&#39;))
+
+        self.serial_device.portname = portname
+
+        self.serial_device.open()
+
+        return self.wait_for_ok(reset_expected=True)
+
+    def disconnect(self):
+        &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
+        if getattr(self, &#39;serial_device&#39;, None) is not None:
+            self.serial_device.close()</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="mirobot.serial_interface.SerialInterface.debug"><code class="name">var <span class="ident">debug</span></code></dt>
+<dd>
+<section class="desc"><p>Return the <code>debug</code> property of <a title="mirobot.serial_interface.SerialInterface" href="#mirobot.serial_interface.SerialInterface"><code>SerialInterface</code></a></p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def debug(self):
+    &#34;&#34;&#34; Return the `debug` property of `SerialInterface` &#34;&#34;&#34;
+    return self._debug</code></pre>
+</details>
+</dd>
+<dt id="mirobot.serial_interface.SerialInterface.is_connected"><code class="name">var <span class="ident">is_connected</span></code></dt>
+<dd>
+<section class="desc"><p>Check if Mirobot is connected.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>connected</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether the Mirobot is connected.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_connected(self):
+    &#34;&#34;&#34;
+    Check if Mirobot is connected.
+
+    Returns
+    -------
+    connected : bool
+        Whether the Mirobot is connected.
+    &#34;&#34;&#34;
+    return self.serial_device.is_open</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="mirobot.serial_interface.SerialInterface.connect"><code class="name flex">
+<span>def <span class="ident">connect</span></span>(<span>self, portname=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Connect to the Mirobot.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>portname</code></strong> :&ensp;<code>str</code></dt>
+<dd>(Default value = <code>None</code>) The name of the port to connnect to. If this is <code>None</code>, then it will try to use <code>self.default_portname</code>. If both are <code>None</code>, then an error will be thrown. To avoid this, specify a portname.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>ok_msg</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
+<dd>The output from an initial Mirobot connection.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def connect(self, portname=None):
+    &#34;&#34;&#34;
+    Connect to the Mirobot.
+
+    Parameters
+    ----------
+    portname : str
+        (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
+
+    Returns
+    -------
+    ok_msg : List[str]
+        The output from an initial Mirobot connection.
+    &#34;&#34;&#34;
+    if portname is None:
+        if self.default_portname is not None:
+            portname = self.default_portname
+        else:
+            self.logger.exception(ValueError(&#39;Portname must be provided! Example: `portname=&#34;COM3&#34;`&#39;))
+
+    self.serial_device.portname = portname
+
+    self.serial_device.open()
+
+    return self.wait_for_ok(reset_expected=True)</code></pre>
+</details>
+</dd>
+<dt id="mirobot.serial_interface.SerialInterface.disconnect"><code class="name flex">
+<span>def <span class="ident">disconnect</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Disconnect from the Mirobot. Close the serial device connection.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def disconnect(self):
+    &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
+    if getattr(self, &#39;serial_device&#39;, None) is not None:
+        self.serial_device.close()</code></pre>
+</details>
+</dd>
+<dt id="mirobot.serial_interface.SerialInterface.send"><code class="name flex">
+<span>def <span class="ident">send</span></span>(<span>self, msg, disable_debug=False, wait=True, wait_idle=True)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def send(self, msg, disable_debug=False, wait=True, wait_idle=True):
+
+    output = self.serial_device.send(msg)
+
+    if self._debug and not disable_debug:
+        self.logger.debug(f&#34;[SENT] {msg}&#34;)
+
+    if wait:
+        output = self.wait_for_ok(disable_debug=disable_debug)
+
+        if wait_idle:
+            self.wait_until_idle()
+
+    return output</code></pre>
+</details>
+</dd>
+<dt id="mirobot.serial_interface.SerialInterface.wait_for_ok"><code class="name flex">
+<span>def <span class="ident">wait_for_ok</span></span>(<span>self, reset_expected=False, disable_debug=False)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Continuously loops over and collects message output from the serial device.
+It stops when it encounters an 'ok' or otherwise terminal condition phrase.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>reset_expected</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a <code>'Using reset pos!'</code> rather than the traditional <code>'Ok'</code>)</dd>
+<dt><strong><code>disable_debug</code></strong> :&ensp;<code>bool</code></dt>
+<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by <code>BaseMirobot.wait_until_idle</code>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>output</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
+<dd>A list of output strings upto and including the terminal string.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_ok(self, reset_expected=False, disable_debug=False):
+    &#34;&#34;&#34;
+    Continuously loops over and collects message output from the serial device.
+    It stops when it encounters an &#39;ok&#39; or otherwise terminal condition phrase.
+
+    Parameters
+    ----------
+    reset_expected : bool
+        (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `&#39;Using reset pos!&#39;` rather than the traditional `&#39;Ok&#39;`)
+    disable_debug : bool
+        (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
+
+    Returns
+    -------
+    output : List[str]
+        A list of output strings upto and including the terminal string.
+    &#34;&#34;&#34;
+    output = [&#39;&#39;]
+
+    ok_eols = [&#39;ok&#39;]
+
+    reset_strings = [&#39;Using reset pos!&#39;]
+
+    def matches_eol_strings(terms, s):
+        for eol in terms:
+            if s.endswith(eol):
+                return True
+        return False
+
+    if reset_expected:
+        eols = ok_eols + reset_strings
+    else:
+        eols = ok_eols
+
+    if os_is_nt and not reset_expected:
+        eol_threshold = 2
+    else:
+        eol_threshold = 1
+
+    eol_counter = 0
+    while eol_counter &lt; eol_threshold:
+        msg = self.serial_device.listen_to_device()
+
+        if self._debug and not disable_debug:
+            self.logger.debug(f&#34;[RECV] {msg}&#34;)
+
+        if &#39;error&#39; in msg:
+            self.logger.error(MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;)))
+
+        if &#39;ALARM&#39; in msg:
+            self.logger.error(MirobotAlarm(msg.split(&#39;ALARM: &#39;, 1)[1]))
+
+        output.append(msg)
+
+        if not reset_expected and matches_eol_strings(reset_strings, msg):
+            self.logger.error(MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;))
+
+        if matches_eol_strings(eols, output[-1]):
+            eol_counter += 1
+
+    return output[1:]  # don&#39;t include the dummy empty string at first index</code></pre>
+</details>
+</dd>
+<dt id="mirobot.serial_interface.SerialInterface.wait_until_idle"><code class="name flex">
+<span>def <span class="ident">wait_until_idle</span></span>(<span>self, refresh_rate=0.1)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Continuously loops over and refreshes state of the Mirobot.
+It stops when it encounters an 'Idle' state string.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>refresh_rate</code></strong> :&ensp;<code>float</code></dt>
+<dd>(Default value = <code>0.1</code>) The rate in seconds to check for the 'Idle' state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>output</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
+<dd>A list of output strings upto and including the terminal string.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_until_idle(self, refresh_rate=0.1):
+    &#34;&#34;&#34;
+    Continuously loops over and refreshes state of the Mirobot.
+    It stops when it encounters an &#39;Idle&#39; state string.
+
+    Parameters
+    ----------
+    refresh_rate : float
+        (Default value = `0.1`) The rate in seconds to check for the &#39;Idle&#39; state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
+
+    Returns
+    -------
+    output : List[str]
+        A list of output strings upto and including the terminal string.
+    &#34;&#34;&#34;
+    self.mirobot.update_status(disable_debug=True)
+
+    while self.mirobot.status.state != &#39;Idle&#39;:
+        time.sleep(refresh_rate)
+        self.mirobot.update_status(disable_debug=True)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="mirobot" href="index.html">mirobot</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="mirobot.serial_interface.SerialInterface" href="#mirobot.serial_interface.SerialInterface">SerialInterface</a></code></h4>
+<ul class="two-column">
+<li><code><a title="mirobot.serial_interface.SerialInterface.connect" href="#mirobot.serial_interface.SerialInterface.connect">connect</a></code></li>
+<li><code><a title="mirobot.serial_interface.SerialInterface.debug" href="#mirobot.serial_interface.SerialInterface.debug">debug</a></code></li>
+<li><code><a title="mirobot.serial_interface.SerialInterface.disconnect" href="#mirobot.serial_interface.SerialInterface.disconnect">disconnect</a></code></li>
+<li><code><a title="mirobot.serial_interface.SerialInterface.is_connected" href="#mirobot.serial_interface.SerialInterface.is_connected">is_connected</a></code></li>
+<li><code><a title="mirobot.serial_interface.SerialInterface.send" href="#mirobot.serial_interface.SerialInterface.send">send</a></code></li>
+<li><code><a title="mirobot.serial_interface.SerialInterface.wait_for_ok" href="#mirobot.serial_interface.SerialInterface.wait_for_ok">wait_for_ok</a></code></li>
+<li><code><a title="mirobot.serial_interface.SerialInterface.wait_until_idle" href="#mirobot.serial_interface.SerialInterface.wait_until_idle">wait_until_idle</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.5</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>
