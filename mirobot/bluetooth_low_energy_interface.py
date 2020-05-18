@@ -29,7 +29,7 @@ def chunks(lst, n):
 class BluetoothLowEnergyInterface:
     """
     An interface for talking to the low-energy Bluetooth extender module for the Mirobot.
-    NOTE: This mode is inherently instable at the moment (@rirze, Thu 14 May 2020). Sometimes commands may not be parsed correctly, causing execution to fail on a misparsing error. While this happens rarely, users should be made aware of the potential exceptions that may arise. Use when serial communication is unavailable.
+    NOTE: This mode is inherently instable at the moment (@rirze, Thu 14 May 2020). Sometimes commands may not be parsed correctly, causing execution to fail on a misparsing error. While this happens rarely, users should be made aware of the potential exceptions that may arise. It is recommended to only use this connection when serial communication is unavailable.
     """
     def __init__(self, mirobot, address=None, debug=False, logger=None, autofindaddress=True):
         """
@@ -95,6 +95,7 @@ class BluetoothLowEnergyInterface:
         self._debug = bool(value)
 
     async def _find_address(self):
+        """ Try to find the Bluetooth Address automagically """
         devices = await discover()
         mirobot_bt = next((d for d in devices if d.name == 'QN-Mini6Axis'), None)
         if mirobot_bt is None:
@@ -222,7 +223,7 @@ class BluetoothLowEnergyInterface:
                     await asyncio.sleep(0.1)
 
                 if wait_idle:
-                    # really wish I could recursively call `send(msg)` here instead of
+                    # TODO: really wish I could recursively call `send(msg)` here instead of
                     # replicating logic. Alas...
                     orig_feedback = self.feedback
 
@@ -253,6 +254,7 @@ class BluetoothLowEnergyInterface:
         if self.feedback:
             self.feedback[-1] = self.feedback[-1].strip('\r\n')
 
+        # BUG:
         # the following bugs me so much, but I can't figure out why this is happening and needed:
         # Instant subsequent calls to `send_msg` hang, for some reason.
         # Like the second invocation doesn't start, it's gets stuck as `selector._poll` in asyncio
