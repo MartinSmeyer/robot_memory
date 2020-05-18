@@ -242,7 +242,19 @@ class BaseMirobot(AbstractContextManager):
         """
         # get only the status message and not 'ok'
         status_msg = self.get_status(disable_debug=disable_debug)[0]
-        self.status = self._parse_status(status_msg)
+        self._set_status(self._parse_status(status_msg))
+
+    def _set_status(self, status):
+        """
+        Set the status object given as the instance's new status.
+
+        Parameters
+        ----------
+        status : `mirobot.mirobot_status.MirobotStatus`
+            The new status object of this instance.
+
+        """
+        self.status = status
 
     def _parse_status(self, msg):
         """

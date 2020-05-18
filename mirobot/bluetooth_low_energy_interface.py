@@ -234,7 +234,7 @@ class BluetoothLowEnergyInterface:
                         while self.ok_counter < 2:
                             # print('waiting for idle...', msg, self.ok_counter)
                             await asyncio.sleep(0.1)
-                        self.mirobot.status = self.mirobot._parse_status(self.feedback[0])
+                        self.mirobot._set_status(self.mirobot._parse_status(self.feedback[0]))
 
                     await check_idle()
 
