@@ -20,7 +20,7 @@ class SerialDevice:
         stopbits : int
              (Default value = `1`) Stopbits of the connection.
         exclusive : bool
-             (Default value = `True`) Whether to (try) forcing exclusivity of serial ports. If another `mirobot.serial_device.SerialDevice` is connected to this port, then don't connect at all. On the other hand, if no other `mirobot.serial_device.SerialDevice` is connected, then create a lock-file signaling that this serial port is in use.
+             (Default value = `True`) Whether to (try) forcing exclusivity of serial port for this instance. Is only a true toggle on Linux and OSx; Windows always exclusively blocks serial ports. Setting this variable to `False` on Windows will throw an error.
         debug : bool
              (Default value = `False`) Whether to print DEBUG-level information from the runtime of this class. Show more detailed information on screen output.
 

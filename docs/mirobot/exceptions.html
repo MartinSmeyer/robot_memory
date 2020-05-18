@@ -30,7 +30,6 @@
 class ExitOnExceptionStreamHandler(logging.StreamHandler):
     def emit(self, record):
         super().emit(record)
-        print(type(record))
         if record.levelno &gt;= logging.ERROR:
             raise SystemExit(-1)
 
@@ -120,7 +119,6 @@ sys.stdout or sys.stderr may be used.</p>
 <pre><code class="python">class ExitOnExceptionStreamHandler(logging.StreamHandler):
     def emit(self, record):
         super().emit(record)
-        print(type(record))
         if record.levelno &gt;= logging.ERROR:
             raise SystemExit(-1)</code></pre>
 </details>
@@ -151,7 +149,6 @@ output to the stream.</p></section>
 </summary>
 <pre><code class="python">def emit(self, record):
     super().emit(record)
-    print(type(record))
     if record.levelno &gt;= logging.ERROR:
         raise SystemExit(-1)</code></pre>
 </details>

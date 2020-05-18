@@ -26,7 +26,6 @@
 </summary>
 <pre><code class="python">from collections.abc import Collection
 from contextlib import AbstractContextManager
-import functools
 import logging
 import os
 from pathlib import Path
@@ -40,27 +39,30 @@ except ImportError:
     # Try backported to PY&lt;37 `importlib_resources`.
     import importlib_resources as pkg_resources
 
-import portalocker
-import serial.tools.list_ports as lp
-
-from .serial_device import SerialDevice
+from .bluetooth_low_energy_interface import BluetoothLowEnergyInterface
+from .serial_interface import SerialInterface
 from .mirobot_status import MirobotStatus, MirobotAngles, MirobotCartesians
 from .exceptions import ExitOnExceptionStreamHandler, MirobotError, MirobotAlarm, MirobotReset, MirobotAmbiguousPort, MirobotStatusError, MirobotResetFileError, MirobotVariableCommandError
+
+os_is_nt = os.name == &#39;nt&#39;
+os_is_posix = os.name == &#39;posix&#39;
 
 
 class BaseMirobot(AbstractContextManager):
     &#34;&#34;&#34; A base class for managing and maintaining known Mirobot operations. &#34;&#34;&#34;
 
-    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=(&#39;65&#39;, &#39;40&#39;), pump_pwm_values=(&#39;0&#39;, &#39;1000&#39;), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs):
+    def __init__(self, *device_args, debug=False, connection_type=&#39;serial&#39;, autoconnect=True, autofindport=True, exclusive=True, valve_pwm_values=(&#39;65&#39;, &#39;40&#39;), pump_pwm_values=(&#39;0&#39;, &#39;1000&#39;), default_speed=2000, reset_file=None, wait=True, **device_kwargs):
         &#34;&#34;&#34;
         Initialization of the `BaseMirobot` class.
 
         Parameters
         ----------
-        *serial_device_args : Any
-             Arguments that are passed into the `mirobot.serial_device.SerialDevice` class.
+        *device_args : Any
+             Arguments that are passed into the `mirobot.serial_device.SerialDevice` or `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` class.
         debug : bool
             (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
+        connection_type : str
+            (Default value = `&#39;serial&#39;`) Which type of connection to make to the Mirobot. By default, it will look for a serial port connection (eg. a physical wire connection). For bluetooth, provide `&#39;bluetooth&#39;` or `&#39;bt&#39;` for this parameter. To explicitly specify a serial port connection, use`&#39;serial&#39;` or `&#39;ser&#39;`.
         autoconnect : bool
             (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `BaseMirobot.connect` is unnecessary.
         autofindport : bool
@@ -75,40 +77,59 @@ class BaseMirobot(AbstractContextManager):
             (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in &#34;reset.xml&#34; provided by WLkata to reset the Mirobot. See `BaseMirobot.reset_configuration` for more details.
         wait : bool
             (Default value = `True`) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored `BaseMirobot.wait`.
-        **serial_device_kwargs : Any
-             Keywords that are passed into the `mirobot.serial_device.SerialDevice` class.
+        **device_kwargs : Any
+             Keywords that are passed into the `mirobot.serial_device.SerialDevice` or `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` class.
 
         Returns
         -------
         class : `BaseMirobot`
         &#34;&#34;&#34;
+        self.logger = logging.getLogger(__name__)
+        &#34;&#34;&#34; The instance level logger. Of type `logging.Logger` &#34;&#34;&#34;
+        self.logger.setLevel(logging.DEBUG)
 
+        self.stream_handler = ExitOnExceptionStreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+
+        formatter = logging.Formatter(f&#34;[Mirobot Init] [%(levelname)s] %(message)s&#34;)
+        self.stream_handler.setFormatter(formatter)
+        self.logger.addHandler(self.stream_handler)
+
+        self.device = None
+        &#34;&#34;&#34; Object that controls the connection to the Mirobot. Can either be a `mirobot.serial_interface.SerialInterface` or `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` class.&#34;&#34;&#34;
         # Parse inputs into SerialDevice
-        serial_device_init_fn = SerialDevice.__init__
-        args_names = serial_device_init_fn.__code__.co_varnames[:serial_device_init_fn.__code__.co_argcount]
-        args_dict = dict(zip(args_names, serial_device_args))
+        if connection_type.lower() in (&#39;serial&#39;, &#39;ser&#39;):
+            serial_device_init_fn = SerialInterface.__init__
+            args_names = serial_device_init_fn.__code__.co_varnames[:serial_device_init_fn.__code__.co_argcount]
+            args_dict = dict(zip(args_names, device_args))
+            args_dict.update(device_kwargs)
 
-        # check if baudrate was passed in args or kwargs, if not use the default value instead
-        if not (&#39;baudrate&#39; in args_dict or &#39;baudrate&#39; in serial_device_kwargs):
-            serial_device_kwargs[&#39;baudrate&#39;] = 115200
-        # check if stopbits was passed in args or kwargs, if not use the default value instead
-        if not (&#39;stopbits&#39; in args_dict or &#39;stopbits&#39; in serial_device_kwargs):
-            serial_device_kwargs[&#39;stopbits&#39;] = 1
+            args_dict[&#39;mirobot&#39;] = self
+            args_dict[&#39;exclusive&#39;] = exclusive
+            args_dict[&#39;debug&#39;] = debug
+            args_dict[&#39;logger&#39;] = self.logger
+            args_dict[&#39;autofindport&#39;] = autofindport
 
-        # if portname was not passed in and autofindport is set to true, autosearch for a serial port
-        if autofindport and not (&#39;portname&#39; in args_dict or &#39;portname&#39; in serial_device_kwargs):
-            self.default_portname = self._find_portname()
-            &#34;&#34;&#34; The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `BaseMirobot.connect`. &#34;&#34;&#34;
+            self.device = SerialInterface(**args_dict)
+            self.default_portname = self.device.default_portname
 
-        else:
-            if &#39;portname&#39; in args_dict:
-                self.default_portname = args_dict[&#39;portname&#39;]
-            elif &#39;portname&#39; in serial_device_kwargs:
-                self.default_portname = serial_device_kwargs[&#39;portname&#39;]
-            else:
-                self.default_portname = None
+        elif connection_type.lower() in (&#39;bluetooth&#39;, &#39;bt&#39;):
+            bluetooth_device_init_fn = BluetoothLowEnergyInterface.__init__
+            args_names = bluetooth_device_init_fn.__code__.co_varnames[:bluetooth_device_init_fn.__code__.co_argcount]
+            args_dict = dict(zip(args_names, device_args))
+            args_dict.update(device_kwargs)
 
-        self.serial_device = SerialDevice(*serial_device_args, debug=debug, **serial_device_kwargs)
+            args_dict[&#39;mirobot&#39;] = self
+            args_dict[&#39;debug&#39;] = debug
+            args_dict[&#39;logger&#39;] = self.logger
+            args_dict[&#39;autofindaddress&#39;] = autofindport
+
+            self.device = BluetoothLowEnergyInterface(**args_dict)
+            self.default_portname = self.device.address
+
+        formatter = logging.Formatter(f&#34;[{self.default_portname}] [%(levelname)s] %(message)s&#34;)
+        self.stream_handler.setFormatter(formatter)
+        # self.logger.addHandler(self.stream_handler)
 
         self.reset_file = pkg_resources.read_text(&#39;mirobot.resources&#39;, &#39;reset.xml&#39;) if reset_file is None else reset_file
         &#34;&#34;&#34; The reset commands to use when resetting the Mirobot. See `BaseMirobot.reset_configuration` for usage and details. &#34;&#34;&#34;
@@ -126,15 +147,6 @@ class BaseMirobot(AbstractContextManager):
 
         self.status = MirobotStatus()
         &#34;&#34;&#34; Dataclass that holds tracks Mirobot&#39;s coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details.&#34;&#34;&#34;
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
-
-        self.stream_handler = ExitOnExceptionStreamHandler()
-        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
-
-        formatter = logging.Formatter(f&#34;[{self.default_portname}] [%(levelname)s] %(message)s&#34;)
-        self.stream_handler.setFormatter(formatter)
-        self.logger.addHandler(self.stream_handler)
 
         # do this at the very end, after everything is setup
         if autoconnect:
@@ -151,6 +163,17 @@ class BaseMirobot(AbstractContextManager):
     def __del__(self):
         &#34;&#34;&#34; Magic method for object deletion &#34;&#34;&#34;
         self.disconnect()
+
+    def connect(self):
+        self.device.connect()
+
+    def disconnect(self):
+        if getattr(self, &#39;device&#39;, None) is not None:
+            self.device.disconnect()
+
+    @property
+    def is_connected(self):
+        return self.device.is_connected
 
     @property
     def debug(self):
@@ -171,106 +194,8 @@ class BaseMirobot(AbstractContextManager):
         &#34;&#34;&#34;
         self._debug = bool(value)
         self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
-        self.serial_device.setDebug(value)
+        self.device.setDebug(value)
 
-    def wait_for_ok(self, reset_expected=False, disable_debug=False):
-        &#34;&#34;&#34;
-        Continously loops over and collects message output from the serial device.
-        It stops when it encounters an &#39;ok&#39; or otherwise terminal condition phrase.
-
-        Parameters
-        ----------
-        reset_expected : bool
-            (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `&#39;Using reset pos!&#39;` rather than the traditional `&#39;Ok&#39;`)
-        disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
-
-        Returns
-        -------
-        output : List[str]
-            A list of output strings upto and including the terminal string.
-        &#34;&#34;&#34;
-        output = [&#39;&#39;]
-
-        ok_eols = [&#39;ok&#39;]
-
-        reset_strings = [&#39;Using reset pos!&#39;]
-
-        def matches_eol_strings(terms, s):
-            for eol in terms:
-                if s.endswith(eol):
-                    return True
-            return False
-
-        if reset_expected:
-            eols = ok_eols + reset_strings
-        else:
-            eols = ok_eols
-
-        while not matches_eol_strings(eols, output[-1]):
-            msg = self.serial_device.listen_to_device()
-
-            if self._debug and not disable_debug:
-                self.logger.debug(f&#34;[RECV] {msg}&#34;)
-
-            if &#39;error&#39; in msg:
-                self.logger.error(MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;)))
-
-            if &#39;ALARM&#39; in msg:
-                self.logger.error(MirobotAlarm(msg.split(&#39;ALARM: &#39;, 1)[1]))
-
-            output.append(msg)
-
-            if not reset_expected and matches_eol_strings(reset_strings, msg):
-                self.logger.error(MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;))
-
-        return output[1:]  # don&#39;t include the dummy empty string at first index
-
-    def wait_decorator(fn):
-        &#34;&#34;&#34;
-        A decorator that will use the `wait` argument for a method to automatically use the `BaseMirobot.wait_for_ok` and respectively, the `wait_idle` argument, for the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
-
-        Parameters
-        ----------
-        fn : Callable
-            Function to wrap. Must have the `wait` and or `wait_idle` argument or keyword.
-
-        Returns
-        -------
-        wrapper : Callable
-            A wrapper that decorates a function.
-        &#34;&#34;&#34;
-
-        @functools.wraps(fn)
-        def wait_wrapper(self, *args, **kwargs):
-            args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
-            args_dict = dict(zip(args_names, args))
-
-            def get_arg(arg_name, default=None):
-                if arg_name in args_dict:
-                    return args_dict.get(arg_name)
-                elif arg_name in kwargs:
-                    return kwargs.get(arg_name)
-                else:
-                    return default
-
-            wait = get_arg(&#39;wait&#39;)
-            disable_debug = get_arg(&#39;disable_debug&#39;)
-            wait_idle = get_arg(&#39;wait_idle&#39;)
-
-            output = fn(self, *args, **kwargs)
-
-            if wait or (wait is None and self.wait):
-                output = self.wait_for_ok(disable_debug=disable_debug)
-
-                if wait_idle:
-                    self.wait_until_idle()
-
-            return output
-
-        return wait_wrapper
-
-    @wait_decorator
     def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False):
         &#34;&#34;&#34;
         Send a message to the Mirobot.
@@ -282,7 +207,7 @@ class BaseMirobot(AbstractContextManager):
         var_command : bool
             (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by ` BaseMirobot.device.wait_until_idle`.
         wait : bool
             (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
         wait_idle : bool
@@ -307,12 +232,15 @@ class BaseMirobot(AbstractContextManager):
                 self.logger.exception(MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg))
 
             # actually send the message
-            output = self.serial_device.send(msg)
+            output = self.device.send(msg,
+                                      disable_debug=disable_debug,
+                                      wait=(wait or (wait is None and self.wait)),
+                                      wait_idle=wait_idle)
 
-        if self._debug and not disable_debug:
-            self.logger.debug(f&#34;[SENT] {msg}&#34;)
+            return output
 
-        return output
+        else:
+            raise Exception(&#39;Mirobot is not Connected!&#39;)
 
     def get_status(self, disable_debug=False):
         &#34;&#34;&#34;
@@ -321,7 +249,7 @@ class BaseMirobot(AbstractContextManager):
         Parameters
         ----------
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.device.wait_until_idle`.
 
         Returns
         -------
@@ -331,7 +259,7 @@ class BaseMirobot(AbstractContextManager):
         &#34;&#34;&#34;
         instruction = &#39;?&#39;
         # we don&#39;t want to wait for idle when checking status-- this leads to unbroken recursion!!
-        return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)
+        return self.send_msg(instruction, disable_debug=disable_debug, wait=True, wait_idle=False)
 
     def update_status(self, disable_debug=False):
         &#34;&#34;&#34;
@@ -340,12 +268,24 @@ class BaseMirobot(AbstractContextManager):
         Parameters
         ----------
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.device.wait_until_idle`.
 
         &#34;&#34;&#34;
         # get only the status message and not &#39;ok&#39;
         status_msg = self.get_status(disable_debug=disable_debug)[0]
-        self.status = self._parse_status(status_msg)
+        self._set_status(self._parse_status(status_msg))
+
+    def _set_status(self, status):
+        &#34;&#34;&#34;
+        Set the status object given as the instance&#39;s new status.
+
+        Parameters
+        ----------
+        status : `mirobot.mirobot_status.MirobotStatus`
+            The new status object of this instance.
+
+        &#34;&#34;&#34;
+        self.status = status
 
     def _parse_status(self, msg):
         &#34;&#34;&#34;
@@ -391,96 +331,6 @@ class BaseMirobot(AbstractContextManager):
         else:
             self.logger.error(MirobotStatusError(f&#34;Could not parse status message \&#34;{msg}\&#34;&#34;))
 
-    def wait_until_idle(self, refresh_rate=0.1):
-        &#34;&#34;&#34;
-        Continuously loops over and refreshes state of the Mirobot.
-        It stops when it encounters an &#39;Idle&#39; state string.
-
-        Parameters
-        ----------
-        refresh_rate : float
-            (Default value = `0.1`) The rate in seconds to check for the &#39;Idle&#39; state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
-
-        Returns
-        -------
-        output : List[str]
-            A list of output strings upto and including the terminal string.
-        &#34;&#34;&#34;
-        self.update_status(disable_debug=True)
-
-        while self.status.state != &#39;Idle&#39;:
-            time.sleep(refresh_rate)
-            self.update_status(disable_debug=True)
-
-    @property
-    def is_connected(self):
-        &#34;&#34;&#34;
-        Check if Mirobot is connected.
-
-        Returns
-        -------
-        connected : bool
-            Whether the Mirobot is connected.
-        &#34;&#34;&#34;
-        return self.serial_device.is_open
-
-    def _find_portname(self):
-        &#34;&#34;&#34;
-        Find the port that might potentially be connected to the Mirobot.
-
-        Returns
-        -------
-        device_name : str
-            The name of the device that is (most-likely) connected to the Mirobot.
-        &#34;&#34;&#34;
-        port_objects = lp.comports()
-
-        if not port_objects:
-            self.logger.exception(MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;))
-
-        else:
-            for p in port_objects:
-                try:
-                    pf = open(p.device)
-                    portalocker.lock(pf, portalocker.LOCK_EX | portalocker.LOCK_NB)
-                    portalocker.unlock(pf)
-                except portalocker.LockException:
-                    continue
-                else:
-                    return p.device
-
-            self.logger.exception(MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;))
-
-    def connect(self, portname=None):
-        &#34;&#34;&#34;
-        Connect to the Mirobot.
-
-        Parameters
-        ----------
-        portname : str
-            (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
-
-        Returns
-        -------
-        ok_msg : List[str]
-            The output from an initial Mirobot connection.
-        &#34;&#34;&#34;
-        if portname is None:
-            if self.default_portname is not None:
-                portname = self.default_portname
-            else:
-                self.logger.exception(ValueError(&#39;Portname must be provided! Example: `portname=&#34;COM3&#34;`&#39;))
-
-        self.serial_device.portname = portname
-
-        self.serial_device.open()
-
-        return self.wait_for_ok(reset_expected=True)
-
-    def disconnect(self):
-        &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
-        if hasattr(self, &#39;serial_device&#39;):
-            self.serial_device.close()
 
     def home_individual(self, wait=None):
         &#34;&#34;&#34;
@@ -1003,17 +853,19 @@ message
 <dl>
 <dt id="mirobot.base_mirobot.BaseMirobot"><code class="flex name class">
 <span>class <span class="ident">BaseMirobot</span></span>
-<span>(</span><span>*serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs)</span>
+<span>(</span><span>*device_args, debug=False, connection_type='serial', autoconnect=True, autofindport=True, exclusive=True, valve_pwm_values=('65', '40'), pump_pwm_values=('0', '1000'), default_speed=2000, reset_file=None, wait=True, **device_kwargs)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A base class for managing and maintaining known Mirobot operations. </p>
 <p>Initialization of the <a title="mirobot.base_mirobot.BaseMirobot" href="#mirobot.base_mirobot.BaseMirobot"><code>BaseMirobot</code></a> class.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>*serial_device_args</code></strong> :&ensp;<code>Any</code></dt>
-<dd>Arguments that are passed into the <a title="mirobot.serial_device.SerialDevice" href="serial_device.html#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> class.</dd>
+<dt><strong><code>*device_args</code></strong> :&ensp;<code>Any</code></dt>
+<dd>Arguments that are passed into the <a title="mirobot.serial_device.SerialDevice" href="serial_device.html#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> or <a title="mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface" href="bluetooth_low_energy_interface.html#mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface"><code>BluetoothLowEnergyInterface</code></a> class.</dd>
 <dt><strong><code>debug</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>False</code>) Whether to print gcode input and output to STDOUT. Stored in <a title="mirobot.base_mirobot.BaseMirobot.debug" href="#mirobot.base_mirobot.BaseMirobot.debug"><code>BaseMirobot.debug</code></a>.</dd>
+<dt><strong><code>connection_type</code></strong> :&ensp;<code>str</code></dt>
+<dd>(Default value = <code>'serial'</code>) Which type of connection to make to the Mirobot. By default, it will look for a serial port connection (eg. a physical wire connection). For bluetooth, provide <code>'bluetooth'</code> or <code>'bt'</code> for this parameter. To explicitly specify a serial port connection, use<code>'serial'</code> or <code>'ser'</code>.</dd>
 <dt><strong><code>autoconnect</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>True</code>) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is <code>True</code>, manually connecting with <a title="mirobot.base_mirobot.BaseMirobot.connect" href="#mirobot.base_mirobot.BaseMirobot.connect"><code>BaseMirobot.connect()</code></a> is unnecessary.</dd>
 <dt><strong><code>autofindport</code></strong> :&ensp;<code>bool</code></dt>
@@ -1028,8 +880,8 @@ message
 <dd>(Default value = <code>None</code>) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in "reset.xml" provided by WLkata to reset the Mirobot. See <a title="mirobot.base_mirobot.BaseMirobot.reset_configuration" href="#mirobot.base_mirobot.BaseMirobot.reset_configuration"><code>BaseMirobot.reset_configuration()</code></a> for more details.</dd>
 <dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>True</code>) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a>.</dd>
-<dt><strong><code>**serial_device_kwargs</code></strong> :&ensp;<code>Any</code></dt>
-<dd>Keywords that are passed into the <a title="mirobot.serial_device.SerialDevice" href="serial_device.html#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> class.</dd>
+<dt><strong><code>**device_kwargs</code></strong> :&ensp;<code>Any</code></dt>
+<dd>Keywords that are passed into the <a title="mirobot.serial_device.SerialDevice" href="serial_device.html#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> or <a title="mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface" href="bluetooth_low_energy_interface.html#mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface"><code>BluetoothLowEnergyInterface</code></a> class.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1043,16 +895,18 @@ message
 <pre><code class="python">class BaseMirobot(AbstractContextManager):
     &#34;&#34;&#34; A base class for managing and maintaining known Mirobot operations. &#34;&#34;&#34;
 
-    def __init__(self, *serial_device_args, debug=False, autoconnect=True, autofindport=True, valve_pwm_values=(&#39;65&#39;, &#39;40&#39;), pump_pwm_values=(&#39;0&#39;, &#39;1000&#39;), default_speed=2000, reset_file=None, wait=True, **serial_device_kwargs):
+    def __init__(self, *device_args, debug=False, connection_type=&#39;serial&#39;, autoconnect=True, autofindport=True, exclusive=True, valve_pwm_values=(&#39;65&#39;, &#39;40&#39;), pump_pwm_values=(&#39;0&#39;, &#39;1000&#39;), default_speed=2000, reset_file=None, wait=True, **device_kwargs):
         &#34;&#34;&#34;
         Initialization of the `BaseMirobot` class.
 
         Parameters
         ----------
-        *serial_device_args : Any
-             Arguments that are passed into the `mirobot.serial_device.SerialDevice` class.
+        *device_args : Any
+             Arguments that are passed into the `mirobot.serial_device.SerialDevice` or `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` class.
         debug : bool
             (Default value = `False`) Whether to print gcode input and output to STDOUT. Stored in `BaseMirobot.debug`.
+        connection_type : str
+            (Default value = `&#39;serial&#39;`) Which type of connection to make to the Mirobot. By default, it will look for a serial port connection (eg. a physical wire connection). For bluetooth, provide `&#39;bluetooth&#39;` or `&#39;bt&#39;` for this parameter. To explicitly specify a serial port connection, use`&#39;serial&#39;` or `&#39;ser&#39;`.
         autoconnect : bool
             (Default value = `True`) Whether to automatically attempt a connection to the Mirobot at the end of class creation. If this is `True`, manually connecting with `BaseMirobot.connect` is unnecessary.
         autofindport : bool
@@ -1067,40 +921,59 @@ message
             (Default value = `None`) A file-like object, file-path, or str containing reset values for the Mirobot. The default (None) will use the commands in &#34;reset.xml&#34; provided by WLkata to reset the Mirobot. See `BaseMirobot.reset_configuration` for more details.
         wait : bool
             (Default value = `True`) Whether to wait for commands to return a status signifying execution has finished. Turns all move-commands into blocking function calls. Stored `BaseMirobot.wait`.
-        **serial_device_kwargs : Any
-             Keywords that are passed into the `mirobot.serial_device.SerialDevice` class.
+        **device_kwargs : Any
+             Keywords that are passed into the `mirobot.serial_device.SerialDevice` or `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` class.
 
         Returns
         -------
         class : `BaseMirobot`
         &#34;&#34;&#34;
+        self.logger = logging.getLogger(__name__)
+        &#34;&#34;&#34; The instance level logger. Of type `logging.Logger` &#34;&#34;&#34;
+        self.logger.setLevel(logging.DEBUG)
 
+        self.stream_handler = ExitOnExceptionStreamHandler()
+        self.stream_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+
+        formatter = logging.Formatter(f&#34;[Mirobot Init] [%(levelname)s] %(message)s&#34;)
+        self.stream_handler.setFormatter(formatter)
+        self.logger.addHandler(self.stream_handler)
+
+        self.device = None
+        &#34;&#34;&#34; Object that controls the connection to the Mirobot. Can either be a `mirobot.serial_interface.SerialInterface` or `mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface` class.&#34;&#34;&#34;
         # Parse inputs into SerialDevice
-        serial_device_init_fn = SerialDevice.__init__
-        args_names = serial_device_init_fn.__code__.co_varnames[:serial_device_init_fn.__code__.co_argcount]
-        args_dict = dict(zip(args_names, serial_device_args))
+        if connection_type.lower() in (&#39;serial&#39;, &#39;ser&#39;):
+            serial_device_init_fn = SerialInterface.__init__
+            args_names = serial_device_init_fn.__code__.co_varnames[:serial_device_init_fn.__code__.co_argcount]
+            args_dict = dict(zip(args_names, device_args))
+            args_dict.update(device_kwargs)
 
-        # check if baudrate was passed in args or kwargs, if not use the default value instead
-        if not (&#39;baudrate&#39; in args_dict or &#39;baudrate&#39; in serial_device_kwargs):
-            serial_device_kwargs[&#39;baudrate&#39;] = 115200
-        # check if stopbits was passed in args or kwargs, if not use the default value instead
-        if not (&#39;stopbits&#39; in args_dict or &#39;stopbits&#39; in serial_device_kwargs):
-            serial_device_kwargs[&#39;stopbits&#39;] = 1
+            args_dict[&#39;mirobot&#39;] = self
+            args_dict[&#39;exclusive&#39;] = exclusive
+            args_dict[&#39;debug&#39;] = debug
+            args_dict[&#39;logger&#39;] = self.logger
+            args_dict[&#39;autofindport&#39;] = autofindport
 
-        # if portname was not passed in and autofindport is set to true, autosearch for a serial port
-        if autofindport and not (&#39;portname&#39; in args_dict or &#39;portname&#39; in serial_device_kwargs):
-            self.default_portname = self._find_portname()
-            &#34;&#34;&#34; The default portname to use when making connections. To override this on a individual basis, provide portname to each invokation of `BaseMirobot.connect`. &#34;&#34;&#34;
+            self.device = SerialInterface(**args_dict)
+            self.default_portname = self.device.default_portname
 
-        else:
-            if &#39;portname&#39; in args_dict:
-                self.default_portname = args_dict[&#39;portname&#39;]
-            elif &#39;portname&#39; in serial_device_kwargs:
-                self.default_portname = serial_device_kwargs[&#39;portname&#39;]
-            else:
-                self.default_portname = None
+        elif connection_type.lower() in (&#39;bluetooth&#39;, &#39;bt&#39;):
+            bluetooth_device_init_fn = BluetoothLowEnergyInterface.__init__
+            args_names = bluetooth_device_init_fn.__code__.co_varnames[:bluetooth_device_init_fn.__code__.co_argcount]
+            args_dict = dict(zip(args_names, device_args))
+            args_dict.update(device_kwargs)
 
-        self.serial_device = SerialDevice(*serial_device_args, debug=debug, **serial_device_kwargs)
+            args_dict[&#39;mirobot&#39;] = self
+            args_dict[&#39;debug&#39;] = debug
+            args_dict[&#39;logger&#39;] = self.logger
+            args_dict[&#39;autofindaddress&#39;] = autofindport
+
+            self.device = BluetoothLowEnergyInterface(**args_dict)
+            self.default_portname = self.device.address
+
+        formatter = logging.Formatter(f&#34;[{self.default_portname}] [%(levelname)s] %(message)s&#34;)
+        self.stream_handler.setFormatter(formatter)
+        # self.logger.addHandler(self.stream_handler)
 
         self.reset_file = pkg_resources.read_text(&#39;mirobot.resources&#39;, &#39;reset.xml&#39;) if reset_file is None else reset_file
         &#34;&#34;&#34; The reset commands to use when resetting the Mirobot. See `BaseMirobot.reset_configuration` for usage and details. &#34;&#34;&#34;
@@ -1118,15 +991,6 @@ message
 
         self.status = MirobotStatus()
         &#34;&#34;&#34; Dataclass that holds tracks Mirobot&#39;s coordinates and pwm values among other quantities. See `mirobot.mirobot_status.MirobotStatus` for more details.&#34;&#34;&#34;
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
-
-        self.stream_handler = ExitOnExceptionStreamHandler()
-        self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
-
-        formatter = logging.Formatter(f&#34;[{self.default_portname}] [%(levelname)s] %(message)s&#34;)
-        self.stream_handler.setFormatter(formatter)
-        self.logger.addHandler(self.stream_handler)
 
         # do this at the very end, after everything is setup
         if autoconnect:
@@ -1143,6 +1007,17 @@ message
     def __del__(self):
         &#34;&#34;&#34; Magic method for object deletion &#34;&#34;&#34;
         self.disconnect()
+
+    def connect(self):
+        self.device.connect()
+
+    def disconnect(self):
+        if getattr(self, &#39;device&#39;, None) is not None:
+            self.device.disconnect()
+
+    @property
+    def is_connected(self):
+        return self.device.is_connected
 
     @property
     def debug(self):
@@ -1163,106 +1038,8 @@ message
         &#34;&#34;&#34;
         self._debug = bool(value)
         self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
-        self.serial_device.setDebug(value)
+        self.device.setDebug(value)
 
-    def wait_for_ok(self, reset_expected=False, disable_debug=False):
-        &#34;&#34;&#34;
-        Continously loops over and collects message output from the serial device.
-        It stops when it encounters an &#39;ok&#39; or otherwise terminal condition phrase.
-
-        Parameters
-        ----------
-        reset_expected : bool
-            (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `&#39;Using reset pos!&#39;` rather than the traditional `&#39;Ok&#39;`)
-        disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
-
-        Returns
-        -------
-        output : List[str]
-            A list of output strings upto and including the terminal string.
-        &#34;&#34;&#34;
-        output = [&#39;&#39;]
-
-        ok_eols = [&#39;ok&#39;]
-
-        reset_strings = [&#39;Using reset pos!&#39;]
-
-        def matches_eol_strings(terms, s):
-            for eol in terms:
-                if s.endswith(eol):
-                    return True
-            return False
-
-        if reset_expected:
-            eols = ok_eols + reset_strings
-        else:
-            eols = ok_eols
-
-        while not matches_eol_strings(eols, output[-1]):
-            msg = self.serial_device.listen_to_device()
-
-            if self._debug and not disable_debug:
-                self.logger.debug(f&#34;[RECV] {msg}&#34;)
-
-            if &#39;error&#39; in msg:
-                self.logger.error(MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;)))
-
-            if &#39;ALARM&#39; in msg:
-                self.logger.error(MirobotAlarm(msg.split(&#39;ALARM: &#39;, 1)[1]))
-
-            output.append(msg)
-
-            if not reset_expected and matches_eol_strings(reset_strings, msg):
-                self.logger.error(MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;))
-
-        return output[1:]  # don&#39;t include the dummy empty string at first index
-
-    def wait_decorator(fn):
-        &#34;&#34;&#34;
-        A decorator that will use the `wait` argument for a method to automatically use the `BaseMirobot.wait_for_ok` and respectively, the `wait_idle` argument, for the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
-
-        Parameters
-        ----------
-        fn : Callable
-            Function to wrap. Must have the `wait` and or `wait_idle` argument or keyword.
-
-        Returns
-        -------
-        wrapper : Callable
-            A wrapper that decorates a function.
-        &#34;&#34;&#34;
-
-        @functools.wraps(fn)
-        def wait_wrapper(self, *args, **kwargs):
-            args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
-            args_dict = dict(zip(args_names, args))
-
-            def get_arg(arg_name, default=None):
-                if arg_name in args_dict:
-                    return args_dict.get(arg_name)
-                elif arg_name in kwargs:
-                    return kwargs.get(arg_name)
-                else:
-                    return default
-
-            wait = get_arg(&#39;wait&#39;)
-            disable_debug = get_arg(&#39;disable_debug&#39;)
-            wait_idle = get_arg(&#39;wait_idle&#39;)
-
-            output = fn(self, *args, **kwargs)
-
-            if wait or (wait is None and self.wait):
-                output = self.wait_for_ok(disable_debug=disable_debug)
-
-                if wait_idle:
-                    self.wait_until_idle()
-
-            return output
-
-        return wait_wrapper
-
-    @wait_decorator
     def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False):
         &#34;&#34;&#34;
         Send a message to the Mirobot.
@@ -1274,7 +1051,7 @@ message
         var_command : bool
             (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by ` BaseMirobot.device.wait_until_idle`.
         wait : bool
             (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
         wait_idle : bool
@@ -1299,12 +1076,15 @@ message
                 self.logger.exception(MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg))
 
             # actually send the message
-            output = self.serial_device.send(msg)
+            output = self.device.send(msg,
+                                      disable_debug=disable_debug,
+                                      wait=(wait or (wait is None and self.wait)),
+                                      wait_idle=wait_idle)
 
-        if self._debug and not disable_debug:
-            self.logger.debug(f&#34;[SENT] {msg}&#34;)
+            return output
 
-        return output
+        else:
+            raise Exception(&#39;Mirobot is not Connected!&#39;)
 
     def get_status(self, disable_debug=False):
         &#34;&#34;&#34;
@@ -1313,7 +1093,7 @@ message
         Parameters
         ----------
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.device.wait_until_idle`.
 
         Returns
         -------
@@ -1323,7 +1103,7 @@ message
         &#34;&#34;&#34;
         instruction = &#39;?&#39;
         # we don&#39;t want to wait for idle when checking status-- this leads to unbroken recursion!!
-        return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)
+        return self.send_msg(instruction, disable_debug=disable_debug, wait=True, wait_idle=False)
 
     def update_status(self, disable_debug=False):
         &#34;&#34;&#34;
@@ -1332,12 +1112,24 @@ message
         Parameters
         ----------
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.device.wait_until_idle`.
 
         &#34;&#34;&#34;
         # get only the status message and not &#39;ok&#39;
         status_msg = self.get_status(disable_debug=disable_debug)[0]
-        self.status = self._parse_status(status_msg)
+        self._set_status(self._parse_status(status_msg))
+
+    def _set_status(self, status):
+        &#34;&#34;&#34;
+        Set the status object given as the instance&#39;s new status.
+
+        Parameters
+        ----------
+        status : `mirobot.mirobot_status.MirobotStatus`
+            The new status object of this instance.
+
+        &#34;&#34;&#34;
+        self.status = status
 
     def _parse_status(self, msg):
         &#34;&#34;&#34;
@@ -1383,96 +1175,6 @@ message
         else:
             self.logger.error(MirobotStatusError(f&#34;Could not parse status message \&#34;{msg}\&#34;&#34;))
 
-    def wait_until_idle(self, refresh_rate=0.1):
-        &#34;&#34;&#34;
-        Continuously loops over and refreshes state of the Mirobot.
-        It stops when it encounters an &#39;Idle&#39; state string.
-
-        Parameters
-        ----------
-        refresh_rate : float
-            (Default value = `0.1`) The rate in seconds to check for the &#39;Idle&#39; state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
-
-        Returns
-        -------
-        output : List[str]
-            A list of output strings upto and including the terminal string.
-        &#34;&#34;&#34;
-        self.update_status(disable_debug=True)
-
-        while self.status.state != &#39;Idle&#39;:
-            time.sleep(refresh_rate)
-            self.update_status(disable_debug=True)
-
-    @property
-    def is_connected(self):
-        &#34;&#34;&#34;
-        Check if Mirobot is connected.
-
-        Returns
-        -------
-        connected : bool
-            Whether the Mirobot is connected.
-        &#34;&#34;&#34;
-        return self.serial_device.is_open
-
-    def _find_portname(self):
-        &#34;&#34;&#34;
-        Find the port that might potentially be connected to the Mirobot.
-
-        Returns
-        -------
-        device_name : str
-            The name of the device that is (most-likely) connected to the Mirobot.
-        &#34;&#34;&#34;
-        port_objects = lp.comports()
-
-        if not port_objects:
-            self.logger.exception(MirobotAmbiguousPort(&#34;No ports found! Make sure your Mirobot is connected and recognized by your operating system.&#34;))
-
-        else:
-            for p in port_objects:
-                try:
-                    pf = open(p.device)
-                    portalocker.lock(pf, portalocker.LOCK_EX | portalocker.LOCK_NB)
-                    portalocker.unlock(pf)
-                except portalocker.LockException:
-                    continue
-                else:
-                    return p.device
-
-            self.logger.exception(MirobotAmbiguousPort(&#34;No open ports found! Make sure your Mirobot is connected and is not being used by another process.&#34;))
-
-    def connect(self, portname=None):
-        &#34;&#34;&#34;
-        Connect to the Mirobot.
-
-        Parameters
-        ----------
-        portname : str
-            (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
-
-        Returns
-        -------
-        ok_msg : List[str]
-            The output from an initial Mirobot connection.
-        &#34;&#34;&#34;
-        if portname is None:
-            if self.default_portname is not None:
-                portname = self.default_portname
-            else:
-                self.logger.exception(ValueError(&#39;Portname must be provided! Example: `portname=&#34;COM3&#34;`&#39;))
-
-        self.serial_device.portname = portname
-
-        self.serial_device.open()
-
-        return self.wait_for_ok(reset_expected=True)
-
-    def disconnect(self):
-        &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
-        if hasattr(self, &#39;serial_device&#39;):
-            self.serial_device.close()
 
     def home_individual(self, wait=None):
         &#34;&#34;&#34;
@@ -2011,30 +1713,25 @@ def debug(self):
 <dd>
 <section class="desc"><p>The default speed to use when issuing commands that involve the speed parameter.</p></section>
 </dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.device"><code class="name">var <span class="ident">device</span></code></dt>
+<dd>
+<section class="desc"><p>Object that controls the connection to the Mirobot. Can either be a <a title="mirobot.serial_interface.SerialInterface" href="serial_interface.html#mirobot.serial_interface.SerialInterface"><code>SerialInterface</code></a> or <a title="mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface" href="bluetooth_low_energy_interface.html#mirobot.bluetooth_low_energy_interface.BluetoothLowEnergyInterface"><code>BluetoothLowEnergyInterface</code></a> class.</p></section>
+</dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.is_connected"><code class="name">var <span class="ident">is_connected</span></code></dt>
 <dd>
-<section class="desc"><p>Check if Mirobot is connected.</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>connected</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether the Mirobot is connected.</dd>
-</dl></section>
+<section class="desc"></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
 def is_connected(self):
-    &#34;&#34;&#34;
-    Check if Mirobot is connected.
-
-    Returns
-    -------
-    connected : bool
-        Whether the Mirobot is connected.
-    &#34;&#34;&#34;
-    return self.serial_device.is_open</code></pre>
+    return self.device.is_connected</code></pre>
 </details>
+</dd>
+<dt id="mirobot.base_mirobot.BaseMirobot.logger"><code class="name">var <span class="ident">logger</span></code></dt>
+<dd>
+<section class="desc"><p>The instance level logger. Of type <code>logging.Logger</code></p></section>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.pump_pwm_values"><code class="name">var <span class="ident">pump_pwm_values</span></code></dt>
 <dd>
@@ -2060,64 +1757,30 @@ def is_connected(self):
 <h3>Methods</h3>
 <dl>
 <dt id="mirobot.base_mirobot.BaseMirobot.connect"><code class="name flex">
-<span>def <span class="ident">connect</span></span>(<span>self, portname=None)</span>
+<span>def <span class="ident">connect</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Connect to the Mirobot.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>portname</code></strong> :&ensp;<code>str</code></dt>
-<dd>(Default value = <code>None</code>) The name of the port to connnect to. If this is <code>None</code>, then it will try to use <code>self.default_portname</code>. If both are <code>None</code>, then an error will be thrown. To avoid this, specify a portname.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>ok_msg</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
-<dd>The output from an initial Mirobot connection.</dd>
-</dl></section>
+<section class="desc"></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def connect(self, portname=None):
-    &#34;&#34;&#34;
-    Connect to the Mirobot.
-
-    Parameters
-    ----------
-    portname : str
-        (Default value = `None`) The name of the port to connnect to. If this is `None`, then it will try to use `self.default_portname`. If both are `None`, then an error will be thrown. To avoid this, specify a portname.
-
-    Returns
-    -------
-    ok_msg : List[str]
-        The output from an initial Mirobot connection.
-    &#34;&#34;&#34;
-    if portname is None:
-        if self.default_portname is not None:
-            portname = self.default_portname
-        else:
-            self.logger.exception(ValueError(&#39;Portname must be provided! Example: `portname=&#34;COM3&#34;`&#39;))
-
-    self.serial_device.portname = portname
-
-    self.serial_device.open()
-
-    return self.wait_for_ok(reset_expected=True)</code></pre>
+<pre><code class="python">def connect(self):
+    self.device.connect()</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.disconnect"><code class="name flex">
 <span>def <span class="ident">disconnect</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Disconnect from the Mirobot. Close the serial device connection.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def disconnect(self):
-    &#34;&#34;&#34; Disconnect from the Mirobot. Close the serial device connection. &#34;&#34;&#34;
-    if hasattr(self, &#39;serial_device&#39;):
-        self.serial_device.close()</code></pre>
+    if getattr(self, &#39;device&#39;, None) is not None:
+        self.device.disconnect()</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.finish_calibration"><code class="name flex">
@@ -2167,7 +1830,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>disable_debug</code></strong> :&ensp;<code>bool</code></dt>
-<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a>.</dd>
+<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <code>BaseMirobot.device.wait_until_idle</code>.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -2185,7 +1848,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
     Parameters
     ----------
     disable_debug : bool
-        (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+        (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.device.wait_until_idle`.
 
     Returns
     -------
@@ -2195,7 +1858,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
     &#34;&#34;&#34;
     instruction = &#39;?&#39;
     # we don&#39;t want to wait for idle when checking status-- this leads to unbroken recursion!!
-    return self.send_msg(instruction, disable_debug=disable_debug, wait_idle=False)</code></pre>
+    return self.send_msg(instruction, disable_debug=disable_debug, wait=True, wait_idle=False)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.go_to_axis"><code class="name flex">
@@ -2823,7 +2486,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <dt><strong><code>var_command</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>False</code>) Whether <code>msg</code> is a variable command (of form <code>$num=value</code>). Will throw an error if does not validate correctly.</dd>
 <dt><strong><code>disable_debug</code></strong> :&ensp;<code>bool</code></dt>
-<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a>.</dd>
+<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <code>BaseMirobot.device.wait_until_idle</code>.</dd>
 <dt><strong><code>wait</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>None</code>) Whether to wait for output to end and to return that output. If <code>None</code>, use class default <a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait"><code>BaseMirobot.wait</code></a> instead.</dd>
 <dt><strong><code>wait_idle</code></strong> :&ensp;<code>bool</code></dt>
@@ -2839,8 +2502,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@wait_decorator
-def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False):
+<pre><code class="python">def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False):
     &#34;&#34;&#34;
     Send a message to the Mirobot.
 
@@ -2851,7 +2513,7 @@ def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_
     var_command : bool
         (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
     disable_debug : bool
-        (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+        (Default value = `False`) Whether to override the class debug setting. Used primarily by ` BaseMirobot.device.wait_until_idle`.
     wait : bool
         (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
     wait_idle : bool
@@ -2876,12 +2538,15 @@ def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_
             self.logger.exception(MirobotVariableCommandError(&#34;Message is not a variable command: &#34; + msg))
 
         # actually send the message
-        output = self.serial_device.send(msg)
+        output = self.device.send(msg,
+                                  disable_debug=disable_debug,
+                                  wait=(wait or (wait is None and self.wait)),
+                                  wait_idle=wait_idle)
 
-    if self._debug and not disable_debug:
-        self.logger.debug(f&#34;[SENT] {msg}&#34;)
+        return output
 
-    return output</code></pre>
+    else:
+        raise Exception(&#39;Mirobot is not Connected!&#39;)</code></pre>
 </details>
 </dd>
 <dt id="mirobot.base_mirobot.BaseMirobot.set_air_pump"><code class="name flex">
@@ -3156,7 +2821,7 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>disable_debug</code></strong> :&ensp;<code>bool</code></dt>
-<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a>.</dd>
+<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Used primarily by <code>BaseMirobot.device.wait_until_idle</code>.</dd>
 </dl></section>
 <details class="source">
 <summary>
@@ -3169,194 +2834,12 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
     Parameters
     ----------
     disable_debug : bool
-        (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+        (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.device.wait_until_idle`.
 
     &#34;&#34;&#34;
     # get only the status message and not &#39;ok&#39;
     status_msg = self.get_status(disable_debug=disable_debug)[0]
-    self.status = self._parse_status(status_msg)</code></pre>
-</details>
-</dd>
-<dt id="mirobot.base_mirobot.BaseMirobot.wait_decorator"><code class="name flex">
-<span>def <span class="ident">wait_decorator</span></span>(<span>fn)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>A decorator that will use the <code>wait</code> argument for a method to automatically use the <a title="mirobot.base_mirobot.BaseMirobot.wait_for_ok" href="#mirobot.base_mirobot.BaseMirobot.wait_for_ok"><code>BaseMirobot.wait_for_ok()</code></a> and respectively, the <code>wait_idle</code> argument, for the <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a> function calls at the end of the wrapped function.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>fn</code></strong> :&ensp;<code>Callable</code></dt>
-<dd>Function to wrap. Must have the <code>wait</code> and or <code>wait_idle</code> argument or keyword.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>wrapper</code></strong> :&ensp;<code>Callable</code></dt>
-<dd>A wrapper that decorates a function.</dd>
-</dl></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def wait_decorator(fn):
-    &#34;&#34;&#34;
-    A decorator that will use the `wait` argument for a method to automatically use the `BaseMirobot.wait_for_ok` and respectively, the `wait_idle` argument, for the `BaseMirobot.wait_until_idle` function calls at the end of the wrapped function.
-
-    Parameters
-    ----------
-    fn : Callable
-        Function to wrap. Must have the `wait` and or `wait_idle` argument or keyword.
-
-    Returns
-    -------
-    wrapper : Callable
-        A wrapper that decorates a function.
-    &#34;&#34;&#34;
-
-    @functools.wraps(fn)
-    def wait_wrapper(self, *args, **kwargs):
-        args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
-        args_dict = dict(zip(args_names, args))
-
-        def get_arg(arg_name, default=None):
-            if arg_name in args_dict:
-                return args_dict.get(arg_name)
-            elif arg_name in kwargs:
-                return kwargs.get(arg_name)
-            else:
-                return default
-
-        wait = get_arg(&#39;wait&#39;)
-        disable_debug = get_arg(&#39;disable_debug&#39;)
-        wait_idle = get_arg(&#39;wait_idle&#39;)
-
-        output = fn(self, *args, **kwargs)
-
-        if wait or (wait is None and self.wait):
-            output = self.wait_for_ok(disable_debug=disable_debug)
-
-            if wait_idle:
-                self.wait_until_idle()
-
-        return output
-
-    return wait_wrapper</code></pre>
-</details>
-</dd>
-<dt id="mirobot.base_mirobot.BaseMirobot.wait_for_ok"><code class="name flex">
-<span>def <span class="ident">wait_for_ok</span></span>(<span>self, reset_expected=False, disable_debug=False)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Continously loops over and collects message output from the serial device.
-It stops when it encounters an 'ok' or otherwise terminal condition phrase.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>reset_expected</code></strong> :&ensp;<code>bool</code></dt>
-<dd>(Default value = <code>False</code>) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a <code>'Using reset pos!'</code> rather than the traditional <code>'Ok'</code>)</dd>
-<dt><strong><code>disable_debug</code></strong> :&ensp;<code>bool</code></dt>
-<dd>(Default value = <code>False</code>) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by <a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code>BaseMirobot.wait_until_idle()</code></a>.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>output</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
-<dd>A list of output strings upto and including the terminal string.</dd>
-</dl></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def wait_for_ok(self, reset_expected=False, disable_debug=False):
-    &#34;&#34;&#34;
-    Continously loops over and collects message output from the serial device.
-    It stops when it encounters an &#39;ok&#39; or otherwise terminal condition phrase.
-
-    Parameters
-    ----------
-    reset_expected : bool
-        (Default value = `False`) Whether a reset string is expected in the output (Example: on starting up Mirobot, output ends with a `&#39;Using reset pos!&#39;` rather than the traditional `&#39;Ok&#39;`)
-    disable_debug : bool
-        (Default value = `False`) Whether to override the class debug setting. Otherwise one will see status message debug output every 0.1 seconds, thereby cluttering standard output. Used primarily by `BaseMirobot.wait_until_idle`.
-
-    Returns
-    -------
-    output : List[str]
-        A list of output strings upto and including the terminal string.
-    &#34;&#34;&#34;
-    output = [&#39;&#39;]
-
-    ok_eols = [&#39;ok&#39;]
-
-    reset_strings = [&#39;Using reset pos!&#39;]
-
-    def matches_eol_strings(terms, s):
-        for eol in terms:
-            if s.endswith(eol):
-                return True
-        return False
-
-    if reset_expected:
-        eols = ok_eols + reset_strings
-    else:
-        eols = ok_eols
-
-    while not matches_eol_strings(eols, output[-1]):
-        msg = self.serial_device.listen_to_device()
-
-        if self._debug and not disable_debug:
-            self.logger.debug(f&#34;[RECV] {msg}&#34;)
-
-        if &#39;error&#39; in msg:
-            self.logger.error(MirobotError(msg.replace(&#39;error: &#39;, &#39;&#39;)))
-
-        if &#39;ALARM&#39; in msg:
-            self.logger.error(MirobotAlarm(msg.split(&#39;ALARM: &#39;, 1)[1]))
-
-        output.append(msg)
-
-        if not reset_expected and matches_eol_strings(reset_strings, msg):
-            self.logger.error(MirobotReset(&#39;Mirobot was unexpectedly reset!&#39;))
-
-    return output[1:]  # don&#39;t include the dummy empty string at first index</code></pre>
-</details>
-</dd>
-<dt id="mirobot.base_mirobot.BaseMirobot.wait_until_idle"><code class="name flex">
-<span>def <span class="ident">wait_until_idle</span></span>(<span>self, refresh_rate=0.1)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Continuously loops over and refreshes state of the Mirobot.
-It stops when it encounters an 'Idle' state string.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>refresh_rate</code></strong> :&ensp;<code>float</code></dt>
-<dd>(Default value = <code>0.1</code>) The rate in seconds to check for the 'Idle' state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>output</code></strong> :&ensp;<code>List</code>[<code>str</code>]</dt>
-<dd>A list of output strings upto and including the terminal string.</dd>
-</dl></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def wait_until_idle(self, refresh_rate=0.1):
-    &#34;&#34;&#34;
-    Continuously loops over and refreshes state of the Mirobot.
-    It stops when it encounters an &#39;Idle&#39; state string.
-
-    Parameters
-    ----------
-    refresh_rate : float
-        (Default value = `0.1`) The rate in seconds to check for the &#39;Idle&#39; state. Choosing a low number might overwhelm the controller on Mirobot. Be cautious when lowering this parameter.
-
-    Returns
-    -------
-    output : List[str]
-        A list of output strings upto and including the terminal string.
-    &#34;&#34;&#34;
-    self.update_status(disable_debug=True)
-
-    while self.status.state != &#39;Idle&#39;:
-        time.sleep(refresh_rate)
-        self.update_status(disable_debug=True)</code></pre>
+    self._set_status(self._parse_status(status_msg))</code></pre>
 </details>
 </dd>
 </dl>
@@ -3383,6 +2866,7 @@ It stops when it encounters an 'Idle' state string.</p>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.connect" href="#mirobot.base_mirobot.BaseMirobot.connect">connect</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.debug" href="#mirobot.base_mirobot.BaseMirobot.debug">debug</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.default_speed" href="#mirobot.base_mirobot.BaseMirobot.default_speed">default_speed</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.device" href="#mirobot.base_mirobot.BaseMirobot.device">device</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.disconnect" href="#mirobot.base_mirobot.BaseMirobot.disconnect">disconnect</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.finish_calibration" href="#mirobot.base_mirobot.BaseMirobot.finish_calibration">finish_calibration</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.get_status" href="#mirobot.base_mirobot.BaseMirobot.get_status">get_status</a></code></li>
@@ -3395,6 +2879,7 @@ It stops when it encounters an 'Idle' state string.</p>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.increment_cartesian_lin" href="#mirobot.base_mirobot.BaseMirobot.increment_cartesian_lin">increment_cartesian_lin</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.increment_cartesian_ptp" href="#mirobot.base_mirobot.BaseMirobot.increment_cartesian_ptp">increment_cartesian_ptp</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.is_connected" href="#mirobot.base_mirobot.BaseMirobot.is_connected">is_connected</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.logger" href="#mirobot.base_mirobot.BaseMirobot.logger">logger</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.pump_pwm_values" href="#mirobot.base_mirobot.BaseMirobot.pump_pwm_values">pump_pwm_values</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.reset_configuration" href="#mirobot.base_mirobot.BaseMirobot.reset_configuration">reset_configuration</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.reset_file" href="#mirobot.base_mirobot.BaseMirobot.reset_file">reset_file</a></code></li>
@@ -3409,9 +2894,6 @@ It stops when it encounters an 'Idle' state string.</p>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.update_status" href="#mirobot.base_mirobot.BaseMirobot.update_status">update_status</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.valve_pwm_values" href="#mirobot.base_mirobot.BaseMirobot.valve_pwm_values">valve_pwm_values</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.wait" href="#mirobot.base_mirobot.BaseMirobot.wait">wait</a></code></li>
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait_decorator" href="#mirobot.base_mirobot.BaseMirobot.wait_decorator">wait_decorator</a></code></li>
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait_for_ok" href="#mirobot.base_mirobot.BaseMirobot.wait_for_ok">wait_for_ok</a></code></li>
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="#mirobot.base_mirobot.BaseMirobot.wait_until_idle">wait_until_idle</a></code></li>
 </ul>
 </li>
 </ul>

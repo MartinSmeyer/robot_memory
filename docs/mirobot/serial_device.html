@@ -27,10 +27,9 @@
 <pre><code class="python">import logging
 import os
 
-import portalocker
 import serial
 
-from .exceptions import ExitOnExceptionStreamHandler, SerialDeviceLockError, SerialDeviceOpenError, SerialDeviceReadError, SerialDeviceCloseError, SerialDeviceWriteError, SerialDeviceUnlockError
+from .exceptions import ExitOnExceptionStreamHandler, SerialDeviceOpenError, SerialDeviceReadError, SerialDeviceCloseError, SerialDeviceWriteError
 
 
 class SerialDevice:
@@ -47,7 +46,7 @@ class SerialDevice:
         stopbits : int
              (Default value = `1`) Stopbits of the connection.
         exclusive : bool
-             (Default value = `True`) Whether to (try) forcing exclusivity of serial ports. If another `mirobot.serial_device.SerialDevice` is connected to this port, then don&#39;t connect at all. On the other hand, if no other `mirobot.serial_device.SerialDevice` is connected, then create a lock-file signaling that this serial port is in use.
+             (Default value = `True`) Whether to (try) forcing exclusivity of serial port for this instance. Is only a true toggle on Linux and OSx; Windows always exclusively blocks serial ports. Setting this variable to `False` on Windows will throw an error.
         debug : bool
              (Default value = `False`) Whether to print DEBUG-level information from the runtime of this class. Show more detailed information on screen output.
 
@@ -72,7 +71,7 @@ class SerialDevice:
         self.stream_handler.setFormatter(formatter)
         self.logger.addHandler(self.stream_handler)
 
-        self.serialport = serial.Serial()
+        self.serialport = serial.Serial(exclusive=exclusive)
         self._is_open = False
 
     def __del__(self):
@@ -118,7 +117,7 @@ class SerialDevice:
             try:
                 msg = self.serialport.readline()
                 if msg != b&#39;&#39;:
-                    msg = str(msg.strip(), &#39;utf-8&#39;)
+                    msg = msg.decode().strip()
                     return msg
 
             except Exception as e:
@@ -143,30 +142,9 @@ class SerialDevice:
             except Exception as e:
                 self.logger.exception(SerialDeviceOpenError(e))
 
-            if self.exclusive:
-                try:
-                    self.logger.debug(f&#34;Attempting to lock serial port {self.portname}&#34;)
-
-                    portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
-
-                    self.logger.debug(f&#34;Succeeded in locking serial port {self.portname}&#34;)
-
-                except portalocker.LockException:
-                    self.logger.exception(SerialDeviceLockError(f&#34;Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;))
-
     def close(self):
         &#34;&#34;&#34; Close the serial port. &#34;&#34;&#34;
         if self._is_open:
-            try:
-                self.logger.debug(f&#34;Attempting to unlock serial port {self.portname}&#34;)
-
-                portalocker.unlock(self.serialport)
-
-                self.logger.debug(f&#34;Succeeded in unlocking serial port {self.portname}&#34;)
-
-            except Exception as e:
-                self.logger.exception(SerialDeviceUnlockError(e))
-
             try:
                 self.logger.debug(f&#34;Attempting to close serial port {self.portname}&#34;)
 
@@ -237,7 +215,7 @@ class SerialDevice:
 <dt><strong><code>stopbits</code></strong> :&ensp;<code>int</code></dt>
 <dd>(Default value = <code>1</code>) Stopbits of the connection.</dd>
 <dt><strong><code>exclusive</code></strong> :&ensp;<code>bool</code></dt>
-<dd>(Default value = <code>True</code>) Whether to (try) forcing exclusivity of serial ports. If another <a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> is connected to this port, then don't connect at all. On the other hand, if no other <a title="mirobot.serial_device.SerialDevice" href="#mirobot.serial_device.SerialDevice"><code>SerialDevice</code></a> is connected, then create a lock-file signaling that this serial port is in use.</dd>
+<dd>(Default value = <code>True</code>) Whether to (try) forcing exclusivity of serial port for this instance. Is only a true toggle on Linux and OSx; Windows always exclusively blocks serial ports. Setting this variable to <code>False</code> on Windows will throw an error.</dd>
 <dt><strong><code>debug</code></strong> :&ensp;<code>bool</code></dt>
 <dd>(Default value = <code>False</code>) Whether to print DEBUG-level information from the runtime of this class. Show more detailed information on screen output.</dd>
 </dl>
@@ -264,7 +242,7 @@ class SerialDevice:
         stopbits : int
              (Default value = `1`) Stopbits of the connection.
         exclusive : bool
-             (Default value = `True`) Whether to (try) forcing exclusivity of serial ports. If another `mirobot.serial_device.SerialDevice` is connected to this port, then don&#39;t connect at all. On the other hand, if no other `mirobot.serial_device.SerialDevice` is connected, then create a lock-file signaling that this serial port is in use.
+             (Default value = `True`) Whether to (try) forcing exclusivity of serial port for this instance. Is only a true toggle on Linux and OSx; Windows always exclusively blocks serial ports. Setting this variable to `False` on Windows will throw an error.
         debug : bool
              (Default value = `False`) Whether to print DEBUG-level information from the runtime of this class. Show more detailed information on screen output.
 
@@ -289,7 +267,7 @@ class SerialDevice:
         self.stream_handler.setFormatter(formatter)
         self.logger.addHandler(self.stream_handler)
 
-        self.serialport = serial.Serial()
+        self.serialport = serial.Serial(exclusive=exclusive)
         self._is_open = False
 
     def __del__(self):
@@ -335,7 +313,7 @@ class SerialDevice:
             try:
                 msg = self.serialport.readline()
                 if msg != b&#39;&#39;:
-                    msg = str(msg.strip(), &#39;utf-8&#39;)
+                    msg = msg.decode().strip()
                     return msg
 
             except Exception as e:
@@ -360,30 +338,9 @@ class SerialDevice:
             except Exception as e:
                 self.logger.exception(SerialDeviceOpenError(e))
 
-            if self.exclusive:
-                try:
-                    self.logger.debug(f&#34;Attempting to lock serial port {self.portname}&#34;)
-
-                    portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
-
-                    self.logger.debug(f&#34;Succeeded in locking serial port {self.portname}&#34;)
-
-                except portalocker.LockException:
-                    self.logger.exception(SerialDeviceLockError(f&#34;Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;))
-
     def close(self):
         &#34;&#34;&#34; Close the serial port. &#34;&#34;&#34;
         if self._is_open:
-            try:
-                self.logger.debug(f&#34;Attempting to unlock serial port {self.portname}&#34;)
-
-                portalocker.unlock(self.serialport)
-
-                self.logger.debug(f&#34;Succeeded in unlocking serial port {self.portname}&#34;)
-
-            except Exception as e:
-                self.logger.exception(SerialDeviceUnlockError(e))
-
             try:
                 self.logger.debug(f&#34;Attempting to close serial port {self.portname}&#34;)
 
@@ -473,16 +430,6 @@ def is_open(self):
     &#34;&#34;&#34; Close the serial port. &#34;&#34;&#34;
     if self._is_open:
         try:
-            self.logger.debug(f&#34;Attempting to unlock serial port {self.portname}&#34;)
-
-            portalocker.unlock(self.serialport)
-
-            self.logger.debug(f&#34;Succeeded in unlocking serial port {self.portname}&#34;)
-
-        except Exception as e:
-            self.logger.exception(SerialDeviceUnlockError(e))
-
-        try:
             self.logger.debug(f&#34;Attempting to close serial port {self.portname}&#34;)
 
             self._is_open = False
@@ -522,7 +469,7 @@ def is_open(self):
         try:
             msg = self.serialport.readline()
             if msg != b&#39;&#39;:
-                msg = str(msg.strip(), &#39;utf-8&#39;)
+                msg = msg.decode().strip()
                 return msg
 
         except Exception as e:
@@ -555,18 +502,7 @@ def is_open(self):
             self.logger.debug(f&#34;Succeeded in opening serial port {self.portname}&#34;)
 
         except Exception as e:
-            self.logger.exception(SerialDeviceOpenError(e))
-
-        if self.exclusive:
-            try:
-                self.logger.debug(f&#34;Attempting to lock serial port {self.portname}&#34;)
-
-                portalocker.lock(self.serialport, portalocker.LOCK_EX | portalocker.LOCK_NB)
-
-                self.logger.debug(f&#34;Succeeded in locking serial port {self.portname}&#34;)
-
-            except portalocker.LockException:
-                self.logger.exception(SerialDeviceLockError(f&#34;Unable to acquire port {self.portname}. Make sure another process is not using it!&#34;))</code></pre>
+            self.logger.exception(SerialDeviceOpenError(e))</code></pre>
 </details>
 </dd>
 <dt id="mirobot.serial_device.SerialDevice.send"><code class="name flex">

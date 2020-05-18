@@ -24,13 +24,11 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from collections import namedtuple
+<pre><code class="python">from types import SimpleNamespace
 
 from .base_mirobot import BaseMirobot
+from .base_rover import BaseRover
 from .mirobot_status import MirobotAngles, MirobotCartesians
-
-cartesian_function_splitter = namedtuple(&#39;cartesian_function_splitter&#39;, [&#39;ptp&#39;, &#39;lin&#39;])
-coordinate_splitter = namedtuple(&#39;coordinate_splitter&#39;, [&#39;cartesian&#39;, &#39;angle&#39;, &#39;rail&#39;])
 
 
 class Mirobot(BaseMirobot):
@@ -55,9 +53,35 @@ class Mirobot(BaseMirobot):
         &#34;&#34;&#34;
         super().__init__(*base_mirobot_args, **base_mirobot_kwargs)
 
-        self.move = coordinate_splitter(cartesian_function_splitter(self.go_to_cartesian_ptp, self.go_to_cartesian_ptp), self.go_to_axis, self.go_to_slide_rail)
+        self._rover = BaseRover(self)
 
-        self.increment = coordinate_splitter(cartesian_function_splitter(self.increment_cartesian_ptp, self.increment_cartesian_lin), self.increment_axis, self.increment_slide_rail)
+        self.move = SimpleNamespace(cartesian=SimpleNamespace(ptp=self.go_to_cartesian_ptp,
+                                                              lin=self.go_to_cartesian_lin),
+                                    angle=self.go_to_axis,
+                                    rail=self.go_to_slide_rail)
+        &#34;&#34;&#34; The root of the move alias. Uses `go_to_...` methods. Can be used as `mirobot.move.ptp(...)` or `mirobot.move.angle(...)` &#34;&#34;&#34;
+
+        self.increment = SimpleNamespace(cartesian=SimpleNamespace(ptp=self.increment_cartesian_ptp,
+                                                                   lin=self.increment_cartesian_lin),
+                                         angle=self.increment_axis,
+                                         rail=self.increment_slide_rail)
+        &#34;&#34;&#34; The root of the increment alias. Uses `increment_...` methods. Can be used as `mirobot.increment.ptp(...)` or `mirobot.increment.angle(...)` &#34;&#34;&#34;
+
+        wheel_aliases = SimpleNamespace(upper=SimpleNamespace(left=self._rover.move_upper_left,
+                                                              right=self._rover.move_upper_right),
+                                        bottom=SimpleNamespace(left=self._rover.move_bottom_left,
+                                                               right=self._rover.move_bottom_right),
+                                        left=SimpleNamespace(upper=self._rover.move_upper_left,
+                                                             bottom=self._rover.move_bottom_left),
+                                        right=SimpleNamespace(upper=self._rover.move_upper_right,
+                                                              bottom=self._rover.move_bottom_right))
+
+        self.rover = SimpleNamespace(wheel=wheel_aliases,
+                                     rotate=SimpleNamespace(left=self._rover.rotate_left,
+                                                            right=self._rover.rotate_right),
+                                     move=SimpleNamespace(forward=self._rover.move_forward,
+                                                          backward=self._rover.move_backward))
+        &#34;&#34;&#34; The root of the rover alias. Uses methods from `mirobot.base_rover.BaseRover`. Can be used as `mirobot.rover.wheel.upper.right(...)` or `mirobot.rover.rotate.left(...)` or `mirobot.rover.move.forward(...)`&#34;&#34;&#34;
 
     @property
     def state(self):
@@ -453,9 +477,35 @@ class Mirobot(BaseMirobot):
         &#34;&#34;&#34;
         super().__init__(*base_mirobot_args, **base_mirobot_kwargs)
 
-        self.move = coordinate_splitter(cartesian_function_splitter(self.go_to_cartesian_ptp, self.go_to_cartesian_ptp), self.go_to_axis, self.go_to_slide_rail)
+        self._rover = BaseRover(self)
 
-        self.increment = coordinate_splitter(cartesian_function_splitter(self.increment_cartesian_ptp, self.increment_cartesian_lin), self.increment_axis, self.increment_slide_rail)
+        self.move = SimpleNamespace(cartesian=SimpleNamespace(ptp=self.go_to_cartesian_ptp,
+                                                              lin=self.go_to_cartesian_lin),
+                                    angle=self.go_to_axis,
+                                    rail=self.go_to_slide_rail)
+        &#34;&#34;&#34; The root of the move alias. Uses `go_to_...` methods. Can be used as `mirobot.move.ptp(...)` or `mirobot.move.angle(...)` &#34;&#34;&#34;
+
+        self.increment = SimpleNamespace(cartesian=SimpleNamespace(ptp=self.increment_cartesian_ptp,
+                                                                   lin=self.increment_cartesian_lin),
+                                         angle=self.increment_axis,
+                                         rail=self.increment_slide_rail)
+        &#34;&#34;&#34; The root of the increment alias. Uses `increment_...` methods. Can be used as `mirobot.increment.ptp(...)` or `mirobot.increment.angle(...)` &#34;&#34;&#34;
+
+        wheel_aliases = SimpleNamespace(upper=SimpleNamespace(left=self._rover.move_upper_left,
+                                                              right=self._rover.move_upper_right),
+                                        bottom=SimpleNamespace(left=self._rover.move_bottom_left,
+                                                               right=self._rover.move_bottom_right),
+                                        left=SimpleNamespace(upper=self._rover.move_upper_left,
+                                                             bottom=self._rover.move_bottom_left),
+                                        right=SimpleNamespace(upper=self._rover.move_upper_right,
+                                                              bottom=self._rover.move_bottom_right))
+
+        self.rover = SimpleNamespace(wheel=wheel_aliases,
+                                     rotate=SimpleNamespace(left=self._rover.rotate_left,
+                                                            right=self._rover.rotate_right),
+                                     move=SimpleNamespace(forward=self._rover.move_forward,
+                                                          backward=self._rover.move_backward))
+        &#34;&#34;&#34; The root of the rover alias. Uses methods from `mirobot.base_rover.BaseRover`. Can be used as `mirobot.rover.wheel.upper.right(...)` or `mirobot.rover.rotate.left(...)` or `mirobot.rover.move.forward(...)`&#34;&#34;&#34;
 
     @property
     def state(self):
@@ -830,6 +880,10 @@ def cartesian(self):
     return self.status.cartesian</code></pre>
 </details>
 </dd>
+<dt id="mirobot.mirobot.Mirobot.increment"><code class="name">var <span class="ident">increment</span></code></dt>
+<dd>
+<section class="desc"><p>The root of the increment alias. Uses <code>increment_...</code> methods. Can be used as <code>mirobot.increment.ptp(...)</code> or <code>mirobot.increment.angle(...)</code></p></section>
+</dd>
 <dt id="mirobot.mirobot.Mirobot.motion_mode"><code class="name">var <span class="ident">motion_mode</span></code></dt>
 <dd>
 <section class="desc"><p>Whether Mirobot is currently in coordinate mode (<code>False</code>) or joint-motion mode (<code>True</code>)</p></section>
@@ -842,6 +896,10 @@ def motion_mode(self):
     &#34;&#34;&#34; Whether Mirobot is currently in coordinate mode (`False`) or joint-motion mode (`True`) &#34;&#34;&#34;
     return self.status.motion_mode</code></pre>
 </details>
+</dd>
+<dt id="mirobot.mirobot.Mirobot.move"><code class="name">var <span class="ident">move</span></code></dt>
+<dd>
+<section class="desc"><p>The root of the move alias. Uses <code>go_to_...</code> methods. Can be used as <code>mirobot.move.ptp(...)</code> or <code>mirobot.move.angle(...)</code></p></section>
 </dd>
 <dt id="mirobot.mirobot.Mirobot.pump_pwm"><code class="name">var <span class="ident">pump_pwm</span></code></dt>
 <dd>
@@ -868,6 +926,10 @@ def rail(self):
     &#34;&#34;&#34; Location of external slide rail module &#34;&#34;&#34;
     return self.status.angle.d</code></pre>
 </details>
+</dd>
+<dt id="mirobot.mirobot.Mirobot.rover"><code class="name">var <span class="ident">rover</span></code></dt>
+<dd>
+<section class="desc"><p>The root of the rover alias. Uses methods from <a title="mirobot.base_rover.BaseRover" href="base_rover.html#mirobot.base_rover.BaseRover"><code>BaseRover</code></a>. Can be used as <code>mirobot.rover.wheel.upper.right(...)</code> or <code>mirobot.rover.rotate.left(...)</code> or <code>mirobot.rover.move.forward(...)</code></p></section>
 </dd>
 <dt id="mirobot.mirobot.Mirobot.state"><code class="name">var <span class="ident">state</span></code></dt>
 <dd>
@@ -1500,15 +1562,14 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <ul class="hlist">
 <li><code><b><a title="mirobot.base_mirobot.BaseMirobot" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot">BaseMirobot</a></b></code>:
 <ul class="hlist">
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.connect" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.connect">connect</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.debug" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.debug">debug</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.default_speed" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.default_speed">default_speed</a></code></li>
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.disconnect" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.disconnect">disconnect</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.device" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.device">device</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.finish_calibration" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.finish_calibration">finish_calibration</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.get_status" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.get_status">get_status</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.home_individual" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.home_individual">home_individual</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.home_simultaneous" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.home_simultaneous">home_simultaneous</a></code></li>
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.is_connected" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.is_connected">is_connected</a></code></li>
+<li><code><a title="mirobot.base_mirobot.BaseMirobot.logger" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.logger">logger</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.pump_pwm_values" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.pump_pwm_values">pump_pwm_values</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.reset_configuration" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.reset_configuration">reset_configuration</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.reset_file" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.reset_file">reset_file</a></code></li>
@@ -1523,60 +1584,9 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.update_status" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.update_status">update_status</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.valve_pwm_values" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.valve_pwm_values">valve_pwm_values</a></code></li>
 <li><code><a title="mirobot.base_mirobot.BaseMirobot.wait" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.wait">wait</a></code></li>
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait_decorator" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.wait_decorator">wait_decorator</a></code></li>
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait_for_ok" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.wait_for_ok">wait_for_ok</a></code></li>
-<li><code><a title="mirobot.base_mirobot.BaseMirobot.wait_until_idle" href="base_mirobot.html#mirobot.base_mirobot.BaseMirobot.wait_until_idle">wait_until_idle</a></code></li>
 </ul>
 </li>
 </ul>
-</dd>
-<dt id="mirobot.mirobot.cartesian_function_splitter"><code class="flex name class">
-<span>class <span class="ident">cartesian_function_splitter</span></span>
-<span>(</span><span>ptp, lin)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>cartesian_function_splitter(ptp, lin)</p></section>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>builtins.tuple</li>
-</ul>
-<h3>Instance variables</h3>
-<dl>
-<dt id="mirobot.mirobot.cartesian_function_splitter.lin"><code class="name">var <span class="ident">lin</span></code></dt>
-<dd>
-<section class="desc"><p>Alias for field number 1</p></section>
-</dd>
-<dt id="mirobot.mirobot.cartesian_function_splitter.ptp"><code class="name">var <span class="ident">ptp</span></code></dt>
-<dd>
-<section class="desc"><p>Alias for field number 0</p></section>
-</dd>
-</dl>
-</dd>
-<dt id="mirobot.mirobot.coordinate_splitter"><code class="flex name class">
-<span>class <span class="ident">coordinate_splitter</span></span>
-<span>(</span><span>cartesian, angle, rail)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>coordinate_splitter(cartesian, angle, rail)</p></section>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>builtins.tuple</li>
-</ul>
-<h3>Instance variables</h3>
-<dl>
-<dt id="mirobot.mirobot.coordinate_splitter.angle"><code class="name">var <span class="ident">angle</span></code></dt>
-<dd>
-<section class="desc"><p>Alias for field number 1</p></section>
-</dd>
-<dt id="mirobot.mirobot.coordinate_splitter.cartesian"><code class="name">var <span class="ident">cartesian</span></code></dt>
-<dd>
-<section class="desc"><p>Alias for field number 0</p></section>
-</dd>
-<dt id="mirobot.mirobot.coordinate_splitter.rail"><code class="name">var <span class="ident">rail</span></code></dt>
-<dd>
-<section class="desc"><p>Alias for field number 2</p></section>
-</dd>
-</dl>
 </dd>
 </dl>
 </section>
@@ -1604,30 +1614,18 @@ If <code>wait</code> is <code>False</code>, then return whether sending the mess
 <li><code><a title="mirobot.mirobot.Mirobot.go_to_cartesian_ptp" href="#mirobot.mirobot.Mirobot.go_to_cartesian_ptp">go_to_cartesian_ptp</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.go_to_slide_rail" href="#mirobot.mirobot.Mirobot.go_to_slide_rail">go_to_slide_rail</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.go_to_zero" href="#mirobot.mirobot.Mirobot.go_to_zero">go_to_zero</a></code></li>
+<li><code><a title="mirobot.mirobot.Mirobot.increment" href="#mirobot.mirobot.Mirobot.increment">increment</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.increment_axis" href="#mirobot.mirobot.Mirobot.increment_axis">increment_axis</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.increment_cartesian_lin" href="#mirobot.mirobot.Mirobot.increment_cartesian_lin">increment_cartesian_lin</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.increment_cartesian_ptp" href="#mirobot.mirobot.Mirobot.increment_cartesian_ptp">increment_cartesian_ptp</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.increment_slide_rail" href="#mirobot.mirobot.Mirobot.increment_slide_rail">increment_slide_rail</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.motion_mode" href="#mirobot.mirobot.Mirobot.motion_mode">motion_mode</a></code></li>
+<li><code><a title="mirobot.mirobot.Mirobot.move" href="#mirobot.mirobot.Mirobot.move">move</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.pump_pwm" href="#mirobot.mirobot.Mirobot.pump_pwm">pump_pwm</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.rail" href="#mirobot.mirobot.Mirobot.rail">rail</a></code></li>
+<li><code><a title="mirobot.mirobot.Mirobot.rover" href="#mirobot.mirobot.Mirobot.rover">rover</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.state" href="#mirobot.mirobot.Mirobot.state">state</a></code></li>
 <li><code><a title="mirobot.mirobot.Mirobot.valve_pwm" href="#mirobot.mirobot.Mirobot.valve_pwm">valve_pwm</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="mirobot.mirobot.cartesian_function_splitter" href="#mirobot.mirobot.cartesian_function_splitter">cartesian_function_splitter</a></code></h4>
-<ul class="">
-<li><code><a title="mirobot.mirobot.cartesian_function_splitter.lin" href="#mirobot.mirobot.cartesian_function_splitter.lin">lin</a></code></li>
-<li><code><a title="mirobot.mirobot.cartesian_function_splitter.ptp" href="#mirobot.mirobot.cartesian_function_splitter.ptp">ptp</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="mirobot.mirobot.coordinate_splitter" href="#mirobot.mirobot.coordinate_splitter">coordinate_splitter</a></code></h4>
-<ul class="">
-<li><code><a title="mirobot.mirobot.coordinate_splitter.angle" href="#mirobot.mirobot.coordinate_splitter.angle">angle</a></code></li>
-<li><code><a title="mirobot.mirobot.coordinate_splitter.cartesian" href="#mirobot.mirobot.coordinate_splitter.cartesian">cartesian</a></code></li>
-<li><code><a title="mirobot.mirobot.coordinate_splitter.rail" href="#mirobot.mirobot.coordinate_splitter.rail">rail</a></code></li>
 </ul>
 </li>
 </ul>
