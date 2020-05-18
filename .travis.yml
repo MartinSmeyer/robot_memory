@@ -1,0 +1,11 @@
+language: python
+install: echo "Not Installing!"
+script: echo "Not Running any Tests!"
+deploy:
+  provider: pypi
+  user: __token__
+  password:
+    secure: esIiPbHkrHUX8xQw5/3FLDz7mjtN0lPpiEHBuDI/Hy2G731IJvyOyHoRSnmEjkYcA2Gtw+EpjmsGIV5duN7afrtis/OlFY1ZVhhgI10KZampZS9hboqJxsS1FhZq7rUm8DKgrChFYZyAdtM3CMGeHGM5CnSdA31IX5sxgzVMgwNLIQ93NAf1btyNRhrF50c5eCPjpo55mDo09UAcPZVnlhmyib6ix+vwSfwuzBr+6G66ekDY71IEpAkP6IUnCpdKz5c6MSaFT841agJ2R/H/nsIotujlBT7ZzgCNWeq+RJYFq+9YQUKefUBFUJpByaKWVK9lNTytDLsW96r8dJNB4mQheF8+VmfhVZNo13b4KXmugrvk4x9IjKh3Ofv8k698bRiDeonU8m3bpC+KByNENn5SbG7lqzbVmetfHZfliNWirn9DtJuC6b6D8/zqlEjb+tuiylrbKbXh6/+5Xr8ztOv0DLL8Inw3NGuIvsHMY+YllC1Jx1B6a4odGNsenAjygDQ9QhKEiDdG2lYwwskX/+W75+lQJk4H5suZi6sShRMQWx+06NAadmz0KBMvlx6w+88fPF8Avx81gGbt26uebjjcvPaJfwCZi0Rp08UshXunaj5uibmcUmtRWFIbUkbIkE3v5UJanjLmZRmMj6Jxdv6nmpBjlwC/O58yq450glU=
+  distributions: sdist bdist_wheel
+  on:
+    tags: true
