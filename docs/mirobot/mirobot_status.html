@@ -24,168 +24,9 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from dataclasses import dataclass, asdict, astuple, fields
-import operator
+<pre><code class="python">from dataclasses import dataclass
 
-
-class basic_dataclass:
-    def asdict(self):
-        return asdict(self)
-
-    def astuple(self):
-        return astuple(self)
-
-    @classmethod
-    def _new_from_dict(cls, dictionary):
-        return cls(**dictionary)
-
-
-class featured_dataclass(basic_dataclass):
-    def _cross_same_type(self, other, operation_function, single=False):
-        new_values = {}
-        for f in fields(self):
-            this_value = getattr(self, f.name)
-
-            if single:
-                other_value = other
-            else:
-                other_value = getattr(other, f.name)
-
-            result = operation_function(this_value, other_value)
-
-            new_values[f.name] = result
-
-        return new_values
-
-    def _binary_operation(self, other, operation):
-        def operation_function(this_value, other_value):
-            if None in (this_value, other_value):
-                return None
-            else:
-                return operation(this_value, other_value)
-
-        if isinstance(other, type(self)):
-            new_values = self._cross_same_type(other, operation_function)
-
-        elif isinstance(other, (int, float)):
-            new_values = self._cross_same_type(other, operation_function, single=True)
-
-        else:
-            raise TypeError(f&#34;Cannot handle {type(self)} and {type(other)}&#34;)
-
-        return self._new_from_dict(new_values)
-
-    def _unary_operation(self, operation):
-        new_values = {f.name: operation(getattr(self, f.name))
-                      if getattr(self, f.name) is not None else None
-                      for f in fields(self)}
-
-        return self._new_from_dict(new_values)
-
-    def _comparision_operation(self, other, operation):
-        def operation_function(this_value, other_value):
-            if None in (this_value, other_value):
-                return True
-            else:
-                return operation(this_value, other_value)
-
-        if isinstance(other, type(self)):
-            new_values = self._cross_same_type(other, operation_function).values()
-
-        elif isinstance(other, (int, float)):
-            new_values = self._cross_same_type(other, operation_function, single=True).values()
-
-        else:
-            raise TypeError(f&#34;Cannot handle {type(self)} and {type(other)}&#34;)
-
-        if all(new_values):
-            return True
-
-        elif not any(new_values):
-            return False
-
-        else:
-            return None
-
-    def __or__(self, other):
-        def operation_function(this_value, other_value):
-            if this_value is None:
-                return other_value
-            else:
-                return this_value
-
-        new_values = self._cross_same_type(other, operation_function)
-        return self._new_from_dict(new_values)
-
-    def __and__(self, other):
-        def operation_function(this_value, other_value):
-            if None not in (this_value, other_value):
-                return this_value
-            else:
-                return None
-
-        new_values = self._cross_same_type(other, operation_function)
-        return self._new_from_dict(new_values)
-
-    def __add__(self, other):
-        return self._binary_operation(other, operator.add)
-
-    def __radd__(self, other):
-        return self._binary_operation(other, operator.add)
-
-    def __sub__(self, other):
-        return self._binary_operation(other, operator.sub)
-
-    def __rsub__(self, other):
-        return self._binary_operation(other, operator.sub)
-
-    def __mul__(self, other):
-        return self._binary_operation(other, operator.mul)
-
-    def __rmul__(self, other):
-        return self._binary_operation(other, operator.mul)
-
-    def __div__(self, other):
-        return self._binary_operation(other, operator.div)
-
-    def __rdiv__(self, other):
-        return self._binary_operation(other, operator.div)
-
-    def __truediv__(self, other):
-        return self._binary_operation(other, operator.truediv)
-
-    def __mod__(self, other):
-        return self._binary_operation(other, operator.mod)
-
-    def __abs__(self):
-        return self._unary_operation(operator.abs)
-
-    def __index__(self):
-        return self._unary_operation(operator.index)
-
-    def __pos__(self):
-        return self._unary_operation(operator.pos)
-
-    def __neg__(self):
-        return self._unary_operation(operator.neg)
-
-    def __lt__(self, other):
-        return self._comparision_operation(other, operator.lt)
-
-    def __le__(self, other):
-        return self._comparision_operation(other, operator.le)
-
-    def __eq__(self, other):
-        return self._comparision_operation(other, operator.eq)
-
-    def __ne__(self, other):
-        return self._comparision_operation(other, operator.ne)
-
-    def __ge__(self, other):
-        return self._comparision_operation(other, operator.ge)
-
-    def __gt__(self, other):
-        return self._comparision_operation(other, operator.gt)
+from .extended_dataclasses import basic_dataclass, featured_dataclass
 
 
 @dataclass
@@ -290,7 +131,7 @@ class MirobotCartesians(featured_dataclass):
 
 
 @dataclass
-class MirobotStatus:
+class MirobotStatus(basic_dataclass):
     &#34;&#34;&#34; A composite dataclass to hold all of Mirobot&#39;s trackable quantities. &#34;&#34;&#34;
     state: str = &#39;&#39;
     &#34;&#34;&#34; The brief descriptor string for Mirobot&#39;s state. &#34;&#34;&#34;
@@ -379,8 +220,8 @@ class MirobotStatus:
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="mirobot.mirobot_status.featured_dataclass" href="#mirobot.mirobot_status.featured_dataclass">featured_dataclass</a></li>
-<li><a title="mirobot.mirobot_status.basic_dataclass" href="#mirobot.mirobot_status.basic_dataclass">basic_dataclass</a></li>
+<li><a title="mirobot.extended_dataclasses.featured_dataclass" href="extended_dataclasses.html#mirobot.extended_dataclasses.featured_dataclass">featured_dataclass</a></li>
+<li><a title="mirobot.extended_dataclasses.basic_dataclass" href="extended_dataclasses.html#mirobot.extended_dataclasses.basic_dataclass">basic_dataclass</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
@@ -565,8 +406,8 @@ def rail(self):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="mirobot.mirobot_status.featured_dataclass" href="#mirobot.mirobot_status.featured_dataclass">featured_dataclass</a></li>
-<li><a title="mirobot.mirobot_status.basic_dataclass" href="#mirobot.mirobot_status.basic_dataclass">basic_dataclass</a></li>
+<li><a title="mirobot.extended_dataclasses.featured_dataclass" href="extended_dataclasses.html#mirobot.extended_dataclasses.featured_dataclass">featured_dataclass</a></li>
+<li><a title="mirobot.extended_dataclasses.basic_dataclass" href="extended_dataclasses.html#mirobot.extended_dataclasses.basic_dataclass">basic_dataclass</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
@@ -687,7 +528,7 @@ def tz(self):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MirobotStatus:
+<pre><code class="python">class MirobotStatus(basic_dataclass):
     &#34;&#34;&#34; A composite dataclass to hold all of Mirobot&#39;s trackable quantities. &#34;&#34;&#34;
     state: str = &#39;&#39;
     &#34;&#34;&#34; The brief descriptor string for Mirobot&#39;s state. &#34;&#34;&#34;
@@ -702,6 +543,10 @@ def tz(self):
     motion_mode: bool = False
     &#34;&#34;&#34; Whether Mirobot is currently in coordinate mode (`False`) or joint-motion mode (`True`) &#34;&#34;&#34;</code></pre>
 </details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="mirobot.extended_dataclasses.basic_dataclass" href="extended_dataclasses.html#mirobot.extended_dataclasses.basic_dataclass">basic_dataclass</a></li>
+</ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="mirobot.mirobot_status.MirobotStatus.angle"><code class="name">var <span class="ident">angle</span></code></dt>
@@ -729,226 +574,6 @@ def tz(self):
 <section class="desc"><p>The current pwm of the value module. (eg. gripper)</p></section>
 </dd>
 </dl>
-</dd>
-<dt id="mirobot.mirobot_status.basic_dataclass"><code class="flex name class">
-<span>class <span class="ident">basic_dataclass</span></span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class basic_dataclass:
-    def asdict(self):
-        return asdict(self)
-
-    def astuple(self):
-        return astuple(self)
-
-    @classmethod
-    def _new_from_dict(cls, dictionary):
-        return cls(**dictionary)</code></pre>
-</details>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="mirobot.mirobot_status.featured_dataclass" href="#mirobot.mirobot_status.featured_dataclass">featured_dataclass</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="mirobot.mirobot_status.basic_dataclass.asdict"><code class="name flex">
-<span>def <span class="ident">asdict</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def asdict(self):
-    return asdict(self)</code></pre>
-</details>
-</dd>
-<dt id="mirobot.mirobot_status.basic_dataclass.astuple"><code class="name flex">
-<span>def <span class="ident">astuple</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def astuple(self):
-    return astuple(self)</code></pre>
-</details>
-</dd>
-</dl>
-</dd>
-<dt id="mirobot.mirobot_status.featured_dataclass"><code class="flex name class">
-<span>class <span class="ident">featured_dataclass</span></span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class featured_dataclass(basic_dataclass):
-    def _cross_same_type(self, other, operation_function, single=False):
-        new_values = {}
-        for f in fields(self):
-            this_value = getattr(self, f.name)
-
-            if single:
-                other_value = other
-            else:
-                other_value = getattr(other, f.name)
-
-            result = operation_function(this_value, other_value)
-
-            new_values[f.name] = result
-
-        return new_values
-
-    def _binary_operation(self, other, operation):
-        def operation_function(this_value, other_value):
-            if None in (this_value, other_value):
-                return None
-            else:
-                return operation(this_value, other_value)
-
-        if isinstance(other, type(self)):
-            new_values = self._cross_same_type(other, operation_function)
-
-        elif isinstance(other, (int, float)):
-            new_values = self._cross_same_type(other, operation_function, single=True)
-
-        else:
-            raise TypeError(f&#34;Cannot handle {type(self)} and {type(other)}&#34;)
-
-        return self._new_from_dict(new_values)
-
-    def _unary_operation(self, operation):
-        new_values = {f.name: operation(getattr(self, f.name))
-                      if getattr(self, f.name) is not None else None
-                      for f in fields(self)}
-
-        return self._new_from_dict(new_values)
-
-    def _comparision_operation(self, other, operation):
-        def operation_function(this_value, other_value):
-            if None in (this_value, other_value):
-                return True
-            else:
-                return operation(this_value, other_value)
-
-        if isinstance(other, type(self)):
-            new_values = self._cross_same_type(other, operation_function).values()
-
-        elif isinstance(other, (int, float)):
-            new_values = self._cross_same_type(other, operation_function, single=True).values()
-
-        else:
-            raise TypeError(f&#34;Cannot handle {type(self)} and {type(other)}&#34;)
-
-        if all(new_values):
-            return True
-
-        elif not any(new_values):
-            return False
-
-        else:
-            return None
-
-    def __or__(self, other):
-        def operation_function(this_value, other_value):
-            if this_value is None:
-                return other_value
-            else:
-                return this_value
-
-        new_values = self._cross_same_type(other, operation_function)
-        return self._new_from_dict(new_values)
-
-    def __and__(self, other):
-        def operation_function(this_value, other_value):
-            if None not in (this_value, other_value):
-                return this_value
-            else:
-                return None
-
-        new_values = self._cross_same_type(other, operation_function)
-        return self._new_from_dict(new_values)
-
-    def __add__(self, other):
-        return self._binary_operation(other, operator.add)
-
-    def __radd__(self, other):
-        return self._binary_operation(other, operator.add)
-
-    def __sub__(self, other):
-        return self._binary_operation(other, operator.sub)
-
-    def __rsub__(self, other):
-        return self._binary_operation(other, operator.sub)
-
-    def __mul__(self, other):
-        return self._binary_operation(other, operator.mul)
-
-    def __rmul__(self, other):
-        return self._binary_operation(other, operator.mul)
-
-    def __div__(self, other):
-        return self._binary_operation(other, operator.div)
-
-    def __rdiv__(self, other):
-        return self._binary_operation(other, operator.div)
-
-    def __truediv__(self, other):
-        return self._binary_operation(other, operator.truediv)
-
-    def __mod__(self, other):
-        return self._binary_operation(other, operator.mod)
-
-    def __abs__(self):
-        return self._unary_operation(operator.abs)
-
-    def __index__(self):
-        return self._unary_operation(operator.index)
-
-    def __pos__(self):
-        return self._unary_operation(operator.pos)
-
-    def __neg__(self):
-        return self._unary_operation(operator.neg)
-
-    def __lt__(self, other):
-        return self._comparision_operation(other, operator.lt)
-
-    def __le__(self, other):
-        return self._comparision_operation(other, operator.le)
-
-    def __eq__(self, other):
-        return self._comparision_operation(other, operator.eq)
-
-    def __ne__(self, other):
-        return self._comparision_operation(other, operator.ne)
-
-    def __ge__(self, other):
-        return self._comparision_operation(other, operator.ge)
-
-    def __gt__(self, other):
-        return self._comparision_operation(other, operator.gt)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="mirobot.mirobot_status.basic_dataclass" href="#mirobot.mirobot_status.basic_dataclass">basic_dataclass</a></li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="mirobot.mirobot_status.MirobotAngles" href="#mirobot.mirobot_status.MirobotAngles">MirobotAngles</a></li>
-<li><a title="mirobot.mirobot_status.MirobotCartesians" href="#mirobot.mirobot_status.MirobotCartesians">MirobotCartesians</a></li>
-</ul>
 </dd>
 </dl>
 </section>
@@ -1012,16 +637,6 @@ def tz(self):
 <li><code><a title="mirobot.mirobot_status.MirobotStatus.state" href="#mirobot.mirobot_status.MirobotStatus.state">state</a></code></li>
 <li><code><a title="mirobot.mirobot_status.MirobotStatus.valve_pwm" href="#mirobot.mirobot_status.MirobotStatus.valve_pwm">valve_pwm</a></code></li>
 </ul>
-</li>
-<li>
-<h4><code><a title="mirobot.mirobot_status.basic_dataclass" href="#mirobot.mirobot_status.basic_dataclass">basic_dataclass</a></code></h4>
-<ul class="">
-<li><code><a title="mirobot.mirobot_status.basic_dataclass.asdict" href="#mirobot.mirobot_status.basic_dataclass.asdict">asdict</a></code></li>
-<li><code><a title="mirobot.mirobot_status.basic_dataclass.astuple" href="#mirobot.mirobot_status.basic_dataclass.astuple">astuple</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="mirobot.mirobot_status.featured_dataclass" href="#mirobot.mirobot_status.featured_dataclass">featured_dataclass</a></code></h4>
 </li>
 </ul>
 </li>
