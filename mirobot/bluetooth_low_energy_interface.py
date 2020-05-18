@@ -187,17 +187,16 @@ class BluetoothLowEnergyInterface:
                     if self.feedback:
                         self.feedback[-1] = self.feedback[-1].strip('\r\n')
 
-                    self.feedback.append(line)
+                    if 'error' in line:
+                        self.logger.error(MirobotError(line.replace('error: ', '')))
 
-                    last_line = self.feedback[-2]
-                    if 'error' in last_line:
-                        self.logger.error(MirobotError(last_line.replace('error: ', '')))
+                    if 'ALARM' in line:
+                        self.logger.error(MirobotAlarm(line.split('ALARM: ', 1)[1]))
 
-                    if 'ALARM' in last_line:
-                        self.logger.error(MirobotAlarm(last_line.split('ALARM: ', 1)[1]))
-
-                    if matches_eol_strings(reset_strings, last_line):
+                    if matches_eol_strings(reset_strings, line):
                         self.logger.error(MirobotReset('Mirobot was unexpectedly reset!'))
+
+                    self.feedback.append(line)
 
                 if self.feedback[-1] == 'ok\r\n':
                     self.ok_counter += 1
