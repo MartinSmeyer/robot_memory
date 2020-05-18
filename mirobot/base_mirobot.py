@@ -59,6 +59,7 @@ class BaseMirobot(AbstractContextManager):
         class : `BaseMirobot`
         """
         self.logger = logging.getLogger(__name__)
+        """ The instance level logger. Of type `logging.Logger` """
         self.logger.setLevel(logging.DEBUG)
 
         self.stream_handler = ExitOnExceptionStreamHandler()
@@ -180,7 +181,7 @@ class BaseMirobot(AbstractContextManager):
         var_command : bool
             (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by ` BaseMirobot.device.wait_until_idle`.
         wait : bool
             (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
         wait_idle : bool
@@ -222,7 +223,7 @@ class BaseMirobot(AbstractContextManager):
         Parameters
         ----------
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.device.wait_until_idle`.
 
         Returns
         -------
@@ -241,7 +242,7 @@ class BaseMirobot(AbstractContextManager):
         Parameters
         ----------
         disable_debug : bool
-            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.wait_until_idle`.
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by `BaseMirobot.device.wait_until_idle`.
 
         """
         # get only the status message and not 'ok'

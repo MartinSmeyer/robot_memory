@@ -43,7 +43,7 @@ class BluetoothLowEnergyInterface:
         debug : bool
             (Default value = False) Whether to show debug statements in logger.
         logger : Logger
-            (Default value = None) Logger instance to use for this class. Usually `mirobot.logger`.
+            (Default value = None) Logger instance to use for this class. Usually `mirobot.base_mirobot.BaseMirobot.logger`.
         autofindaddress : bool
             (Default value = True) Whether to automatically search for Mirobot's bluetooth module if `address` parameter is `None`.
 

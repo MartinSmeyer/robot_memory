@@ -11,7 +11,7 @@ os_is_posix = os.name == 'posix'
 
 
 class SerialInterface:
-    """ A class for bridging the interface between `mirobot.mirobot.BaseMirobot` and `mirobot.serial_device.SerialDevice`"""
+    """ A class for bridging the interface between `mirobot.base_mirobot.BaseMirobot` and `mirobot.serial_device.SerialDevice`"""
     def __init__(self, mirobot, portname=None, baudrate=None, stopbits=None, exclusive=True, debug=False, logger=None, autofindport=True):
         """ Initialization of `SerialInterface` class
 
@@ -30,7 +30,7 @@ class SerialInterface:
         debug : bool
              (Default value = False) Whether to show debug statements in logger.
         logger : logger.Logger
-             (Default value = None) Logger instance to use for this class. Usually `mirobot.logger`.
+             (Default value = None) Logger instance to use for this class. Usually `mirobot.base_mirobot.BaseMirobot.logger`.
         autofindport : bool
              (Default value = True) Whether to automatically search for an available port if `address` parameter is `None`.
 
