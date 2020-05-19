@@ -45,23 +45,24 @@ class MirobotVariableCommandError(Exception):
 
 class SerialDeviceReadError(Exception):
     """ An inplace class for when SerialDevice is unable to read the serial port """
+    pass
 
 
 class SerialDeviceOpenError(Exception):
     """ An inplace class for when SerialDevice is unable to open the serial port """
-
-
-class SerialDeviceLockError(Exception):
-    """ An inplace class for when SerialDevice is unable to lock the serial port """
+    pass
 
 
 class SerialDeviceCloseError(Exception):
     """ An inplace class for when SerialDevice is unable to close the serial port """
-
-
-class SerialDeviceUnlockError(Exception):
-    """ An inplace class for when SerialDevice is unable to unlock the serial port """
+    pass
 
 
 class SerialDeviceWriteError(Exception):
     """ An inplace class for when SerialDevice is unable to write to the serial port """
+    pass
+
+
+class InvalidBluetoothAddressError(Exception):
+    """ An inplace class for when an invalid Bluetooth address is given """
+    pass
