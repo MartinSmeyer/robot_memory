@@ -5,7 +5,7 @@ import time
 
 from bleak import discover, BleakClient
 
-from .exceptions import MirobotError, MirobotAlarm, MirobotReset
+from .exceptions import MirobotError, MirobotAlarm, MirobotReset, InvalidBluetoothAddressError
 
 
 os_is_posix = os.name == 'posix'
@@ -70,9 +70,13 @@ class BluetoothLowEnergyInterface:
     async def _ainit(self, address=None, autofindaddress=True):
         # if address was not passed in and autofindaddress is set to true,
         # then autosearch for a bluetooth device
-        if autofindaddress and address is None:
-            self.address = await self._find_address()
-            """ The default address to use when making connections. To override this on a individual basis, provide portname to each invocation of `BaseMirobot.connect`. """
+        if not address:
+            if autofindaddress:
+                self.address = await self._find_address()
+                """ The default address to use when making connections. To override this on a individual basis, provide portname to each invocation of `BaseMirobot.connect`. """
+                self.logger.info(f"Using Bluetooth Address \"{self.address}\"")
+            else:
+                self.logger.exception(InvalidBluetoothAddressError('Must either provide a Bluetooth address or turn on autodiscovery!'))
         else:
             self.address = address
 
