@@ -8,6 +8,8 @@ from .mirobot_status import MirobotAngles, MirobotCartesians
 class Mirobot(BaseMirobot):
     """ A class for managing and maintaining known Mirobot operations."""
 
+    _rover = BaseRover(None)
+
     def __init__(self, *base_mirobot_args, **base_mirobot_kwargs):
         """
         Initialization of the `Mirobot` class.
@@ -28,34 +30,6 @@ class Mirobot(BaseMirobot):
         super().__init__(*base_mirobot_args, **base_mirobot_kwargs)
 
         self._rover = BaseRover(self)
-
-        self.move = SimpleNamespace(cartesian=SimpleNamespace(ptp=self.go_to_cartesian_ptp,
-                                                              lin=self.go_to_cartesian_lin),
-                                    angle=self.go_to_axis,
-                                    rail=self.go_to_slide_rail)
-        """ The root of the move alias. Uses `go_to_...` methods. Can be used as `mirobot.move.ptp(...)` or `mirobot.move.angle(...)` """
-
-        self.increment = SimpleNamespace(cartesian=SimpleNamespace(ptp=self.increment_cartesian_ptp,
-                                                                   lin=self.increment_cartesian_lin),
-                                         angle=self.increment_axis,
-                                         rail=self.increment_slide_rail)
-        """ The root of the increment alias. Uses `increment_...` methods. Can be used as `mirobot.increment.ptp(...)` or `mirobot.increment.angle(...)` """
-
-        wheel_aliases = SimpleNamespace(upper=SimpleNamespace(left=self._rover.move_upper_left,
-                                                              right=self._rover.move_upper_right),
-                                        bottom=SimpleNamespace(left=self._rover.move_bottom_left,
-                                                               right=self._rover.move_bottom_right),
-                                        left=SimpleNamespace(upper=self._rover.move_upper_left,
-                                                             bottom=self._rover.move_bottom_left),
-                                        right=SimpleNamespace(upper=self._rover.move_upper_right,
-                                                              bottom=self._rover.move_bottom_right))
-
-        self.rover = SimpleNamespace(wheel=wheel_aliases,
-                                     rotate=SimpleNamespace(left=self._rover.rotate_left,
-                                                            right=self._rover.rotate_right),
-                                     move=SimpleNamespace(forward=self._rover.move_forward,
-                                                          backward=self._rover.move_backward))
-        """ The root of the rover alias. Uses methods from `mirobot.base_rover.BaseRover`. Can be used as `mirobot.rover.wheel.upper.right(...)` or `mirobot.rover.rotate.left(...)` or `mirobot.rover.move.forward(...)`"""
 
     @property
     def state(self):
@@ -395,3 +369,31 @@ class Mirobot(BaseMirobot):
 
         return super().go_to_axis(d=d,
                                   speed=speed, wait=wait)
+
+    move = SimpleNamespace(cartesian=SimpleNamespace(ptp=go_to_cartesian_ptp,
+                                                     lin=go_to_cartesian_lin),
+                           angle=go_to_axis,
+                           rail=go_to_slide_rail)
+    """ The root of the move alias. Uses `go_to_...` methods. Can be used as `mirobot.move.ptp(...)` or `mirobot.move.angle(...)` """
+
+    increment = SimpleNamespace(cartesian=SimpleNamespace(ptp=increment_cartesian_ptp,
+                                                          lin=increment_cartesian_lin),
+                                angle=increment_axis,
+                                rail=increment_slide_rail)
+    """ The root of the increment alias. Uses `increment_...` methods. Can be used as `mirobot.increment.ptp(...)` or `mirobot.increment.angle(...)` """
+
+    wheel = SimpleNamespace(upper=SimpleNamespace(left=_rover.move_upper_left,
+                                                  right=_rover.move_upper_right),
+                            bottom=SimpleNamespace(left=_rover.move_bottom_left,
+                                                   right=_rover.move_bottom_right),
+                            left=SimpleNamespace(upper=_rover.move_upper_left,
+                                                 bottom=_rover.move_bottom_left),
+                            right=SimpleNamespace(upper=_rover.move_upper_right,
+                                                  bottom=_rover.move_bottom_right))
+
+    rover = SimpleNamespace(wheel=wheel,
+                            rotate=SimpleNamespace(left=_rover.rotate_left,
+                                                   right=_rover.rotate_right),
+                            move=SimpleNamespace(forward=_rover.move_forward,
+                                                 backward=_rover.move_backward))
+    """ The root of the rover alias. Uses methods from `mirobot.base_rover.BaseRover`. Can be used as `mirobot.rover.wheel.upper.right(...)` or `mirobot.rover.rotate.left(...)` or `mirobot.rover.move.forward(...)`"""
