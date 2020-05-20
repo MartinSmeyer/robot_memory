@@ -130,7 +130,7 @@ class SerialDevice:
             except Exception as e:
                 self.logger.exception(SerialDeviceCloseError(e))
 
-    def send(self, message):
+    def send(self, message, terminator=os.linesep):
         """
         Send a message to the serial port.
 
@@ -140,13 +140,15 @@ class SerialDevice:
         message : str
             The string to send to serial port.
 
+        terminator : str
+            (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `'\\r\\n'` for windows and `'\\n'` for modern operating systems.
+
         Returns
         -------
         result : bool
             Whether the sending of `message` succeeded.
 
         """
-        terminator = r'\r\n'
         if self._is_open:
             try:
                 if not message.endswith(terminator):
