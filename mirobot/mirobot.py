@@ -1,14 +1,21 @@
-from types import SimpleNamespace
+from collections import namedtuple
+from typing import Union
 
 from .base_mirobot import BaseMirobot
 from .base_rover import BaseRover
 from .mirobot_status import MirobotAngles, MirobotCartesians
 
+dim_splitter = namedtuple('dim_spliter', ['cartesian', 'angle', 'rail'])
+cartesian_type_splitter = namedtuple('cartesian_type_splitter', ['ptp', 'lin'])
+left_right_splitter = namedtuple('left_right_splitter', ['left', 'right'])
+upper_lower_splitter = namedtuple('upper_lower_splitter', ['upper', 'lower'])
+four_way_splitter = namedtuple('four_way_splitter', ['left', 'right', 'upper', 'lower'])
+forward_backward_splitter = namedtuple('forward_backward_splitter', ['forward', 'backward'])
+rover_splitter = namedtuple('rover_splitter', ['wheel', 'rotate', 'move'])
+
 
 class Mirobot(BaseMirobot):
     """ A class for managing and maintaining known Mirobot operations."""
-
-    _rover = BaseRover(None)
 
     def __init__(self, *base_mirobot_args, **base_mirobot_kwargs):
         """
@@ -30,6 +37,34 @@ class Mirobot(BaseMirobot):
         super().__init__(*base_mirobot_args, **base_mirobot_kwargs)
 
         self._rover = BaseRover(self)
+
+        self.move = dim_splitter(cartesian=cartesian_type_splitter(ptp=self.go_to_cartesian_ptp,
+                                                                   lin=self.go_to_cartesian_lin),
+                                 angle=self.go_to_axis,
+                                 rail=self.go_to_slide_rail)
+        """ The root of the move alias. Uses `go_to_...` methods. Can be used as `mirobot.move.ptp(...)` or `mirobot.move.angle(...)` """
+
+        self.increment = dim_splitter(cartesian=cartesian_type_splitter(ptp=self.increment_cartesian_ptp,
+                                                                        lin=self.increment_cartesian_lin),
+                                      angle=self.increment_axis,
+                                      rail=self.increment_slide_rail)
+        """ The root of the increment alias. Uses `increment_...` methods. Can be used as `mirobot.increment.ptp(...)` or `mirobot.increment.angle(...)` """
+
+        self.wheel = four_way_splitter(upper=left_right_splitter(left=self._rover.move_upper_left,
+                                                                 right=self._rover.move_upper_right),
+                                       lower=left_right_splitter(left=self._rover.move_bottom_left,
+                                                                 right=self._rover.move_bottom_right),
+                                       left=upper_lower_splitter(upper=self._rover.move_upper_left,
+                                                                 lower=self._rover.move_bottom_left),
+                                       right=upper_lower_splitter(upper=self._rover.move_upper_right,
+                                                                  lower=self._rover.move_bottom_right))
+
+        self.rover = rover_splitter(wheel=self.wheel,
+                                    rotate=left_right_splitter(left=self._rover.rotate_left,
+                                                               right=self._rover.rotate_right),
+                                    move=forward_backward_splitter(forward=self._rover.move_forward,
+                                                                   backward=self._rover.move_backward))
+        """ The root of the rover alias. Uses methods from `mirobot.base_rover.BaseRover`. Can be used as `mirobot.rover.wheel.upper.right(...)` or `mirobot.rover.rotate.left(...)` or `mirobot.rover.move.forward(...)`"""
 
     @property
     def state(self):
@@ -91,7 +126,7 @@ class Mirobot(BaseMirobot):
 
         Parameters
         ----------
-        x : Union[float, MirobotCartesians]
+        x : Union[float, mirobot.mirobot_status.MirobotCartesians]
             (Default value = `None`) If `float`, this represents the X-axis position.
                                      If of type `mirobot.mirobot_status.MirobotCartesians`, then this will be used for all positional values instead.
         y : float
@@ -130,7 +165,7 @@ class Mirobot(BaseMirobot):
 
         Parameters
         ----------
-        x : Union[float, MirobotCartesians]
+        x : Union[float, mirobot.mirobot_status.MirobotCartesians]
             (Default value = `None`) If `float`, this represents the X-axis position.
                                      If of type `mirobot.mirobot_status.MirobotCartesians`, then this will be used for all positional values instead.
         y : float
@@ -170,7 +205,7 @@ class Mirobot(BaseMirobot):
 
         Parameters
         ----------
-        x : Union[float, MirobotAngles]
+        x : Union[float, mirobot.mirobot_status.MirobotAngles]
             (Default value = `None`) If `float`, this represents the angle of axis 1.
                                      If of type `mirobot.mirobot_status.MirobotAngles`, then this will be used for all positional values instead.
         y : float
@@ -211,7 +246,7 @@ class Mirobot(BaseMirobot):
 
         Parameters
         ----------
-        x : Union[float, MirobotCartesians]
+        x : Union[float, mirobot.mirobot_status.MirobotCartesians]
             (Default value = `None`) If `float`, this represents the X-axis position.
                                      If of type `mirobot.mirobot_status.MirobotCartesians`, then this will be used for all positional values instead.
         y : float
@@ -250,7 +285,7 @@ class Mirobot(BaseMirobot):
 
         Parameters
         ----------
-        x : Union[float, MirobotCartesians]
+        x : Union[float, mirobot.mirobot_status.MirobotCartesians]
             (Default value = `None`) If `float`, this represents the X-axis position.
                                      If of type `mirobot.mirobot_status.MirobotCartesians`, then this will be used for all positional values instead.
         y : float
@@ -289,7 +324,7 @@ class Mirobot(BaseMirobot):
 
         Parameters
         ----------
-        x : Union[float, MirobotAngles]
+        x : Union[float, mirobot.mirobot_status.MirobotAngles]
             (Default value = `None`) If `float`, this represents the angle of axis 1.
                                      If of type `mirobot.mirobot_status.MirobotAngles`, then this will be used for all positional values instead.
         y : float
@@ -369,31 +404,3 @@ class Mirobot(BaseMirobot):
 
         return super().go_to_axis(d=d,
                                   speed=speed, wait=wait)
-
-    move = SimpleNamespace(cartesian=SimpleNamespace(ptp=go_to_cartesian_ptp,
-                                                     lin=go_to_cartesian_lin),
-                           angle=go_to_axis,
-                           rail=go_to_slide_rail)
-    """ The root of the move alias. Uses `go_to_...` methods. Can be used as `mirobot.move.ptp(...)` or `mirobot.move.angle(...)` """
-
-    increment = SimpleNamespace(cartesian=SimpleNamespace(ptp=increment_cartesian_ptp,
-                                                          lin=increment_cartesian_lin),
-                                angle=increment_axis,
-                                rail=increment_slide_rail)
-    """ The root of the increment alias. Uses `increment_...` methods. Can be used as `mirobot.increment.ptp(...)` or `mirobot.increment.angle(...)` """
-
-    wheel = SimpleNamespace(upper=SimpleNamespace(left=_rover.move_upper_left,
-                                                  right=_rover.move_upper_right),
-                            bottom=SimpleNamespace(left=_rover.move_bottom_left,
-                                                   right=_rover.move_bottom_right),
-                            left=SimpleNamespace(upper=_rover.move_upper_left,
-                                                 bottom=_rover.move_bottom_left),
-                            right=SimpleNamespace(upper=_rover.move_upper_right,
-                                                  bottom=_rover.move_bottom_right))
-
-    rover = SimpleNamespace(wheel=wheel,
-                            rotate=SimpleNamespace(left=_rover.rotate_left,
-                                                   right=_rover.rotate_right),
-                            move=SimpleNamespace(forward=_rover.move_forward,
-                                                 backward=_rover.move_backward))
-    """ The root of the rover alias. Uses methods from `mirobot.base_rover.BaseRover`. Can be used as `mirobot.rover.wheel.upper.right(...)` or `mirobot.rover.rotate.left(...)` or `mirobot.rover.move.forward(...)`"""
