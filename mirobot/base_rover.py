@@ -25,7 +25,7 @@ class BaseRover:
 
             output = []
             for i in range(repeat):
-                output.extend(self.fn(*args, **kwargs))
+                output.extend(fn(self, *args, **kwargs))
 
             return output
 
