@@ -85,9 +85,33 @@ class SerialInterface:
         self._debug = bool(value)
         self.serial_device.setDebug(value)
 
-    def send(self, msg, disable_debug=False, wait=True, wait_idle=True):
+    def send(self, msg, disable_debug=False, terminator=os.linesep, wait=True, wait_idle=True):
+        """
+        Send a message to the Mirobot.
 
-        output = self.serial_device.send(msg)
+        Parameters
+        ----------
+        msg : str or bytes
+             A message or instruction to send to the Mirobot.
+        var_command : bool
+            (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
+        disable_debug : bool
+            (Default value = `False`) Whether to override the class debug setting. Used primarily by ` BaseMirobot.device.wait_until_idle`.
+        terminator : str
+            (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `'\\r\\n'` for windows and `'\\n'` for modern operating systems.
+        wait : bool
+            (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
+        wait_idle : bool
+            (Default value = `False`) Whether to wait for Mirobot to be idle before returning.
+
+        Returns
+        -------
+        msg : List[str] or bool
+            If `wait` is `True`, then return a list of strings which contains message output.
+            If `wait` is `False`, then return whether sending the message succeeded.
+        """
+
+        output = self.serial_device.send(msg, terminator=terminator)
 
         if self._debug and not disable_debug:
             self.logger.debug(f"[SENT] {msg}")

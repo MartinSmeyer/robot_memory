@@ -147,7 +147,7 @@ class BluetoothLowEnergyInterface:
         """ Whether this class is connected to the Bluetooth Extender Box """
         return self.connection
 
-    def send(self, msg, disable_debug=False, wait=True, wait_idle=True):
+    def send(self, msg, disable_debug=False, terminator=None, wait=True, wait_idle=True):
         """
 
         Send a message to the Bluetooth Extender Box. Shouldn't be used by the end user.
@@ -157,6 +157,8 @@ class BluetoothLowEnergyInterface:
             The message/instruction to send. A `\\r\\n` will be appended to this message.
         disable_debug : bool
              (Default value = False) Whether to disable debug statements on `idle`-state polling.
+        terminator : str
+            (Default value = `None`) Dummy variable for this method. This implementation will always use `\\r\\n` as the line terminator.
         wait : bool
              (Default value = True) Whether to wait for the command to return a `ok` response.
         wait_idle :

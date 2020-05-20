@@ -34,49 +34,49 @@ class BaseRover:
     @repeat_decorator
     def move_upper_left(self, repeat=1, wait=True):
         instruction = "W7"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')
 
     @repeat_decorator
     def move_upper_right(self, repeat=1, wait=True):
         instruction = "W9"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')
 
     @repeat_decorator
     def move_bottom_left(self, repeat=1, wait=True):
         instruction = "W1"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')
 
     @repeat_decorator
     def move_bottom_right(self, repeat=1, wait=True):
         instruction = "W3"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')
 
     @repeat_decorator
     def move_forward(self, repeat=1, wait=True):
         instruction = "W8"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')
 
     @repeat_decorator
     def move_backward(self, repeat=1, wait=True):
         instruction = "W2"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')
 
     @repeat_decorator
     def move_left(self, repeat=1, wait=True):
         instruction = "W4"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')
 
     @repeat_decorator
     def move_right(self, repeat=1, wait=True):
         instruction = "W6"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')
 
     @repeat_decorator
     def rotate_left(self, repeat=1, wait=True):
         instruction = "W10"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')
 
     @repeat_decorator
     def rotate_right(self, repeat=1, wait=True):
         instruction = "W11"
-        return self._mirobot.send_msg(instruction, wait=wait)
+        return self._mirobot.send_msg(instruction, wait=wait, terminator='\r\n')

@@ -170,7 +170,7 @@ class BaseMirobot(AbstractContextManager):
         self.stream_handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
         self.device.setDebug(value)
 
-    def send_msg(self, msg, var_command=False, disable_debug=False, wait=None, wait_idle=False):
+    def send_msg(self, msg, var_command=False, disable_debug=False, terminator=os.linesep, wait=None, wait_idle=False):
         """
         Send a message to the Mirobot.
 
@@ -182,6 +182,8 @@ class BaseMirobot(AbstractContextManager):
             (Default value = `False`) Whether `msg` is a variable command (of form `$num=value`). Will throw an error if does not validate correctly.
         disable_debug : bool
             (Default value = `False`) Whether to override the class debug setting. Used primarily by ` BaseMirobot.device.wait_until_idle`.
+        terminator : str
+            (Default value = `os.linesep`) The line separator to use when signaling a new line. Usually `'\\r\\n'` for windows and `'\\n'` for modern operating systems.
         wait : bool
             (Default value = `None`) Whether to wait for output to end and to return that output. If `None`, use class default `BaseMirobot.wait` instead.
         wait_idle : bool
@@ -208,6 +210,7 @@ class BaseMirobot(AbstractContextManager):
             # actually send the message
             output = self.device.send(msg,
                                       disable_debug=disable_debug,
+                                      terminator=os.linesep,
                                       wait=(wait or (wait is None and self.wait)),
                                       wait_idle=wait_idle)
 
