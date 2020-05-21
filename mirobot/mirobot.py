@@ -1,17 +1,16 @@
-from collections import namedtuple
-from typing import Union
+from typing import NamedTuple
 
 from .base_mirobot import BaseMirobot
 from .base_rover import BaseRover
 from .mirobot_status import MirobotAngles, MirobotCartesians
 
-dim_splitter = namedtuple('dim_spliter', ['cartesian', 'angle', 'rail'])
-cartesian_type_splitter = namedtuple('cartesian_type_splitter', ['ptp', 'lin'])
-left_right_splitter = namedtuple('left_right_splitter', ['left', 'right'])
-upper_lower_splitter = namedtuple('upper_lower_splitter', ['upper', 'lower'])
-four_way_splitter = namedtuple('four_way_splitter', ['left', 'right', 'upper', 'lower'])
-forward_backward_splitter = namedtuple('forward_backward_splitter', ['forward', 'backward'])
-rover_splitter = namedtuple('rover_splitter', ['wheel', 'rotate', 'move'])
+dim_splitter = NamedTuple('dim_spliter', ['cartesian', 'angle', 'rail'])
+cartesian_type_splitter = NamedTuple('cartesian_type_splitter', ['ptp', 'lin'])
+left_right_splitter = NamedTuple('left_right_splitter', ['left', 'right'])
+upper_lower_splitter = NamedTuple('upper_lower_splitter', ['upper', 'lower'])
+four_way_splitter = NamedTuple('four_way_splitter', ['left', 'right', 'upper', 'lower'])
+forward_backward_splitter = NamedTuple('forward_backward_splitter', ['forward', 'backward'])
+rover_splitter = NamedTuple('rover_splitter', ['wheel', 'rotate', 'move'])
 
 
 class Mirobot(BaseMirobot):
