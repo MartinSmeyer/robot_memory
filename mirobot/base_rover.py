@@ -6,7 +6,7 @@ class BaseRover:
     def __init__(self, mirobot):
         self._mirobot = mirobot
 
-    def time_decorator(self, fn):
+    def time_decorator(fn):
         @functools.wraps(fn)
         def time_wrapper(self, *args, **kwargs):
             args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
