@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from mirobot import Mirobot
 
+# MirobotCartesians(x=202.0, y=0.0, z=181.0, a=0.0, b=0.0, c=0.0)
+
 # Default for `wait=` is `True`, but explicitly state it here to showcase this.
 with Mirobot(wait=True, debug=True) as m:
 
