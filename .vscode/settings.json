@@ -1,0 +1,4 @@
+{
+    "python.formatting.provider": "black",
+    "python.pythonPath": "/home/msundermeyer/miniconda3/envs/mirobot/bin/python"
+}
